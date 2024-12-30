@@ -1,0 +1,25 @@
+{
+  "name": "com.tirex.util",
+  "displayName": "Unity Utils",
+  "description": "Unity Utilities",
+  "version": "1.0.0",
+  "unity": "6000.0.32",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tojinguyen/Unity-Utilities.git"
+  },
+  "author": {
+    "name": "Toji",
+    "email": "toainguyenprogramminggame@gmail.com"
+  },
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json" : "3.0.1"
+  },
+  "keywords": [
+    "Unity Utilities, Unity Utils"
+  ],
+  "release": {
+    "branches": ["main"]
+  }
+}
