@@ -47,7 +47,7 @@ public class SpriteImportSettings
             selectedTextureType = (TextureImporterType)EditorPrefs.GetInt(TEXTURE_TYPE_KEY, (int)TextureImporterType.Sprite);
             selectedMaxSize = EditorPrefs.GetInt(MAX_SIZE_KEY, 1024);
             selectedFormat = (TextureImporterFormat)EditorPrefs.GetInt(FORMAT_KEY, (int)TextureImporterFormat.Automatic);
-            autoApplySettings = EditorPrefs.GetBool(AUTO_APPLY_KEY, true);  // Load toggle value
+            autoApplySettings = EditorPrefs.GetBool(AUTO_APPLY_KEY, false);  // Load toggle value
         }
 
         private void OnGUI()
@@ -98,6 +98,9 @@ public class SpriteImportSettings
         // Called when a sprite asset is imported
         private void OnPreprocessTexture()
         {
+            var isApplySettings = EditorPrefs.GetBool(AUTO_APPLY_KEY, true);
+            if (!isApplySettings)
+                return;
             if (assetImporter is not TextureImporter importer) 
                 return;
             // Only apply the settings if the auto-apply feature is enabled
