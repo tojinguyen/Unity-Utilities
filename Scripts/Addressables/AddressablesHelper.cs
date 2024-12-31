@@ -5,7 +5,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using Cysharp.Threading.Tasks;
 using Object = UnityEngine.Object;
 
-public class AddressablesHelper
+public static class AddressablesHelper
 {
     private class FeatureAddressableCache
     {
@@ -18,16 +18,16 @@ public class AddressablesHelper
     private const string STR_FORMAT_GUID = "{0}{1}";
     private const string DEFAULT_FEATURE_NAME = "default_feature_cache";
 
-    private Dictionary<string, int> _refCountAssetRef = new(20);
+    private static Dictionary<string, int> _refCountAssetRef = new(20);
 
-    private Dictionary<string, FeatureAddressableCache> _featureAddressableCaches;
+    private static Dictionary<string, FeatureAddressableCache> _featureAddressableCaches;
 
-    public AddressablesHelper()
+    static AddressablesHelper()
     {
         _featureAddressableCaches = new Dictionary<string, FeatureAddressableCache>(DEFAULT_FEATURE_AMOUNT);
     }
 
-    public async UniTask<TObject> GetAssetAsync<TObject>(string assetName, string featureName = DEFAULT_FEATURE_NAME)
+    public static async UniTask<TObject> GetAssetAsync<TObject>(string assetName, string featureName = DEFAULT_FEATURE_NAME)
         where TObject : Object
     {
         try
@@ -93,14 +93,14 @@ public class AddressablesHelper
         }
     }
 
-    public async UniTaskVoid GetAssetAsync<TObject>(string assetName, Action<TObject> result) where TObject : Object
+    public static async UniTaskVoid GetAssetAsync<TObject>(string assetName, Action<TObject> result) where TObject : Object
     {
         var resource = await GetAssetAsync<TObject>(assetName);
 
         result?.Invoke(resource);
     }
 
-    public async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DEFAULT_FEATURE_NAME) where TObject : Object
+    public static async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DEFAULT_FEATURE_NAME) where TObject : Object
     {
         try
         {
@@ -115,19 +115,19 @@ public class AddressablesHelper
         }
     }
 
-    public async UniTaskVoid GetAssetAsync<TObject>(AssetReference assetRef, Action<TObject> resultCallback)
+    public static async UniTaskVoid GetAssetAsync<TObject>(AssetReference assetRef, Action<TObject> resultCallback)
         where TObject : Object
     {
         var result = await GetAssetAsync<TObject>(assetRef);
         resultCallback?.Invoke(result);
     }
 
-    public void UnloadAssetHandle(AssetReference assetRef)
+    public static void UnloadAssetHandle(AssetReference assetRef)
     {
         UnloadAssetHandle(GetGuidKeyFromAssetRef(assetRef));
     }
     
-    public void TryUnloadAssetHandle(AssetReference assetRef)
+    public static void TryUnloadAssetHandle(AssetReference assetRef)
     {
         if (assetRef == null)
             return;
@@ -136,7 +136,7 @@ public class AddressablesHelper
         TryUnloadAssetHandle(guid);
     }
     
-    public void TryUnloadAssetHandle(string assetName)
+    public static void TryUnloadAssetHandle(string assetName)
     {
         if (_refCountAssetRef.TryGetValue(assetName, out var refCount))
             if (refCount > 1)
@@ -149,7 +149,7 @@ public class AddressablesHelper
         UnloadAssetHandle(assetName);
     }
     
-    public void UnloadAsyncAllAddressableInFeature(string featureName)
+    public static void UnloadAsyncAllAddressableInFeature(string featureName)
     {
         if (!_featureAddressableCaches.TryGetValue(featureName, out var featureCache))
             return;
@@ -186,7 +186,7 @@ public class AddressablesHelper
         featureCache.LoadedAsset.Clear();
     }
     
-    public async UniTask UnloadAsyncAllAddressable()
+    public static async UniTask UnloadAsyncAllAddressable()
     {
         foreach (var featureCache in _featureAddressableCaches.Values)
         {
@@ -213,12 +213,12 @@ public class AddressablesHelper
         _refCountAssetRef.Clear();
     }
     
-    public string GetGuidKeyFromAssetRef(AssetReference assetRef)
+    public static string GetGuidKeyFromAssetRef(AssetReference assetRef)
     {
         return string.Format(STR_FORMAT_GUID, assetRef.AssetGUID, assetRef.SubObjectName);
     }
     
-    private void UnloadAssetHandle(string guid)
+    private static void UnloadAssetHandle(string guid)
     {
         if (!_featureAddressableCaches.TryGetValue(guid, out var featureCache))
             return;
