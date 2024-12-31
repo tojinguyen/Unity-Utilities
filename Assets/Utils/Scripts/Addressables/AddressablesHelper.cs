@@ -93,13 +93,6 @@ public static class AddressablesHelper
         }
     }
 
-    public static async UniTask<TObject> GetAssetAsync<TObject>(string assetName, Action<TObject> result) where TObject : Object
-    {
-        var resource = await GetAssetAsync<TObject>(assetName);
-        result?.Invoke(resource);
-        return resource;
-    }
-
     public static async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DEFAULT_FEATURE_NAME) where TObject : Object
     {
         try
@@ -113,14 +106,6 @@ public static class AddressablesHelper
             ConsoleLogger.LogError($"GetAssetAsync asset {assetRef} with guid {GetGuidKeyFromAssetRef(assetRef)} fail: {ex.Message}");
             return null;
         }
-    }
-
-    public static async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, Action<TObject> resultCallback)
-        where TObject : Object
-    {
-        var result = await GetAssetAsync<TObject>(assetRef);
-        resultCallback?.Invoke(result);
-        return result;
     }
 
     public static void UnloadAssetHandle(AssetReference assetRef)
