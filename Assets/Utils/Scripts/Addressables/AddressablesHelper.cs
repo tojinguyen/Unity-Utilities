@@ -7,143 +7,118 @@ using Object = UnityEngine.Object;
 
 public class AddressablesHelper
 {
+    private class FeatureAddressableCache
+    {
+        public Dictionary<string, AsyncOperationHandle> LoadedAsset;
+        public Dictionary<string, AsyncOperationHandle> LoadingAsset;
+    }
+
+    private const int DEFAULT_FEATURE_AMOUNT = 5;
+    private const int DEFAULT_EXPECTED_LOAD_ASSETS = 20;
     private const string STR_FORMAT_GUID = "{0}{1}";
+    private const string DEFAULT_FEATURE_NAME = "default_feature_cache";
 
     private Dictionary<string, int> _refCountAssetRef = new(20);
 
-    private Dictionary<string, AsyncOperationHandle> _loadingAssets;
-    private Dictionary<string, AsyncOperationHandle> _loadedAssets;
-    
-    public AddressablesHelper(int expectedLoadingAssets = 5, int expectedLoadedAssets = 20)
-    {
-        _loadingAssets = new Dictionary<string, AsyncOperationHandle>(expectedLoadingAssets);
-        _loadedAssets = new Dictionary<string, AsyncOperationHandle>(expectedLoadedAssets);
-    }
+    private Dictionary<string, FeatureAddressableCache> _featureAddressableCaches;
 
     public AddressablesHelper()
     {
-        _loadingAssets = new Dictionary<string, AsyncOperationHandle>(5);
-        _loadedAssets = new Dictionary<string, AsyncOperationHandle>(20);
+        _featureAddressableCaches = new Dictionary<string, FeatureAddressableCache>(DEFAULT_FEATURE_AMOUNT);
     }
 
-    public async UniTask<TObject> GetAssetAsync<TObject>(string name) where TObject : Object
+    public async UniTask<TObject> GetAssetAsync<TObject>(string assetName, string featureName = DEFAULT_FEATURE_NAME)
+        where TObject : Object
     {
         try
         {
-            if (_loadedAssets.TryGetValue(name, out var handle))
+            var isFeatureExists = _featureAddressableCaches.TryGetValue(featureName, out var featureCache);
+            if (!isFeatureExists)
             {
-                _refCountAssetRef[name]++;
-                if (handle.IsValid())
+                featureCache = new FeatureAddressableCache
                 {
-                    return handle.Result as TObject;
+                    LoadedAsset = new Dictionary<string, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS)
+                };
+                _featureAddressableCaches.Add(featureName, featureCache);
+            }
+            else
+            {
+                // Check loaded asset
+                var isHandleExists = featureCache.LoadedAsset.TryGetValue(assetName, out var handle);
+                if (isHandleExists)
+                {
+                    if (handle.IsValid())
+                    {
+                        _refCountAssetRef[assetName]++;
+                        return handle.Result as TObject;
+                    }
+
+                    featureCache.LoadedAsset.Remove(assetName);
                 }
 
-                _loadedAssets.Remove(name);
+                // Check loading asset
+                var isHandleLoading = featureCache.LoadingAsset.TryGetValue(assetName, out handle);
+
+                if (isHandleLoading)
+                {
+                    if (!handle.IsValid())
+                        featureCache.LoadingAsset.Remove(assetName);
+                    else
+                    {
+                        await handle;
+                        if (_refCountAssetRef.TryGetValue(assetName, out var value))
+                            _refCountAssetRef[assetName]++;
+                        else
+                            _refCountAssetRef.Add(assetName, 1);
+                        return handle.Result as TObject;
+                    }
+                }
             }
 
-            if (_loadingAssets.TryGetValue(name, out handle))
-            {
-                if (_refCountAssetRef.TryGetValue(name, out var value))
-                {
-                    _refCountAssetRef[name]++;
-                }
-                else
-                {
-                    _refCountAssetRef.Add(name, 1);
-                }
-
-                if (!handle.IsValid())
-                    _loadingAssets.Remove(name);
-                else
-                {
-                    await handle;
-                    return handle.Result as TObject;
-                }
-            }
-            _refCountAssetRef.Add(name, 1);
-            handle = Addressables.LoadAssetAsync<TObject>(name);
-            _loadingAssets.Add(name, handle);
-            await handle;
-            _loadedAssets.Add(name, handle);
-            _loadingAssets.Remove(name);
-            if (handle.Status != AsyncOperationStatus.Succeeded) 
+            _refCountAssetRef.Add(assetName, 1);
+            var handleAssetAsync = Addressables.LoadAssetAsync<TObject>(assetName);
+            featureCache.LoadingAsset.Add(assetName, handleAssetAsync);
+            await handleAssetAsync;
+            featureCache.LoadedAsset.Add(assetName, handleAssetAsync);
+            featureCache.LoadingAsset.Remove(assetName);
+            if (handleAssetAsync.Status != AsyncOperationStatus.Succeeded)
                 return null;
-            var go = handle.Result;
-
-            return go as TObject;
-
+            var obj = handleAssetAsync.Result;
+            return obj;
         }
         catch (Exception ex)
         {
-            ConsoleLogger.LogError("GetAssetAsync with name fail: " + ex.Message);
+            ConsoleLogger.LogError($"GetAssetAsync with name {assetName} fail: {ex.Message}");
             return null;
         }
     }
 
-    public async UniTaskVoid GetAssetAsync<TObject>(string name, Action<TObject> result) where TObject : Object
+    public async UniTaskVoid GetAssetAsync<TObject>(string assetName, Action<TObject> result) where TObject : Object
     {
-        var resource = await GetAssetAsync<TObject>(name);
+        var resource = await GetAssetAsync<TObject>(assetName);
 
         result?.Invoke(resource);
     }
-    
-    public async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef) where TObject : Object
+
+    public async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DEFAULT_FEATURE_NAME) where TObject : Object
     {
         try
         {
-            var guid = GetGuidKeyFromAssetRef(assetRef);
-            if (_loadedAssets.TryGetValue(guid, out var handle))
-            {
-                _refCountAssetRef[guid]++;
-                if (handle.IsValid())
-                    return handle.Result as TObject;
-                _loadedAssets.Remove(guid);
-            }
-            if (_loadingAssets.TryGetValue(guid, out handle))
-            {
-                if (_refCountAssetRef.TryGetValue(guid, out var value))
-                {
-                    _refCountAssetRef[guid]++;
-                }
-                else
-                {
-                    _refCountAssetRef.Add(guid, 1);
-                }
-
-                if (!handle.IsValid())
-                    _loadingAssets.Remove(guid);
-                else
-                {
-                    await handle.Task;
-                    return handle.Result as TObject;
-                }
-            }
-            _refCountAssetRef.Add(guid, 1);
-            handle = Addressables.LoadAssetAsync<TObject>(assetRef);
-            _loadingAssets.Add(guid, handle);
-            await handle;
-            _loadedAssets.Add(guid, handle);
-            _loadingAssets.Remove(guid);
-            if (handle.Status == AsyncOperationStatus.Succeeded)
-            {
-                var go = handle.Result;
-                return go as TObject;
-            }
-
-            return null;
+            var assetName = GetGuidKeyFromAssetRef(assetRef);
+            var obj = await GetAssetAsync<TObject>(assetName, featureName);
+            return obj;
         }
         catch (Exception ex)
         {
-            ConsoleLogger.LogError("GetAssetAsync fail: " + ex.Message);
+            ConsoleLogger.LogError($"GetAssetAsync asset {assetRef} with guid {GetGuidKeyFromAssetRef(assetRef)} fail: {ex.Message}");
             return null;
         }
-
     }
 
-    public async UniTaskVoid GetAssetAsync<TObject>(AssetReference assetRef, Action<TObject> resultCallback) where TObject : Object
+    public async UniTaskVoid GetAssetAsync<TObject>(AssetReference assetRef, Action<TObject> resultCallback)
+        where TObject : Object
     {
         var result = await GetAssetAsync<TObject>(assetRef);
-
         resultCallback?.Invoke(result);
     }
 
@@ -151,54 +126,106 @@ public class AddressablesHelper
     {
         UnloadAssetHandle(GetGuidKeyFromAssetRef(assetRef));
     }
-
-    public void UnloadAssetHandle(string guild)
-    {
-        if (!_loadedAssets.TryGetValue(guild, out var handle))
-            return;
-        Addressables.Release(handle);
-        _loadedAssets.Remove(guild);
-    }
-
+    
     public void TryUnloadAssetHandle(AssetReference assetRef)
     {
         if (assetRef == null)
             return;
 
         var guid = GetGuidKeyFromAssetRef(assetRef);
-        if (_refCountAssetRef.TryGetValue(guid, out var refCount))
+        TryUnloadAssetHandle(guid);
+    }
+    
+    public void TryUnloadAssetHandle(string assetName)
+    {
+        if (_refCountAssetRef.TryGetValue(assetName, out var refCount))
             if (refCount > 1)
             {
-                _refCountAssetRef[guid] -= 1;
+                _refCountAssetRef[assetName] -= 1;
                 return;
             }
-        _refCountAssetRef.Remove(guid);
-        UnloadAssetHandle(guid);
-    }
 
-    protected string GetGuidKeyFromAssetRef(AssetReference assetRef)
+        _refCountAssetRef.Remove(assetName);
+        UnloadAssetHandle(assetName);
+    }
+    
+    public void UnloadAsyncAllAddressableInFeature(string featureName)
     {
-        return string.Format(STR_FORMAT_GUID, assetRef.AssetGUID, assetRef.SubObjectName);
+        if (!_featureAddressableCaches.TryGetValue(featureName, out var featureCache))
+            return;
+        foreach (var element in featureCache.LoadingAsset)
+        {
+            var asset = element.Key;
+            var handle = element.Value;
+            if (handle.IsValid())
+                Addressables.Release(handle);
+
+            if (_refCountAssetRef.TryGetValue(asset, out var refCount))
+            {
+                _refCountAssetRef[asset] -= 1;
+                if (_refCountAssetRef[asset] <= 0)
+                    _refCountAssetRef.Remove(asset);
+            }
+        }
+        featureCache.LoadingAsset.Clear();
+        
+        foreach (var element in featureCache.LoadedAsset)
+        {
+            var asset = element.Key;
+            var handle = element.Value;
+            if (handle.IsValid())
+                Addressables.Release(handle);
+
+            if (_refCountAssetRef.TryGetValue(asset, out var refCount))
+            {
+                _refCountAssetRef[asset] -= 1;
+                if (_refCountAssetRef[asset] <= 0)
+                    _refCountAssetRef.Remove(asset);
+            }
+        }
+        featureCache.LoadedAsset.Clear();
     }
     
     public async UniTask UnloadAsyncAllAddressable()
     {
-        foreach (var handle in _loadingAssets.Values)
+        foreach (var featureCache in _featureAddressableCaches.Values)
         {
-            await handle.Task;
-            Addressables.Release(handle);
-        }
-        _loadingAssets.Clear();
-
-        foreach (var handle in _loadedAssets.Values)
-        {
-            if (handle.IsValid())
+            foreach (var handle in featureCache.LoadingAsset.Values)
             {
-                Addressables.Release(handle);
+                await handle;
+                if (handle.IsValid())
+                    Addressables.Release(handle);
             }
+            featureCache.LoadingAsset.Clear();
         }
-        _loadedAssets.Clear();
+        
+        foreach (var featureCache in _featureAddressableCaches.Values)
+        {
+            foreach (var handle in featureCache.LoadedAsset.Values)
+            {
+                if (handle.IsValid())
+                    Addressables.Release(handle);
+            }
+            featureCache.LoadedAsset.Clear();
+        }
+        
+        _featureAddressableCaches.Clear();
         _refCountAssetRef.Clear();
     }
+    
+    public string GetGuidKeyFromAssetRef(AssetReference assetRef)
+    {
+        return string.Format(STR_FORMAT_GUID, assetRef.AssetGUID, assetRef.SubObjectName);
+    }
+    
+    private void UnloadAssetHandle(string guid)
+    {
+        if (!_featureAddressableCaches.TryGetValue(guid, out var featureCache))
+            return;
+        if (featureCache.LoadedAsset.TryGetValue(guid, out var handle))
+        {
+            Addressables.Release(handle);
+            featureCache.LoadedAsset.Remove(guid);
+        }
+    }
 }
-
