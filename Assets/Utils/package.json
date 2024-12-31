@@ -2,7 +2,7 @@
   "name": "com.tirex.util",
   "displayName": "Unity Utils",
   "description": "Unity Utilities",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -13,7 +13,6 @@
     "email": "toainguyenprogramminggame@gmail.com"
   },
   "dependencies": {
-    "com.cysharp.unitask" : "2.3.3"
   },
   "keywords": [
     "Unity Utilities, Unity Utils"
