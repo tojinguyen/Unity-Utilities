@@ -14,7 +14,8 @@
     "email": "toainguyenprogramminggame@gmail.com"
   },
   "dependencies": {
-    "com.unity.nuget.newtonsoft-json" : "3.0.1"
+    "com.unity.nuget.newtonsoft-json" : "3.0.1",
+    "com.cysharp.unitask" : "2.3.3"
   },
   "keywords": [
     "Unity Utilities, Unity Utils"
