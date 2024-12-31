@@ -41,7 +41,7 @@ public abstract class MonoSingleton<T> : MonoBehaviour
                     return instance;
                 }
 
-                T[] objects = FindObjectsOfType<T>();
+                T[] objects = FindObjectsByType<T>(FindObjectsSortMode.None);
                 if (objects != null)
                 {
 
