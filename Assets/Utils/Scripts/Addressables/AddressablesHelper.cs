@@ -1,12 +1,11 @@
 using System;
-using UnityEngine;
 using UnityEngine.AddressableAssets;
 using System.Collections.Generic;
 using UnityEngine.ResourceManagement.AsyncOperations;
 using Cysharp.Threading.Tasks;
 using Object = UnityEngine.Object;
 
-public class AddressablesHelper : IDisposable
+public class AddressablesHelper
 {
     private const string STR_FORMAT_GUID = "{0}{1}";
 
@@ -76,7 +75,7 @@ public class AddressablesHelper : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.LogError("GetAssetAsync with name fail: " + ex.Message);
+            ConsoleLogger.LogError("GetAssetAsync with name fail: " + ex.Message);
             return null;
         }
     }
@@ -135,7 +134,7 @@ public class AddressablesHelper : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.LogError("GetAssetAsync fail: " + ex.Message);
+            ConsoleLogger.LogError("GetAssetAsync fail: " + ex.Message);
             return null;
         }
 
@@ -200,11 +199,6 @@ public class AddressablesHelper : IDisposable
         }
         _loadedAssets.Clear();
         _refCountAssetRef.Clear();
-    }
-   
-    public void Dispose()
-    {
-        UnloadAsyncAllAddressable().Forget();
     }
 }
 
