@@ -2,7 +2,7 @@
   "name": "com.tirex.util",
   "displayName": "Unity Utils",
   "description": "Unity Utilities",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "unity": "6000.0.32",
   "license": "MIT",
   "repository": {
