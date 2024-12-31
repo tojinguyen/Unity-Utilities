@@ -61,9 +61,39 @@ public static class AddressablesHelper
                 return;
             }
         _refCountAssetRef.Remove(assetName);
-        UnloadAssetHandle(assetName);
+        // Find feature cache
+        foreach (var featureCache in _featureAddressableCaches.Values)
+        {
+            if (!featureCache.LoadedAsset.TryGetValue(assetName, out var handle)) 
+                continue;
+            Addressables.Release(handle);
+            featureCache.LoadedAsset.Remove(assetName);
+            return;
+        }
     }
-
+    
+    /// <summary>
+    /// Try unload asset handle by asset name in feature
+    /// </summary>
+    /// <param name="assetName"></param>
+    /// <param name="featureName"></param>
+    public static void TryUnloadAssetHandle(string assetName, string featureName = DEFAULT_FEATURE_NAME)
+    {
+        if (_refCountAssetRef.TryGetValue(assetName, out var refCount))
+            if (refCount > 1)
+            {
+                _refCountAssetRef[assetName] -= 1;
+                return;
+            }
+        _refCountAssetRef.Remove(assetName);
+        if (!_featureAddressableCaches.TryGetValue(featureName, out var featureCache))
+            return;
+        if (!featureCache.LoadedAsset.TryGetValue(assetName, out var handle)) 
+            return;
+        Addressables.Release(handle);
+        featureCache.LoadedAsset.Remove(assetName);
+    }
+    
     /// <summary>
     /// Remove all asset in feature cache
     /// </summary>
@@ -208,18 +238,5 @@ public static class AddressablesHelper
     private static string GetGuidKeyFromAssetRef(AssetReference assetRef)
     {
         return string.Format(STR_FORMAT_GUID, assetRef.AssetGUID, assetRef.SubObjectName);
-    }
-    
-    private static void UnloadAssetHandle(string assetName)
-    {
-        // Find feature cache
-        foreach (var featureCache in _featureAddressableCaches.Values)
-        {
-            if (!featureCache.LoadedAsset.TryGetValue(assetName, out var handle)) 
-                continue;
-            Addressables.Release(handle);
-            featureCache.LoadedAsset.Remove(assetName);
-            return;
-        }
     }
 }
