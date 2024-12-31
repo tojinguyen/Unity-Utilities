@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 
@@ -120,10 +121,13 @@ public class SpriteImportSettings
             importer.textureCompression = compression;
             importer.textureType = textureType;
             importer.maxTextureSize = maxSize;
+#pragma warning disable CS0618 // Type or member is obsolete
             importer.textureFormat = format;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // Log the applied settings
             Debug.Log($"Applied Sprite Import Settings: {importer.assetPath}");
         }
     }
 }
+#endif
