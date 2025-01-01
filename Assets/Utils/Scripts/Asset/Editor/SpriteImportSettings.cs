@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+#if UNITY_EDITOR && AUTO_APPLY_SPRITE_SETTINGS
 using UnityEditor;
 using UnityEngine;
 
