@@ -142,7 +142,8 @@ public static class AddressablesHelper
             {
                 featureCache = new FeatureAddressableCache
                 {
-                    LoadedAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS)
+                    LoadedAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS),
+                    LoadingAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS)
                 };
                 _featureAddressableCaches.Add(featureName, featureCache);
             }
