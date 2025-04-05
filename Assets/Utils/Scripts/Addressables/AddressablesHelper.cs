@@ -7,23 +7,23 @@ using Object = UnityEngine.Object;
 
 public static class AddressablesHelper
 {
-    private class FeatureAddressableCache
+    private class _featureAddressableCache
     {
         public Dictionary<AssetReference, AsyncOperationHandle> LoadedAsset;
         public Dictionary<AssetReference, AsyncOperationHandle> LoadingAsset;
     }
 
-    private const int DEFAULT_FEATURE_AMOUNT = 5;
-    private const int DEFAULT_EXPECTED_LOAD_ASSETS = 20;
-    private const string DEFAULT_FEATURE_NAME = "default_feature_cache";
+    private const int DefaultFeatureAmount = 5;
+    private const int DefaultExpectedLoadAssets = 20;
+    private const string DefaultFeatureName = "default_feature_cache";
 
-    private static Dictionary<AssetReference, int> _refCountAssetRef = new(20);
+    private static readonly Dictionary<AssetReference, int> RefCountAssetRef = new(20);
 
-    private static Dictionary<string, FeatureAddressableCache> _featureAddressableCaches;
+    private static readonly Dictionary<string, _featureAddressableCache> FeatureAddressableCaches;
 
     static AddressablesHelper()
     {
-        _featureAddressableCaches = new Dictionary<string, FeatureAddressableCache>(DEFAULT_FEATURE_AMOUNT);
+        FeatureAddressableCaches = new Dictionary<string, _featureAddressableCache>(DefaultFeatureAmount);
     }
 
     /// <summary>
@@ -35,15 +35,15 @@ public static class AddressablesHelper
         if (assetRef == null)
             return;
 
-        if (_refCountAssetRef.TryGetValue(assetRef, out var refCount))
+        if (RefCountAssetRef.TryGetValue(assetRef, out var refCount))
             if (refCount > 1)
             {
-                _refCountAssetRef[assetRef] -= 1;
+                RefCountAssetRef[assetRef] -= 1;
                 return;
             }
-        _refCountAssetRef.Remove(assetRef);
+        RefCountAssetRef.Remove(assetRef);
         // Find feature cache
-        foreach (var featureCache in _featureAddressableCaches.Values)
+        foreach (var featureCache in FeatureAddressableCaches.Values)
         {
             if (!featureCache.LoadedAsset.TryGetValue(assetRef, out var handle)) 
                 continue;
@@ -59,7 +59,7 @@ public static class AddressablesHelper
     /// <param name="featureName">Feature Name</param>
     public static async UniTaskVoid UnloadAsyncAllAddressableInFeature(string featureName)
     {
-        if (!_featureAddressableCaches.TryGetValue(featureName, out var featureCache))
+        if (!FeatureAddressableCaches.TryGetValue(featureName, out var featureCache))
             return;
         foreach (var element in featureCache.LoadingAsset)
         {
@@ -69,11 +69,11 @@ public static class AddressablesHelper
             if (handle.IsValid())
                 Addressables.Release(handle);
 
-            if (_refCountAssetRef.TryGetValue(asset, out var refCount))
+            if (RefCountAssetRef.TryGetValue(asset, out var refCount))
             {
-                _refCountAssetRef[asset] -= 1;
-                if (_refCountAssetRef[asset] <= 0)
-                    _refCountAssetRef.Remove(asset);
+                RefCountAssetRef[asset] -= 1;
+                if (RefCountAssetRef[asset] <= 0)
+                    RefCountAssetRef.Remove(asset);
             }
         }
         featureCache.LoadingAsset.Clear();
@@ -85,11 +85,11 @@ public static class AddressablesHelper
             if (handle.IsValid())
                 Addressables.Release(handle);
 
-            if (_refCountAssetRef.TryGetValue(asset, out var refCount))
+            if (RefCountAssetRef.TryGetValue(asset, out var refCount))
             {
-                _refCountAssetRef[asset] -= 1;
-                if (_refCountAssetRef[asset] <= 0)
-                    _refCountAssetRef.Remove(asset);
+                RefCountAssetRef[asset] -= 1;
+                if (RefCountAssetRef[asset] <= 0)
+                    RefCountAssetRef.Remove(asset);
             }
         }
         featureCache.LoadedAsset.Clear();
@@ -100,7 +100,7 @@ public static class AddressablesHelper
     /// </summary>
     public static async UniTaskVoid UnloadAsyncAllAddressable()
     {
-        foreach (var featureCache in _featureAddressableCaches.Values)
+        foreach (var featureCache in FeatureAddressableCaches.Values)
         {
             foreach (var handle in featureCache.LoadingAsset.Values)
             {
@@ -111,7 +111,7 @@ public static class AddressablesHelper
             featureCache.LoadingAsset.Clear();
         }
         
-        foreach (var featureCache in _featureAddressableCaches.Values)
+        foreach (var featureCache in FeatureAddressableCaches.Values)
         {
             foreach (var handle in featureCache.LoadedAsset.Values)
             {
@@ -121,8 +121,8 @@ public static class AddressablesHelper
             featureCache.LoadedAsset.Clear();
         }
         
-        _featureAddressableCaches.Clear();
-        _refCountAssetRef.Clear();
+        FeatureAddressableCaches.Clear();
+        RefCountAssetRef.Clear();
     }
     
     /// <summary>
@@ -132,20 +132,20 @@ public static class AddressablesHelper
     /// <param name="featureName">Feature Name</param>
     /// <typeparam name="TObject"></typeparam>
     /// <returns></returns>
-    public static async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DEFAULT_FEATURE_NAME)
+    public static async UniTask<TObject> GetAssetAsync<TObject>(AssetReference assetRef, string featureName = DefaultFeatureName)
         where TObject : Object
     {
         try
         {
-            var isFeatureExists = _featureAddressableCaches.TryGetValue(featureName, out var featureCache);
+            var isFeatureExists = FeatureAddressableCaches.TryGetValue(featureName, out var featureCache);
             if (!isFeatureExists)
             {
-                featureCache = new FeatureAddressableCache
+                featureCache = new _featureAddressableCache
                 {
-                    LoadedAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS),
-                    LoadingAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DEFAULT_EXPECTED_LOAD_ASSETS)
+                    LoadedAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DefaultExpectedLoadAssets),
+                    LoadingAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DefaultExpectedLoadAssets)
                 };
-                _featureAddressableCaches.Add(featureName, featureCache);
+                FeatureAddressableCaches.Add(featureName, featureCache);
             }
             else
             {
@@ -155,7 +155,7 @@ public static class AddressablesHelper
                 {
                     if (handle.IsValid())
                     {
-                        _refCountAssetRef[assetRef]++;
+                        RefCountAssetRef[assetRef]++;
                         return handle.Result as TObject;
                     }
 
@@ -172,16 +172,16 @@ public static class AddressablesHelper
                     else
                     {
                         await handle;
-                        if (_refCountAssetRef.TryGetValue(assetRef, out var value))
-                            _refCountAssetRef[assetRef]++;
+                        if (RefCountAssetRef.TryGetValue(assetRef, out var value))
+                            RefCountAssetRef[assetRef]++;
                         else
-                            _refCountAssetRef.Add(assetRef, 1);
+                            RefCountAssetRef.Add(assetRef, 1);
                         return handle.Result as TObject;
                     }
                 }
             }
 
-            _refCountAssetRef.Add(assetRef, 1);
+            RefCountAssetRef.Add(assetRef, 1);
             var handleAssetAsync = Addressables.LoadAssetAsync<TObject>(assetRef);
             featureCache.LoadingAsset.Add(assetRef, handleAssetAsync);
             await handleAssetAsync;
