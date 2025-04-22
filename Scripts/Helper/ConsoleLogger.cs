@@ -12,7 +12,7 @@ public enum ColorLog
     WHITE
 }
 
-public class ConsoleLogger
+public static class ConsoleLogger
 {
     [Conditional("ALL_LOG")]
     public static void LogColor(object message, ColorLog color = ColorLog.WHITE)
