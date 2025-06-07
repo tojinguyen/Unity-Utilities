@@ -27,9 +27,9 @@ namespace TirexGame.Utils.Ads.Examples
         
         private async UniTask InitializeAds()
         {
-            Debug.Log("Initializing ads...");
+            ConsoleLogger.Log("Initializing ads...");
             await AdService.InitializeAsync();
-            Debug.Log("Ads initialized!");
+            ConsoleLogger.Log("Ads initialized!");
         }
         
         public void ShowBanner()
@@ -63,11 +63,11 @@ namespace TirexGame.Utils.Ads.Examples
             // Make sure ad is ready
             if (!AdService.IsInterstitialReady())
             {
-                Debug.Log("Loading interstitial ad...");
+                ConsoleLogger.Log("Loading interstitial ad...");
                 bool loaded = await AdService.LoadInterstitialAsync();
                 if (!loaded)
                 {
-                    Debug.Log("Failed to load interstitial ad");
+                    ConsoleLogger.Log("Failed to load interstitial ad");
                     return;
                 }
             }
@@ -78,7 +78,7 @@ namespace TirexGame.Utils.Ads.Examples
             {
                 lastInterstitialTime = Time.time;
                 gameActionCount = 0;
-                Debug.Log("Interstitial ad shown");
+                ConsoleLogger.Log("Interstitial ad shown");
             }
         }
         
@@ -90,7 +90,7 @@ namespace TirexGame.Utils.Ads.Examples
             // Make sure ad is ready
             if (!AdService.IsRewardedReady())
             {
-                Debug.Log("Loading rewarded ad...");
+                ConsoleLogger.Log("Loading rewarded ad...");
                 bool loaded = await AdService.LoadRewardedAsync();
                 if (!loaded)
                 {
@@ -107,11 +107,11 @@ namespace TirexGame.Utils.Ads.Examples
             {
                 // Give reward to player
                 GiveRewardToPlayer();
-                Debug.Log($"Player earned reward: {result.Reward.Type} x{result.Reward.Amount}");
+                ConsoleLogger.Log($"Player earned reward: {result.Reward.Type} x{result.Reward.Amount}");
             }
             else
             {
-                Debug.Log("Player didn't complete the ad");
+                ConsoleLogger.Log("Player didn't complete the ad");
                 // Optional: Show message that they need to watch the full ad
             }
         }
@@ -123,7 +123,7 @@ namespace TirexGame.Utils.Ads.Examples
             // GameManager.Instance.AddExtraLife();
             // GameManager.Instance.UnlockBonus();
             
-            Debug.Log("Reward given to player!");
+            ConsoleLogger.Log("Reward given to player!");
         }
         
         /// <summary>
@@ -136,7 +136,7 @@ namespace TirexGame.Utils.Ads.Examples
             {
                 // Give coins based on reward amount
                 int coinsToGive = (int)(result.Reward.Amount * 10); // Convert reward to coins
-                Debug.Log($"Player earned {coinsToGive} coins!");
+                ConsoleLogger.Log($"Player earned {coinsToGive} coins!");
                 
                 // Add coins to player's account
                 // PlayerData.AddCoins(coinsToGive);
@@ -151,7 +151,7 @@ namespace TirexGame.Utils.Ads.Examples
             var result = await AdService.ShowRewardedAsync();
             if (result.Success)
             {
-                Debug.Log("Player earned an extra life!");
+                ConsoleLogger.Log("Player earned an extra life!");
                 
                 // Give extra life
                 // GameManager.Instance.AddLife();
@@ -166,14 +166,14 @@ namespace TirexGame.Utils.Ads.Examples
             var result = await AdService.ShowRewardedAsync();
             if (result.Success)
             {
-                Debug.Log("Player can continue playing!");
+                ConsoleLogger.Log("Player can continue playing!");
                 
                 // Continue the game
                 // GameManager.Instance.ContinueGame();
             }
             else
             {
-                Debug.Log("Player chose not to continue");
+                ConsoleLogger.Log("Player chose not to continue");
                 // Show game over screen
                 // GameManager.Instance.ShowGameOver();
             }
