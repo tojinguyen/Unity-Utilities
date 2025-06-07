@@ -1,4 +1,4 @@
-public interface IDataModel<out T>
+public interface IDataModel<T>
 {
     public void SetDefaultData();
 }

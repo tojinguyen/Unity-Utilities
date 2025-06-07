@@ -5,12 +5,12 @@ using System.Text;
 public static class DataEncryptor
 {
     private static readonly byte[] DefaultKey = Encoding.UTF8.GetBytes("1234567890123456"); // Key 16 bytes
-    private static readonly byte[] DefaultIV = Encoding.UTF8.GetBytes("6543210987654321"); // IV 16 bytes
+    private static readonly byte[] DefaultIv = Encoding.UTF8.GetBytes("6543210987654321"); // IV 16 bytes
 
     public static byte[] Encrypt(string plainText, byte[] key = null, byte[] iv = null)
     {
         key ??= DefaultKey;
-        iv ??= DefaultIV;
+        iv ??= DefaultIv;
 
         using var aes = Aes.Create();
         aes.Key = key;
@@ -29,7 +29,7 @@ public static class DataEncryptor
     public static string Decrypt(byte[] cipherText, byte[] key = null, byte[] iv = null)
     {
         key ??= DefaultKey;
-        iv ??= DefaultIV;
+        iv ??= DefaultIv;
 
         using var aes = Aes.Create();
         aes.Key = key;

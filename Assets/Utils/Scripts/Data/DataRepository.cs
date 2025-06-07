@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Data
@@ -98,7 +97,7 @@ namespace TirexGame.Utils.Data
                 var filePath = GetFilePath(key);
                 var directory = System.IO.Path.GetDirectoryName(filePath);
                 
-                if (!System.IO.Directory.Exists(directory))
+                if (!string.IsNullOrEmpty(directory) && !System.IO.Directory.Exists(directory))
                 {
                     System.IO.Directory.CreateDirectory(directory);
                 }
@@ -140,7 +139,7 @@ namespace TirexGame.Utils.Data
                 
                 if (System.IO.File.Exists(filePath))
                 {
-                    await UniTask.Run(() => System.IO.File.Delete(filePath));
+                    await UniTask.RunOnThreadPool(() => System.IO.File.Delete(filePath));
                     return true;
                 }
                 
@@ -156,7 +155,7 @@ namespace TirexGame.Utils.Data
         public async UniTask<bool> ExistsAsync(string key)
         {
             var filePath = GetFilePath(key);
-            return await UniTask.Run(() => System.IO.File.Exists(filePath));
+            return await UniTask.RunOnThreadPool(() => System.IO.File.Exists(filePath));
         }
         
         public async UniTask<IEnumerable<string>> GetAllKeysAsync()
@@ -170,7 +169,7 @@ namespace TirexGame.Utils.Data
                     return new string[0];
                 }
                 
-                var files = await UniTask.Run(() => System.IO.Directory.GetFiles(typeFolder, "*.json"));
+                var files = await UniTask.RunOnThreadPool(() => System.IO.Directory.GetFiles(typeFolder, "*.json"));
                 var keys = new List<string>();
                 
                 foreach (var file in files)
