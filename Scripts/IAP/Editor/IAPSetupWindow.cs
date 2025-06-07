@@ -43,11 +43,33 @@ namespace TirexGame.Utils.IAP.Editor
             }
             
             EditorGUILayout.Space(10);
-            
-            // Configuration creation
+              // Configuration creation
             EditorGUILayout.LabelField("Configuration Setup", EditorStyles.boldLabel);
             
+            EditorGUILayout.BeginHorizontal();
             configPath = EditorGUILayout.TextField("Config Path:", configPath);
+            if (GUILayout.Button("Browse", GUILayout.Width(60)))
+            {
+                string selectedPath = EditorUtility.OpenFolderPanel("Select Config Path", configPath, "");
+                if (!string.IsNullOrEmpty(selectedPath))
+                {
+                    // Convert absolute path to relative path from Assets folder
+                    string dataPath = Application.dataPath;
+                    if (selectedPath.StartsWith(dataPath))
+                    {
+                        configPath = "Assets" + selectedPath.Substring(dataPath.Length).Replace('\\', '/');
+                    }
+                    else
+                    {
+                        // If selected path is outside Assets folder, keep the original path
+                        EditorUtility.DisplayDialog("Invalid Path", 
+                            "Please select a folder inside the Assets directory.", 
+                            "OK");
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            
             configName = EditorGUILayout.TextField("Config Name:", configName);
             
             if (GUILayout.Button("Create IAP Configuration"))
