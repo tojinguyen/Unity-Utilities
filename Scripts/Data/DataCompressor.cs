@@ -17,8 +17,8 @@ namespace TirexGame.Utils.Data
         public long CompressedSize { get; set; }
         public double CompressionRatio => OriginalSize > 0 ? (double)CompressedSize / OriginalSize : 0;
         public double SpaceSavedPercent => OriginalSize > 0 ? (1.0 - CompressionRatio) * 100 : 0;
-        public TimeSpan CompressionTime { get; set; }
-        public TimeSpan DecompressionTime { get; set; }
+        public TimeSpan CompressionTime { get; internal set; }
+        public TimeSpan DecompressionTime { get; internal set; }
     }
 
     /// <summary>
@@ -26,10 +26,10 @@ namespace TirexGame.Utils.Data
     /// </summary>
     public class CompressionResult
     {
-        public byte[] Data { get; set; }
+        public byte[] Data { get; internal set; }
         public CompressionStats Stats { get; set; }
         public bool Success { get; set; }
-        public string Error { get; set; }
+        public string Error { get; internal set; }
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ namespace TirexGame.Utils.Data
             Optimal = 0,
             Fastest = 1,
             NoCompression = 2,
-            SmallestSize = 3
+            MaxCompression = 3
         }
 
         /// <summary>
@@ -286,7 +286,7 @@ namespace TirexGame.Utils.Data
         public static async Task<CompressionResult> CompressJsonAsync(string jsonData)
         {
             // JSON typically compresses well with GZip at optimal level
-            return await CompressStringAsync(jsonData, CompressionAlgorithm.GZip, CompressionLevel.Optimal);
+            return await CompressStringAsync(jsonData);
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace TirexGame.Utils.Data
         /// </summary>
         public static async Task<string> DecompressJsonAsync(byte[] compressedJsonData)
         {
-            var result = await DecompressToStringAsync(compressedJsonData, CompressionAlgorithm.GZip);
+            var result = await DecompressToStringAsync(compressedJsonData);
             
             if (!result.Success)
             {
@@ -316,7 +316,7 @@ namespace TirexGame.Utils.Data
             {
                 try
                 {
-                    var result = await CompressBytesAsync(data, algorithm, CompressionLevel.Optimal);
+                    var result = await CompressBytesAsync(data, algorithm);
                     if (result.Success)
                     {
                         results[algorithm] = result.Stats;
@@ -382,7 +382,7 @@ namespace TirexGame.Utils.Data
                 if (frequency[i] > 0)
                 {
                     var probability = (double)frequency[i] / sampleSize;
-                    entropy -= probability * Math.Log2(probability);
+                    entropy -= probability * Math.Log(probability) / Math.Log(2);
                 }
             }
 
@@ -399,7 +399,7 @@ namespace TirexGame.Utils.Data
                 CompressionLevel.Optimal => System.IO.Compression.CompressionLevel.Optimal,
                 CompressionLevel.Fastest => System.IO.Compression.CompressionLevel.Fastest,
                 CompressionLevel.NoCompression => System.IO.Compression.CompressionLevel.NoCompression,
-                CompressionLevel.SmallestSize => System.IO.Compression.CompressionLevel.SmallestSize,
+                CompressionLevel.MaxCompression => System.IO.Compression.CompressionLevel.Optimal,
                 _ => System.IO.Compression.CompressionLevel.Optimal
             };
         }
@@ -420,6 +420,37 @@ namespace TirexGame.Utils.Data
             }
 
             return $"{len:0.##} {sizes[order]}";
+        }
+        
+        /// <summary>
+        /// Helper methods for DataRepository compatibility
+        /// </summary>
+        public static string Compress(string data)
+        {
+            var result = CompressStringAsync(data).GetAwaiter().GetResult();
+            if (result.Success)
+            {
+                return Convert.ToBase64String(result.Data);
+            }
+            return data;
+        }
+        
+        public static string Decompress(string compressedData)
+        {
+            try
+            {
+                var bytes = Convert.FromBase64String(compressedData);
+                var result = DecompressBytesAsync(bytes).GetAwaiter().GetResult();
+                if (result.Success)
+                {
+                    return Encoding.UTF8.GetString(result.Data);
+                }
+            }
+            catch
+            {
+                // If decompression fails, return original data
+            }
+            return compressedData;
         }
     }
 }

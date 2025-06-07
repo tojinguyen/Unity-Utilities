@@ -170,8 +170,9 @@ namespace TirexGame.Utils.Data
                         var getAllKeysMethod = repository.GetType().GetMethod("GetAllKeysAsync");
                         if (getAllKeysMethod != null)
                         {
-                            var keysTask = getAllKeysMethod.Invoke(repository, null) as UniTask<IEnumerable<string>>;
-                            var keys = await keysTask;
+                            var keysTask = getAllKeysMethod.Invoke(repository, null);
+                            var keysResult = await ConvertToUniTask(keysTask);
+                            var keys = keysResult as IEnumerable<string>;
 
                             foreach (var key in keys)
                             {

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -12,11 +11,11 @@ namespace TirexGame.Utils.Data
     public class DataManager : MonoSingleton<DataManager>
     {
         [Header("Configuration")]
-        [SerializeField] private bool enableLogging = true;
-        [SerializeField] private bool enableCaching = true;
-        [SerializeField] private int defaultCacheExpirationMinutes = 30;
-        [SerializeField] private bool enableAutoSave = true;
-        [SerializeField] private float autoSaveIntervalSeconds = 300f; // 5 minutes
+        [SerializeField] private bool _enableLogging = true;
+        [SerializeField] private bool _enableCaching = true;
+        [SerializeField] private int _defaultCacheExpirationMinutes = 30;
+        [SerializeField] private bool _enableAutoSave = true;
+        [SerializeField] private float _autoSaveIntervalSeconds = 300f; // 5 minutes
         
         private readonly Dictionary<Type, IDataRepository> _repositories = new();
         private readonly DataCacheManager _cacheManager = new();
@@ -33,7 +32,7 @@ namespace TirexGame.Utils.Data
         {
             base.Initialize();
             
-            if (enableAutoSave)
+            if (_enableAutoSave)
             {
                 StartAutoSave();
             }
@@ -62,7 +61,7 @@ namespace TirexGame.Utils.Data
             try
             {
                 // Check cache first
-                if (enableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
+                if (_enableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
                 {
                     Log($"Data retrieved from cache: {key}");
                     return cachedData;
@@ -84,9 +83,9 @@ namespace TirexGame.Utils.Data
                         }
                         
                         // Cache data
-                        if (enableCaching)
+                        if (_enableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_defaultCacheExpirationMinutes));
                         }
                         
                         OnDataLoaded?.Invoke(type, data);
@@ -145,9 +144,9 @@ namespace TirexGame.Utils.Data
                     if (success)
                     {
                         // Update cache
-                        if (enableCaching)
+                        if (_enableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_defaultCacheExpirationMinutes));
                         }
                         
                         OnDataSaved?.Invoke(type, data);
@@ -221,7 +220,7 @@ namespace TirexGame.Utils.Data
             key ??= type.Name;
             
             // Check cache first
-            if (enableCaching && _cacheManager.ContainsKey(key))
+            if (_enableCaching && _cacheManager.ContainsKey(key))
             {
                 return true;
             }
@@ -276,7 +275,8 @@ namespace TirexGame.Utils.Data
             
             foreach (var kvp in _repositories)
             {
-                if (kvp.Value is IDataRepository repository)
+                var repository = kvp.Value;
+                if (repository != null)
                 {
                     tasks.Add(repository.SaveAllAsync());
                 }
@@ -294,7 +294,7 @@ namespace TirexGame.Utils.Data
             Action<T> onLoaded = null,
             Action<string> onDeleted = null) where T : class
         {
-            _eventManager.Subscribe<T>(onSaved, onLoaded, onDeleted);
+            _eventManager.Subscribe(onSaved, onLoaded, onDeleted);
         }
         
         /// <summary>
@@ -316,10 +316,11 @@ namespace TirexGame.Utils.Data
         /// <summary>
         /// Create a backup of all data
         /// </summary>
-        public async UniTask CreateFullBackupAsync()
+        public async UniTask<string> CreateFullBackupAsync()
         {
-            await _backupManager.CreateFullBackupAsync(_repositories);
+            var backupId = await _backupManager.CreateFullBackupAsync(_repositories);
             Log("Full backup created");
+            return backupId;
         }
         
         /// <summary>
@@ -327,20 +328,21 @@ namespace TirexGame.Utils.Data
         /// </summary>
         public async UniTask<bool> RestoreFromBackupAsync(string backupId)
         {
-            var success = await _backupManager.RestoreFromBackupAsync(backupId, _repositories);
-            if (success)
+            var result = await _backupManager.RestoreFromBackupAsync(backupId, _repositories);
+            if (result.Success)
             {
                 ClearCache(); // Clear cache after restore
                 Log($"Data restored from backup: {backupId}");
+                return true;
             }
-            return success;
+            return false;
         }
         
         private async void StartAutoSave()
         {
             while (this != null && gameObject.activeInHierarchy)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(autoSaveIntervalSeconds));
+                await UniTask.Delay(TimeSpan.FromSeconds(_autoSaveIntervalSeconds));
                 
                 if (this != null)
                 {
@@ -351,7 +353,7 @@ namespace TirexGame.Utils.Data
         
         private void Log(string message)
         {
-            if (enableLogging)
+            if (_enableLogging)
             {
                 Debug.Log($"[DataManager] {message}");
             }
@@ -359,7 +361,7 @@ namespace TirexGame.Utils.Data
         
         private void LogError(string message)
         {
-            if (enableLogging)
+            if (_enableLogging)
             {
                 Debug.LogError($"[DataManager] {message}");
             }
