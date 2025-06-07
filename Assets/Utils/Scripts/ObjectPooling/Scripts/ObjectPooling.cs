@@ -6,6 +6,7 @@ public static class ObjectPooling
     private static readonly Dictionary<GameObject, Queue<Component>> Pools = new();
     private static readonly Dictionary<Component, GameObject> InstanceToPrefab = new();
 
+#if OBJECT_POOLING_TRACK_PERFORMANCE
     // ======= PERFORMANCE TRACKING =======
     private static readonly Dictionary<GameObject, PoolStats> PoolStatistics = new();
 
@@ -22,6 +23,7 @@ public static class ObjectPooling
         public float HitRate => TotalRequests > 0 ? (float)PoolHits / TotalRequests : 0f;
         public float MissRate => TotalRequests > 0 ? (float)PoolMisses / TotalRequests : 0f;
     }
+#endif
 
     // ======= COMPONENT VERSIONS =======    
     public static void Prewarm<T>(T prefab, int count) where T : Component
@@ -32,9 +34,7 @@ public static class ObjectPooling
         {
             pool = new Queue<Component>();
             Pools[prefabGo] = pool;
-        }
-
-        for (var i = 0; i < count; i++)
+        }        for (var i = 0; i < count; i++)
         {
             var instance = Object.Instantiate(prefab);
             instance.gameObject.SetActive(false);
@@ -42,6 +42,7 @@ public static class ObjectPooling
             InstanceToPrefab[instance] = prefabGo;
         }
 
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         if (!PoolStatistics.TryGetValue(prefabGo, out var stats))
         {
@@ -54,6 +55,7 @@ public static class ObjectPooling
 
         ConsoleLogger.Log(
             $"[ObjectPooling] Prewarmed pool for {prefabGo.name} with {count} objects. Pool size: {pool.Count}");
+#endif
     }
 
     public static T GetObject<T>(T prefab) where T : Component
@@ -69,11 +71,10 @@ public static class ObjectPooling
         var wasPoolHit = pool.Count > 0;
         var instance = wasPoolHit
             ? (T)pool.Dequeue()
-            : Object.Instantiate(prefab);
-
-        instance.gameObject.SetActive(true);
+            : Object.Instantiate(prefab);        instance.gameObject.SetActive(true);
         InstanceToPrefab[instance] = prefabGo;
 
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         if (!PoolStatistics.TryGetValue(prefabGo, out var stats))
         {
@@ -100,6 +101,7 @@ public static class ObjectPooling
         }
 
         PoolStatistics[prefabGo] = stats;
+#endif
 
         return instance;
     }
@@ -264,11 +266,10 @@ public static class ObjectPooling
             ConsoleLogger.LogWarning($"[ObjectPooling] Tried to return unknown object: {instance.name}");
             Object.Destroy(instance.gameObject);
             return;
-        }
-
-        instance.gameObject.SetActive(false);
+        }        instance.gameObject.SetActive(false);
         Pools[prefabGo].Enqueue(instance);
 
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         if (PoolStatistics.TryGetValue(prefabGo, out var stats))
         {
@@ -279,6 +280,7 @@ public static class ObjectPooling
             ConsoleLogger.Log(
                 $"[ObjectPooling] Object returned to pool for {prefabGo.name} - Pool size: {Pools[prefabGo].Count}, Active: {stats.CurrentActiveCount}");
         }
+#endif
     }
 
     public static void ReturnObject(GameObject obj)
@@ -306,10 +308,9 @@ public static class ObjectPooling
             var instance = pool.Dequeue();
             InstanceToPrefab.Remove(instance);
             Object.Destroy(instance.gameObject);
-        }
+        }        Pools.Remove(prefabGo);
 
-        Pools.Remove(prefabGo);
-
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         if (PoolStatistics.TryGetValue(prefabGo, out var stats))
         {
@@ -317,10 +318,10 @@ public static class ObjectPooling
                 $"[ObjectPooling] Pool cleared for {prefabGo.name} - Final stats: Hit Rate: {stats.HitRate:P2}, Total Created: {stats.TotalCreated}");
             PoolStatistics.Remove(prefabGo);
         }
-    }
-
-    public static void ClearAllPools()
+#endif
+    }    public static void ClearAllPools()
     {
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         ConsoleLogger.Log("[ObjectPooling] Clearing all pools - Final summary:");
         foreach (var kvp in PoolStatistics)
@@ -330,6 +331,7 @@ public static class ObjectPooling
             ConsoleLogger.Log(
                 $"  {prefabGo.name}: Hit Rate: {stats.HitRate:P2}, Total Created: {stats.TotalCreated}, Peak Active: {stats.PeakActiveCount}");
         }
+#endif
 
         foreach (var pool in Pools.Values)
         {
@@ -343,7 +345,9 @@ public static class ObjectPooling
 
         Pools.Clear();
         InstanceToPrefab.Clear();
+#if OBJECT_POOLING_TRACK_PERFORMANCE
         PoolStatistics.Clear();
+#endif
     }
 
     public static int GetPoolSize<T>(T prefab) where T : Component
@@ -354,10 +358,9 @@ public static class ObjectPooling
     public static int GetPoolSize(GameObject prefab)
     {
         return Pools.TryGetValue(prefab, out var pool) ? pool.Count : 0;
-    }
+    }    // ======= DEBUG & PERFORMANCE TRACKING =======
 
-    // ======= DEBUG & PERFORMANCE TRACKING =======
-
+#if OBJECT_POOLING_TRACK_PERFORMANCE
     public static void LogPoolStats(GameObject prefab)
     {
         if (PoolStatistics.TryGetValue(prefab, out var stats))
@@ -417,4 +420,14 @@ public static class ObjectPooling
     {
         return GetHitRate(prefab.gameObject);
     }
+#else
+    // Stub methods when performance tracking is disabled
+    public static void LogPoolStats(GameObject prefab) { }
+    public static void LogPoolStats<T>(T prefab) where T : Component { }
+    public static void LogAllPoolStats() { }
+    public static int GetActiveCount(GameObject prefab) { return 0; }
+    public static int GetActiveCount<T>(T prefab) where T : Component { return 0; }
+    public static float GetHitRate(GameObject prefab) { return 0f; }
+    public static float GetHitRate<T>(T prefab) where T : Component { return 0f; }
+#endif
 }
