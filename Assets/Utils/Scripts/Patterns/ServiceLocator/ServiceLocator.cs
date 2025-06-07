@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace TirexGame.Utils.Patterns.ServiceLocator
 {
@@ -315,12 +314,11 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             return $"{typeof(T).FullName}_{key}";
         }
-        
-        private void Log(string message)
+          private void Log(string message)
         {
             if (_enableLogging)
             {
-                Debug.Log($"[ServiceLocator] {message}");
+                ConsoleLogger.LogColor($"[ServiceLocator] {message}", ColorLog.BLUE);
             }
         }
         
@@ -328,13 +326,13 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             if (_enableLogging)
             {
-                Debug.LogWarning($"[ServiceLocator] {message}");
+                ConsoleLogger.LogWarning($"[ServiceLocator] {message}");
             }
         }
         
         private void LogError(string message)
         {
-            Debug.LogError($"[ServiceLocator] {message}");
+            ConsoleLogger.LogError($"[ServiceLocator] {message}");
         }
     }
 }

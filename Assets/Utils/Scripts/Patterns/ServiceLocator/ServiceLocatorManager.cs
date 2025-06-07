@@ -153,16 +153,14 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
             
             base.OnDestroy();
         }
-        
-        private void Log(string message)
+          private void Log(string message)
         {
             if (enableLogging)
             {
-                Debug.Log($"[ServiceLocatorManager] {message}");
+                ConsoleLogger.LogColor($"[ServiceLocatorManager] {message}", ColorLog.BLUE);
             }
         }
-        
-        #region Unity Editor Support
+          #region Unity Editor Support
         
 #if UNITY_EDITOR
         [ContextMenu("Log Service Count")]
@@ -170,21 +168,20 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             if (_serviceLocator != null)
             {
-                Debug.Log($"[ServiceLocatorManager] Total registered services: {_serviceLocator.ServiceCount}");
+                ConsoleLogger.LogColor($"[ServiceLocatorManager] Total registered services: {_serviceLocator.ServiceCount}", ColorLog.YELLOW);
             }
             else
             {
-                Debug.Log("[ServiceLocatorManager] Service locator not initialized");
+                ConsoleLogger.LogWarning("[ServiceLocatorManager] Service locator not initialized");
             }
         }
-        
-        [ContextMenu("Clear All Services")]
+          [ContextMenu("Clear All Services")]
         private void ClearAllServices()
         {
             if (_serviceLocator != null)
             {
                 _serviceLocator.Clear();
-                Debug.Log("[ServiceLocatorManager] All services cleared via context menu");
+                ConsoleLogger.LogColor("[ServiceLocatorManager] All services cleared via context menu", ColorLog.RED);
             }
         }
 #endif
