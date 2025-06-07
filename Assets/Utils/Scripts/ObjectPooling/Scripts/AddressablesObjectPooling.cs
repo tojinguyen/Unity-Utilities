@@ -67,6 +67,19 @@ public static class AddressablesObjectPooling
     }
 
     /// <summary>
+    /// Get an object from the pool with Vector2 position.
+    /// </summary>
+    public static async UniTask<GameObject> GetObject(AssetReference assetRef, Vector2 position)
+    {
+        var instance = await GetObject(assetRef);
+        if (instance != null)
+        {
+            instance.transform.position = new Vector3(position.x, position.y, instance.transform.position.z);
+        }
+        return instance;
+    }
+
+    /// <summary>
     /// Return an object back to the pool.
     /// </summary>
     public static void ReturnObject(GameObject obj)
