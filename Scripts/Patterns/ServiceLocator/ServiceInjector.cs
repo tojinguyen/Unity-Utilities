@@ -54,14 +54,14 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             if (target == null)
             {
-                Debug.LogError("[ServiceInjector] Cannot inject into null target");
+                ConsoleLogger.LogError("[ServiceInjector] Cannot inject into null target");
                 return;
             }
             
             var locator = serviceLocator ?? ServiceLocatorManager.Services;
             if (locator == null)
             {
-                Debug.LogError("[ServiceInjector] No service locator available for injection");
+                ConsoleLogger.LogError("[ServiceInjector] No service locator available for injection");
                 return;
             }
 
@@ -71,16 +71,16 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
                 try
                 {
                     injectable.InjectServices(locator);
-                    Debug.Log($"[ServiceInjector] Injected services into {target.GetType().Name}");
+                    ConsoleLogger.LogColor($"[ServiceInjector] Injected services into {target.GetType().Name}", ColorLog.GREEN);
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[ServiceInjector] Failed to inject services into {target.GetType().Name}: {e.Message}");
+                    ConsoleLogger.LogError($"[ServiceInjector] Failed to inject services into {target.GetType().Name}: {e.Message}");
                 }
             }
             else
             {
-                Debug.LogWarning($"[ServiceInjector] {target.GetType().Name} does not implement IServiceInjectable interface");
+                ConsoleLogger.LogWarning($"[ServiceInjector] {target.GetType().Name} does not implement IServiceInjectable interface");
             }
         }
           /// <summary>
@@ -93,7 +93,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             if (gameObject == null)
             {
-                Debug.LogError("[ServiceInjector] Cannot inject into null GameObject");
+                ConsoleLogger.LogError("[ServiceInjector] Cannot inject into null GameObject");
                 return;
             }
             
@@ -134,7 +134,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             if (logInjection)
             {
-                Debug.Log($"[{GetType().Name}] Injecting services...");
+                ConsoleLogger.LogColor($"[{GetType().Name}] Injecting services...", ColorLog.BLUE);
             }
             
             ServiceInjector.Inject(this);
@@ -187,7 +187,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
                 {
                     var serviceType = typeof(T).Name;
                     var keyInfo = string.IsNullOrEmpty(key) ? "" : $" with key '{key}'";
-                    Debug.LogError($"[ServiceInjection] Required service {serviceType}{keyInfo} not found");
+                    ConsoleLogger.LogError($"[ServiceInjection] Required service {serviceType}{keyInfo} not found");
                 }
                 
                 return false;
@@ -198,7 +198,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
                 {
                     var serviceType = typeof(T).Name;
                     var keyInfo = string.IsNullOrEmpty(key) ? "" : $" with key '{key}'";
-                    Debug.LogError($"[ServiceInjection] Failed to resolve service {serviceType}{keyInfo}: {e.Message}");
+                    ConsoleLogger.LogError($"[ServiceInjection] Failed to resolve service {serviceType}{keyInfo}: {e.Message}");
                 }
                 
                 return false;
