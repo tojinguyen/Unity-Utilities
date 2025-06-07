@@ -181,6 +181,31 @@ Collection of custom editor tools to enhance development:
 - **Configuration management** with test/production modes
 - **Asset creation helpers** for quick setup
 
+### 💰 IAP (In-App Purchase) Integration
+Complete IAP system with cross-platform support:
+- **Multiple Product Types** supporting Consumable, Non-Consumable, and Subscription
+- **Cross-Platform Support** for Android (Google Play) and iOS (App Store)
+- **Receipt Validation** with client-side and server-side options
+- **Purchase Restoration** with automatic handling for iOS
+- **Event System** with comprehensive callbacks for all IAP actions
+- **Configuration System** using ScriptableObjects for easy setup
+
+#### Quick Start
+```csharp
+// Initialize IAP
+await IAPService.InitializeAsync();
+
+// Purchase a product
+var result = await IAPService.PurchaseAsync("remove_ads");
+if (result.Success)
+{
+    // Process successful purchase
+}
+
+// Restore purchases (iOS)
+var restoreResult = await IAPService.RestorePurchasesAsync();
+```
+
 ## 🚀 Installation
 
 ### Option 1: Unity Package Manager (Recommended)
@@ -854,6 +879,333 @@ AudioService.SetUIVolume(1.0f);
 // Mute/unmute categories
 AudioService.SetMusicMuted(true);
 AudioService.ToggleMusicMute();
+```
+
+### IAP (In-App Purchase) Integration
+
+#### 1. Complete Shop Implementation
+```csharp
+public class ShopManager : MonoBehaviour
+{
+    [Header("Product IDs")]
+    [SerializeField] private string removeAdsProductId = "remove_ads";
+    [SerializeField] private string premiumCurrencyProductId = "premium_currency_100";
+    [SerializeField] private string vipSubscriptionProductId = "vip_subscription";
+    
+    [Header("UI References")]
+    [SerializeField] private ShopItemUI[] shopItems;
+    [SerializeField] private Button restoreButton;
+    [SerializeField] private Text statusText;
+    
+    private async void Start()
+    {
+        await InitializeShop();
+    }
+    
+    private async UniTask InitializeShop()
+    {
+        // Subscribe to IAP events
+        IAPService.SubscribeToEvents(
+            onInitialized: OnIAPReady,
+            onPurchaseCompleted: OnPurchaseCompleted,
+            onPurchaseFailed: OnPurchaseFailed,
+            onPurchasesRestored: OnPurchasesRestored
+        );
+        
+        UpdateStatus("Initializing shop...");
+        
+        // Initialize IAP system
+        await IAPService.InitializeAsync();
+    }
+    
+    private void OnIAPReady()
+    {
+        UpdateStatus("Shop ready!");
+        RefreshShopItems();
+        SetupRestoreButton();
+    }
+    
+    private void RefreshShopItems()
+    {
+        foreach (var shopItem in shopItems)
+        {
+            var productInfo = IAPService.GetProductInfo(shopItem.ProductId);
+            
+            shopItem.SetTitle(productInfo.Title);
+            shopItem.SetDescription(productInfo.Description);
+            shopItem.SetPrice(productInfo.Price);
+            shopItem.SetAvailable(productInfo.IsAvailable);
+            
+            // Setup purchase button
+            shopItem.SetPurchaseCallback(() => PurchaseProduct(shopItem.ProductId).Forget());
+        }
+    }
+    
+    private async UniTaskVoid PurchaseProduct(string productId)
+    {
+        if (!IAPService.IsProductAvailable(productId))
+        {
+            ShowMessage("Product not available");
+            return;
+        }
+        
+        UpdateStatus($"Purchasing {productId}...");
+        
+        var result = await IAPService.PurchaseAsync(productId);
+        
+        if (result.Success)
+        {
+            UpdateStatus("Purchase successful!");
+            ProcessPurchase(result);
+        }
+        else
+        {
+            UpdateStatus($"Purchase failed: {result.ErrorMessage}");
+        }
+    }
+    
+    private void ProcessPurchase(PurchaseResult purchase)
+    {
+        switch (purchase.ProductId)
+        {
+            case var id when id == removeAdsProductId:
+                RemoveAdsFromGame();
+                PlayerPrefs.SetInt("ads_removed", 1);
+                break;
+                
+            case var id when id == premiumCurrencyProductId:
+                AddPremiumCurrency(100);
+                break;
+                
+            case var id when id == vipSubscriptionProductId:
+                ActivateVIPSubscription();
+                break;
+        }
+        
+        PlayerPrefs.Save();
+        RefreshShopItems();
+    }
+    
+    private void SetupRestoreButton()
+    {
+        if (restoreButton != null)
+        {
+            restoreButton.onClick.AddListener(() => RestorePurchases().Forget());
+            
+            // Show restore button only on iOS
+            restoreButton.gameObject.SetActive(Application.platform == RuntimePlatform.IPhonePlayer);
+        }
+    }
+    
+    private async UniTaskVoid RestorePurchases()
+    {
+        UpdateStatus("Restoring purchases...");
+        
+        var result = await IAPService.RestorePurchasesAsync();
+        
+        if (result.Success)
+        {
+            UpdateStatus($"Restored {result.RestoredPurchases.Length} purchases");
+            
+            foreach (var purchase in result.RestoredPurchases)
+            {
+                ProcessPurchase(purchase);
+            }
+        }
+        else
+        {
+            UpdateStatus($"Restore failed: {result.ErrorMessage}");
+        }
+    }
+}
+```
+
+#### 2. Advanced Receipt Validation
+```csharp
+public class PurchaseValidator : MonoBehaviour
+{
+    [Header("Server Settings")]
+    [SerializeField] private string validationServerUrl = "https://your-server.com/validate";
+    [SerializeField] private string apiKey = "your-api-key";
+    
+    public async UniTask<bool> ValidatePurchaseWithServer(PurchaseResult purchase)
+    {
+        try
+        {
+            var validationData = new ValidationRequest
+            {
+                receipt = purchase.Receipt,
+                productId = purchase.ProductId,
+                transactionId = purchase.TransactionId,
+                platform = Application.platform.ToString()
+            };
+            
+            var json = JsonUtility.ToJson(validationData);
+            var response = await SendValidationRequest(json);
+            
+            var validationResponse = JsonUtility.FromJson<ValidationResponse>(response);
+            
+            if (validationResponse.isValid)
+            {
+                Debug.Log($"Purchase validated: {purchase.ProductId}");
+                return true;
+            }
+            else
+            {
+                Debug.LogWarning($"Purchase validation failed: {validationResponse.error}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"Validation error: {ex.Message}");
+            return false;
+        }
+    }
+    
+    private async UniTask<string> SendValidationRequest(string jsonData)
+    {
+        using (var www = UnityWebRequest.Post(validationServerUrl, jsonData, "application/json"))
+        {
+            www.SetRequestHeader("Authorization", $"Bearer {apiKey}");
+            
+            await www.SendWebRequest();
+            
+            if (www.result == UnityWebRequest.Result.Success)
+            {
+                return www.downloadHandler.text;
+            }
+            else
+            {
+                throw new Exception($"Request failed: {www.error}");
+            }
+        }
+    }
+    
+    [System.Serializable]
+    public class ValidationRequest
+    {
+        public string receipt;
+        public string productId;
+        public string transactionId;
+        public string platform;
+    }
+    
+    [System.Serializable]
+    public class ValidationResponse
+    {
+        public bool isValid;
+        public string error;
+        public string orderId;
+    }
+}
+```
+
+#### 3. Subscription Management
+```csharp
+public class SubscriptionManager : MonoBehaviour
+{
+    [Header("Subscription Products")]
+    [SerializeField] private string monthlySubscriptionId = "vip_monthly";
+    [SerializeField] private string yearlySubscriptionId = "vip_yearly";
+    
+    [Header("UI References")]
+    [SerializeField] private GameObject subscriptionPanel;
+    [SerializeField] private Text subscriptionStatusText;
+    [SerializeField] private Button[] subscriptionButtons;
+    
+    private void Start()
+    {
+        CheckSubscriptionStatus();
+        SetupSubscriptionUI();
+    }
+    
+    private void CheckSubscriptionStatus()
+    {
+        // Check if user has active subscription
+        bool hasMonthlySubscription = HasActiveSubscription(monthlySubscriptionId);
+        bool hasYearlySubscription = HasActiveSubscription(yearlySubscriptionId);
+        
+        if (hasMonthlySubscription || hasYearlySubscription)
+        {
+            ActivateVIPFeatures();
+            subscriptionStatusText.text = "VIP Active";
+        }
+        else
+        {
+            DeactivateVIPFeatures();
+            subscriptionStatusText.text = "No Active Subscription";
+        }
+    }
+    
+    private bool HasActiveSubscription(string productId)
+    {
+        // Check subscription status
+        // This could involve checking with your server or local storage
+        var productInfo = IAPService.GetProductInfo(productId);
+        
+        // For subscriptions, you'd typically validate with your server
+        // or check the receipt for subscription status
+        return PlayerPrefs.GetInt($"subscription_{productId}", 0) == 1;
+    }
+    
+    private void SetupSubscriptionUI()
+    {
+        foreach (var button in subscriptionButtons)
+        {
+            var productId = button.name; // Assuming button name matches product ID
+            var productInfo = IAPService.GetProductInfo(productId);
+            
+            // Update button text with price
+            var buttonText = button.GetComponentInChildren<Text>();
+            if (buttonText != null)
+            {
+                buttonText.text = $"{productInfo.Title} - {productInfo.Price}";
+            }
+            
+            // Setup purchase callback
+            button.onClick.AddListener(() => PurchaseSubscription(productId).Forget());
+        }
+    }
+    
+    private async UniTaskVoid PurchaseSubscription(string productId)
+    {
+        var result = await IAPService.PurchaseAsync(productId);
+        
+        if (result.Success)
+        {
+            // Validate subscription purchase
+            bool isValid = await ValidateSubscriptionPurchase(result);
+            
+            if (isValid)
+            {
+                PlayerPrefs.SetInt($"subscription_{productId}", 1);
+                PlayerPrefs.SetString($"subscription_start_date", DateTime.Now.ToString());
+                CheckSubscriptionStatus();
+            }
+        }
+    }
+    
+    private async UniTask<bool> ValidateSubscriptionPurchase(PurchaseResult purchase)
+    {
+        // Implement subscription validation logic
+        // This should typically involve server-side validation
+        var validation = await IAPService.ValidatePurchaseAsync(purchase.Receipt, purchase.ProductId);
+        return validation.IsValid;
+    }
+    
+    private void ActivateVIPFeatures()
+    {
+        // Enable VIP features in your game
+        GameManager.Instance.EnableVIPFeatures();
+    }
+    
+    private void DeactivateVIPFeatures()
+    {
+        // Disable VIP features
+        GameManager.Instance.DisableVIPFeatures();
+    }
+}
 ```
 
 ## Contributing
