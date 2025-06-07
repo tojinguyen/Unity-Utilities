@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.IO;
@@ -187,3 +188,4 @@ namespace TirexGame.Utils.Ads.Editor
         }
     }
 }
+#endif
