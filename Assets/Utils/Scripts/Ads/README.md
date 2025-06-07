@@ -2,6 +2,23 @@
 
 This package provides a complete AdMob integration solution for Unity projects with a clean, service-based architecture.
 
+## Quick Start
+
+### 🚀 Get Running in 5 Minutes
+
+1. **Open Setup Window**: `TirexGame > Ads > Setup AdMob`
+2. **Install SDK**: Click "Install Google Mobile Ads SDK"
+3. **Create Config**: Click "Create AdMob Configuration"
+4. **Add Manager**: Click "Add AdManager to Scene"
+5. **Start Using**:
+   ```csharp
+   // In your game script
+   await AdService.InitializeAsync();
+   AdService.ShowBanner();
+   ```
+
+That's it! You now have working test ads in your game.
+
 ## Features
 
 - **Banner Ads**: Customizable positioning (Top, Bottom, Center, etc.)
@@ -309,6 +326,14 @@ Enable logging in the AdMobConfig to see detailed debug information:
 Enable Logging: ✓
 ```
 
+Check the Unity Console for detailed logs:
+```
+[AdManager] Initializing AdMob...
+[AdManager] AdMob initialized successfully
+[AdManager] Loading interstitial ad: ca-app-pub-xxxxx
+[AdManager] Interstitial ad loaded successfully
+```
+
 ### Platform Conditional Compilation
 
 The code uses conditional compilation directives:
@@ -320,11 +345,136 @@ The code uses conditional compilation directives:
 
 This ensures the code only compiles on supported platforms.
 
+### Testing with Test Ads
+
+When `Enable Test Mode` is checked in the AdMobConfig:
+- Test ads will be shown instead of real ads
+- No real revenue will be generated
+- Ads will always be available for testing
+- Use test device IDs for more realistic testing
+
+### Mediation Support
+
+The AdMob implementation supports mediation networks:
+- Configure mediation in your AdMob dashboard
+- No code changes required
+- The same API works with all mediated networks
+
+### GDPR and Privacy Compliance
+
+For GDPR compliance, you may need to:
+```csharp
+// Request consent before initializing ads
+// Use Google UMP SDK or similar consent management
+await RequestConsentAsync();
+await AdService.InitializeAsync();
+```
+
+### Ad Frequency Management
+
+Implement smart ad frequency controls:
+```csharp
+public class AdFrequencyManager
+{
+    private static float lastInterstitialTime;
+    private static int sessionAdCount;
+    private const float MIN_INTERVAL = 60f; // 1 minute minimum
+    private const int MAX_SESSION_ADS = 10;
+    
+    public static bool CanShowInterstitial()
+    {
+        return Time.time - lastInterstitialTime > MIN_INTERVAL &&
+               sessionAdCount < MAX_SESSION_ADS;
+    }
+    
+    public static void OnInterstitialShown()
+    {
+        lastInterstitialTime = Time.time;
+        sessionAdCount++;
+    }
+}
+```
+
 ## Dependencies
 
 - Unity 2021.3 or later
 - UniTask package (`com.cysharp.unitask`)
 - Google Mobile Ads SDK
+
+## Advanced Configuration
+
+### Custom Ad Loading Strategy
+
+Create a custom ad preloading strategy:
+```csharp
+public class SmartAdLoader : MonoBehaviour
+{
+    private void Start()
+    {
+        StartCoroutine(PreloadAdsRoutine());
+    }
+    
+    private IEnumerator PreloadAdsRoutine()
+    {
+        // Wait for initialization
+        yield return new WaitUntil(() => AdService.IsInitialized);
+        
+        // Preload interstitial
+        if (!AdService.IsInterstitialReady())
+        {
+            yield return AdService.LoadInterstitialAsync().ToCoroutine();
+        }
+        
+        // Wait a bit before loading rewarded to avoid rate limiting
+        yield return new WaitForSeconds(2f);
+        
+        // Preload rewarded
+        if (!AdService.IsRewardedReady())
+        {
+            yield return AdService.LoadRewardedAsync().ToCoroutine();
+        }
+    }
+}
+```
+
+### Performance Optimization
+
+1. **Preload Strategy**: Load ads during natural breaks (menu screens, loading)
+2. **Memory Management**: Destroy banners when not needed
+3. **Background Loading**: Load ads while player is engaged
+4. **Retry Logic**: Implement exponential backoff for failed loads
+
+### Integration with Analytics
+
+Track ad performance with your analytics system:
+```csharp
+public class AdAnalytics : MonoBehaviour
+{
+    private void Start()
+    {
+        AdService.SubscribeToEvents(
+            onAdShown: (adType) => TrackAdShown(adType),
+            onRewardEarned: (reward) => TrackRewardEarned(reward),
+            onAdFailedToShow: (adType, error) => TrackAdError(adType, error)
+        );
+    }
+    
+    private void TrackAdShown(AdType adType)
+    {
+        // Analytics.LogEvent("ad_shown", "ad_type", adType.ToString());
+    }
+    
+    private void TrackRewardEarned(AdReward reward)
+    {
+        // Analytics.LogEvent("reward_earned", "type", reward.Type, "amount", reward.Amount);
+    }
+    
+    private void TrackAdError(AdType adType, string error)
+    {
+        // Analytics.LogEvent("ad_error", "ad_type", adType.ToString(), "error", error);
+    }
+}
+```
 
 ## Support
 
@@ -333,6 +483,53 @@ For issues and questions:
 2. Verify your AdMob configuration
 3. Test with Google's test ad unit IDs
 4. Consult the [Google AdMob documentation](https://developers.google.com/admob/unity)
+
+## Migration Guide
+
+### From Legacy AdMob Integration
+
+If you're migrating from an older AdMob setup:
+
+1. **Remove old AdMob scripts** and dependencies
+2. **Install the new Google Mobile Ads SDK** via Package Manager
+3. **Create AdMobConfig** with your existing ad unit IDs
+4. **Replace old ad calls** with new AdService calls:
+
+```csharp
+// Old way
+AdMobManager.Instance.ShowInterstitial();
+
+// New way
+await AdService.ShowInterstitialAsync();
+```
+
+### From Other Ad Networks
+
+When migrating from other ad networks:
+
+1. **Keep your existing ad unit IDs** from AdMob dashboard
+2. **Replace network-specific calls** with AdService calls
+3. **Update event handling** to use the new event system
+4. **Test thoroughly** with test ads before going live
+
+## Version History
+
+### Version 1.0.0
+- Initial AdMob integration
+- Banner, Interstitial, and Rewarded ad support
+- UniTask async/await support
+- Event system implementation
+- Test mode support
+- Automatic retry logic
+
+## Roadmap
+
+### Planned Features
+- **App Open Ads**: Support for app open ad format
+- **Native Ads**: Native ad integration
+- **Mediation Helpers**: Built-in mediation network helpers
+- **A/B Testing**: Ad placement and timing optimization
+- **Revenue Analytics**: Built-in revenue tracking
 
 ## License
 
