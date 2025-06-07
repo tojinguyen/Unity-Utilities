@@ -5,15 +5,15 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AudioDatabase", menuName = "Audio/Audio Database")]
 public class AudioDatabase : ScriptableObject
 {
-    [Header("Audio Clips")]
-    [SerializeField] private List<AudioClipData> audioClips = new List<AudioClipData>();
-    
-    [Header("Category Settings")]
-    [SerializeField] private List<AudioCategorySettings> categorySettings = new List<AudioCategorySettings>();
-    
+    [Header("Audio Clips")] [SerializeField]
+    private List<AudioClipData> audioClips = new List<AudioClipData>();
+
+    [Header("Category Settings")] [SerializeField]
+    private List<AudioCategorySettings> categorySettings = new List<AudioCategorySettings>();
+
     private Dictionary<string, AudioClipData> clipLookup;
     private Dictionary<AudioType, AudioCategorySettings> categoryLookup;
-    
+
     [Serializable]
     public class AudioCategorySettings
     {
@@ -23,12 +23,12 @@ public class AudioDatabase : ScriptableObject
         public int maxConcurrentSounds = 10;
         public bool allowDuplicates = true;
     }
-    
+
     public void Initialize()
     {
         BuildLookupTables();
     }
-    
+
     private void BuildLookupTables()
     {
         // Build clip lookup
@@ -39,7 +39,7 @@ public class AudioDatabase : ScriptableObject
             {
                 if (clipLookup.ContainsKey(clip.id))
                 {
-                    Debug.LogWarning($"[AudioDatabase] Duplicate audio clip ID: {clip.id}");
+                    ConsoleLogger.LogWarning($"[AudioDatabase] Duplicate audio clip ID: {clip.id}");
                 }
                 else
                 {
@@ -47,14 +47,14 @@ public class AudioDatabase : ScriptableObject
                 }
             }
         }
-        
+
         // Build category lookup
         categoryLookup = new Dictionary<AudioType, AudioCategorySettings>();
         foreach (var setting in categorySettings)
         {
             categoryLookup[setting.audioType] = setting;
         }
-        
+
         // Ensure all audio types have settings
         foreach (AudioType audioType in Enum.GetValues(typeof(AudioType)))
         {
@@ -73,23 +73,23 @@ public class AudioDatabase : ScriptableObject
             }
         }
     }
-    
+
     public AudioClipData GetAudioClip(string id)
     {
         if (clipLookup == null)
             BuildLookupTables();
-            
+
         return clipLookup.TryGetValue(id, out var clip) ? clip : null;
     }
-    
+
     public AudioCategorySettings GetCategorySettings(AudioType audioType)
     {
         if (categoryLookup == null)
             BuildLookupTables();
-            
+
         return categoryLookup.TryGetValue(audioType, out var settings) ? settings : null;
     }
-    
+
     public List<AudioClipData> GetAudioClipsByType(AudioType audioType)
     {
         var result = new List<AudioClipData>();
@@ -98,22 +98,23 @@ public class AudioDatabase : ScriptableObject
             if (clip.audioType == audioType)
                 result.Add(clip);
         }
+
         return result;
     }
-    
+
     public bool HasAudioClip(string id)
     {
         if (clipLookup == null)
             BuildLookupTables();
-            
+
         return clipLookup.ContainsKey(id);
     }
-    
+
     public void AddAudioClip(AudioClipData clipData)
     {
         if (clipData == null || string.IsNullOrEmpty(clipData.id))
             return;
-            
+
         // Check for duplicates
         for (int i = 0; i < audioClips.Count; i++)
         {
@@ -124,11 +125,11 @@ public class AudioDatabase : ScriptableObject
                 return;
             }
         }
-        
+
         audioClips.Add(clipData);
         BuildLookupTables();
     }
-    
+
     public bool RemoveAudioClip(string id)
     {
         for (int i = 0; i < audioClips.Count; i++)
@@ -140,9 +141,10 @@ public class AudioDatabase : ScriptableObject
                 return true;
             }
         }
+
         return false;
     }
-    
+
     public void SetCategoryVolume(AudioType audioType, float volume)
     {
         var settings = GetCategorySettings(audioType);
@@ -151,7 +153,7 @@ public class AudioDatabase : ScriptableObject
             settings.masterVolume = Mathf.Clamp01(volume);
         }
     }
-    
+
     public void SetCategoryMuted(AudioType audioType, bool muted)
     {
         var settings = GetCategorySettings(audioType);
@@ -160,31 +162,31 @@ public class AudioDatabase : ScriptableObject
             settings.muted = muted;
         }
     }
-    
+
     public float GetCategoryVolume(AudioType audioType)
     {
         var settings = GetCategorySettings(audioType);
         return settings?.masterVolume ?? 1f;
     }
-    
+
     public bool IsCategoryMuted(AudioType audioType)
     {
         var settings = GetCategorySettings(audioType);
         return settings?.muted ?? false;
     }
-    
+
     public int GetMaxConcurrentSounds(AudioType audioType)
     {
         var settings = GetCategorySettings(audioType);
         return settings?.maxConcurrentSounds ?? 10;
     }
-    
+
     public bool AllowDuplicates(AudioType audioType)
     {
         var settings = GetCategorySettings(audioType);
         return settings?.allowDuplicates ?? true;
     }
-    
+
     private void OnValidate()
     {
         // Validate IDs are unique
@@ -195,7 +197,7 @@ public class AudioDatabase : ScriptableObject
             {
                 if (usedIds.Contains(clip.id))
                 {
-                    Debug.LogWarning($"[AudioDatabase] Duplicate ID found: {clip.id}");
+                    ConsoleLogger.LogWarning($"[AudioDatabase] Duplicate ID found: {clip.id}");
                 }
                 else
                 {
