@@ -53,13 +53,12 @@ namespace TirexGame.Utils.IAP
         
         #region Unity Lifecycle
         
-        protected override void Awake()
-        {
+        protected override void Awake()        {
             base.Awake();
             
             if (config == null)
             {
-                Debug.LogError("[IAPManager] IAPConfig is not assigned!");
+                ConsoleLogger.LogError("[IAPManager] IAPConfig is not assigned!");
                 return;
             }
             
@@ -74,13 +73,12 @@ namespace TirexGame.Utils.IAP
         #region Initialization
         
         public async UniTask InitializeAsync()
-        {
-            if (_isInitialized)
+        {            if (_isInitialized)
                 return;
                 
             if (config == null)
             {
-                Debug.LogError("[IAPManager] IAPConfig is not assigned!");
+                ConsoleLogger.LogError("[IAPManager] IAPConfig is not assigned!");
                 return;
             }
             
@@ -507,17 +505,15 @@ namespace TirexGame.Utils.IAP
             }
         }
         
-        private void Log(string message)
-        {
+        private void Log(string message)        {
             if (config != null && config.EnableLogging)
             {
-                Debug.Log($"[IAPManager] {message}");
+                ConsoleLogger.Log($"[IAPManager] {message}");
             }
         }
-        
-        private void LogError(string message)
+          private void LogError(string message)
         {
-            Debug.LogError($"[IAPManager] {message}");
+            ConsoleLogger.LogError($"[IAPManager] {message}");
         }
         
         #endregion
