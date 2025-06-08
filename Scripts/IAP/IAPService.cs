@@ -98,13 +98,13 @@ namespace TirexGame.Utils.IAP
             if (Manager == null) return;
             
             if (onInitialized != null)
-                Manager.OnInitialized += onInitialized;
+                Manager.OnIAPInitialized += onInitialized;
             if (onInitializationFailed != null)
                 Manager.OnInitializationFailed += onInitializationFailed;
             if (onPurchaseCompleted != null)
                 Manager.OnPurchaseCompleted += onPurchaseCompleted;
             if (onPurchaseFailed != null)
-                Manager.OnPurchaseFailed += onPurchaseFailed;
+                Manager.OnIAPPurchaseFailed += onPurchaseFailed;
             if (onPurchasesRestored != null)
                 Manager.OnPurchasesRestored += onPurchasesRestored;
             if (onPurchaseRestoreFailed != null)
@@ -122,13 +122,13 @@ namespace TirexGame.Utils.IAP
             if (Manager == null) return;
             
             if (onInitialized != null)
-                Manager.OnInitialized -= onInitialized;
+                Manager.OnIAPInitialized -= onInitialized;
             if (onInitializationFailed != null)
                 Manager.OnInitializationFailed -= onInitializationFailed;
             if (onPurchaseCompleted != null)
                 Manager.OnPurchaseCompleted -= onPurchaseCompleted;
             if (onPurchaseFailed != null)
-                Manager.OnPurchaseFailed -= onPurchaseFailed;
+                Manager.OnIAPPurchaseFailed -= onPurchaseFailed;
             if (onPurchasesRestored != null)
                 Manager.OnPurchasesRestored -= onPurchasesRestored;
             if (onPurchaseRestoreFailed != null)

@@ -6,7 +6,14 @@
         "UniTask.Addressables",
         "Unity.Addressables",
         "Unity.ResourceManager",
-        "UnityEngine.Purchasing"
+        "UnityEngine.Purchasing",
+        "UnityEngine.Purchasing.Security",
+        "UnityEngine.Purchasing.SecurityStub",
+        "UnityEngine.Purchasing.Stores",
+        "UnityEngine.Purchasing.Apple",
+        "Purchasing.Common",
+        "UnityEngine.Purchasing.AppleCore",
+        "UnityEngine.Purchasing.SecurityCore"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
