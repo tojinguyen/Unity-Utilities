@@ -35,19 +35,19 @@ namespace TirexGame.Utils.Ads
         
         private void SetupButtons()
         {
-            if (initializeButton != null)
+            if (initializeButton)
                 initializeButton.onClick.AddListener(() => InitializeAds().Forget());
                 
-            if (showBannerButton != null)
+            if (showBannerButton)
                 showBannerButton.onClick.AddListener(ShowBanner);
                 
-            if (hideBannerButton != null)
+            if (hideBannerButton)
                 hideBannerButton.onClick.AddListener(HideBanner);
                 
-            if (showInterstitialButton != null)
+            if (showInterstitialButton)
                 showInterstitialButton.onClick.AddListener(() => ShowInterstitial().Forget());
                 
-            if (showRewardedButton != null)
+            if (showRewardedButton)
                 showRewardedButton.onClick.AddListener(() => ShowRewarded().Forget());
         }
         
@@ -184,7 +184,7 @@ namespace TirexGame.Utils.Ads
         
         private void UpdateStatus(string message)
         {
-            if (statusText != null)
+            if (statusText)
             {
                 statusText.text = $"[{System.DateTime.Now:HH:mm:ss}] {message}";
             }
