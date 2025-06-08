@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Security;
 #endif
@@ -12,99 +11,106 @@ using UnityEngine.Purchasing.Security;
 namespace TirexGame.Utils.IAP
 {
     public class IAPManager : MonoSingleton<IAPManager>, IIAPManager
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
         , IStoreListener
 #endif
     {
-        [Header("Configuration")]
-        [SerializeField] private IAPConfig config;
-        
-        [Header("Auto Initialize")]
-        [SerializeField] private bool autoInitialize = true;
-        
+        [Header("Configuration")] [SerializeField]
+        private IAPConfig config;
+
+        [Header("Auto Initialize")] [SerializeField]
+        private bool autoInitialize = true;
+
         private bool _isInitialized;
         private Dictionary<string, ProductInfo> _productCatalog = new Dictionary<string, ProductInfo>();
-        
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
         private IStoreController _storeController;
         private IExtensionProvider _storeExtensionProvider;
         private UniTaskCompletionSource<bool> _initializationTcs;
-        private Dictionary<string, UniTaskCompletionSource<PurchaseResult>> _purchaseTasks = 
+
+        private Dictionary<string, UniTaskCompletionSource<PurchaseResult>> _purchaseTasks =
             new Dictionary<string, UniTaskCompletionSource<PurchaseResult>>();
+
         private UniTaskCompletionSource<RestoreResult> _restoreTcs;
 #endif
-        
+
         #region Properties
-        
+
         public bool IsInitialized => _isInitialized;
-        
+
         #endregion
-        
+
         #region Events
-        
+
         public event Action OnInitialized;
         public event Action<string> OnInitializationFailed;
         public event Action<PurchaseResult> OnPurchaseCompleted;
         public event Action<string, string> OnPurchaseFailed;
         public event Action<RestoreResult> OnPurchasesRestored;
         public event Action<string> OnPurchaseRestoreFailed;
-        
+
         #endregion
-        
+
         #region Unity Lifecycle
-        
-        protected override void Awake()        {
+
+        protected override void Awake()
+        {
             base.Awake();
-            
+
             if (config == null)
             {
                 ConsoleLogger.LogError("[IAPManager] IAPConfig is not assigned!");
                 return;
             }
-            
+
             if (autoInitialize)
             {
                 InitializeAsync().Forget();
             }
         }
-        
+
         #endregion
-        
+
         #region Initialization
-        
+
         public async UniTask InitializeAsync()
-        {            if (_isInitialized)
+        {
+            if (_isInitialized)
                 return;
-                
+
             if (config == null)
             {
                 ConsoleLogger.LogError("[IAPManager] IAPConfig is not assigned!");
                 return;
             }
-            
+
             Log("Initializing IAP...");
-            
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             try
             {
                 if (IsCurrentPlatformSupported())
                 {
                     var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-                    
+
                     // Add products from config
                     foreach (var productDef in config.Products)
                     {
                         var productType = ConvertProductType(productDef.type);
-                        builder.AddProduct(productDef.productId, productType, 
-                            new IDs { { productDef.GetStoreSpecificId(), GooglePlay.Name }, 
-                                     { productDef.GetStoreSpecificId(), AppleAppStore.Name } });
-                        
+                        builder.AddProduct(productDef.productId, productType,
+                            new IDs
+                            {
+                                { productDef.GetStoreSpecificId(), GooglePlay.Name },
+                                { productDef.GetStoreSpecificId(), AppleAppStore.Name }
+                            });
+
                         Log($"Added product: {productDef.productId} ({productDef.type})");
                     }
-                    
+
                     _initializationTcs = new UniTaskCompletionSource<bool>();
                     UnityPurchasing.Initialize(this, builder);
-                    
+
                     await _initializationTcs.Task;
                 }
                 else
@@ -124,66 +130,66 @@ namespace TirexGame.Utils.IAP
             OnInitialized?.Invoke();
 #endif
         }
-        
+
         #endregion
-        
+
         #region Purchase Methods
-        
+
         public async UniTask<PurchaseResult> PurchaseAsync(string productId)
         {
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             if (!_isInitialized)
             {
                 LogError("IAP is not initialized yet");
                 return new PurchaseResult(false, productId, errorMessage: "IAP not initialized");
             }
-            
+
             if (_storeController == null)
             {
                 LogError("Store controller is null");
                 return new PurchaseResult(false, productId, errorMessage: "Store controller unavailable");
             }
-            
+
             var product = _storeController.products.WithID(productId);
             if (product == null)
             {
                 LogError($"Product not found: {productId}");
                 return new PurchaseResult(false, productId, errorMessage: "Product not found");
             }
-            
+
             if (!product.availableToPurchase)
             {
                 LogError($"Product not available for purchase: {productId}");
                 return new PurchaseResult(false, productId, errorMessage: "Product not available");
             }
-            
+
             Log($"Initiating purchase for: {productId}");
-            
+
             var tcs = new UniTaskCompletionSource<PurchaseResult>();
             _purchaseTasks[productId] = tcs;
-            
+
             _storeController.InitiatePurchase(product);
-            
+
             return await tcs.Task;
 #else
             LogError("Unity Purchasing is not available on this platform");
             return new PurchaseResult(false, productId, errorMessage: "Platform not supported");
 #endif
         }
-        
+
         public async UniTask<RestoreResult> RestorePurchasesAsync()
         {
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             if (!_isInitialized)
             {
                 LogError("IAP is not initialized yet");
                 return new RestoreResult(false, errorMessage: "IAP not initialized");
             }
-            
+
             Log("Initiating purchase restoration...");
-            
+
             _restoreTcs = new UniTaskCompletionSource<RestoreResult>();
-            
+
             // Platform-specific restore
 #if UNITY_IOS || UNITY_TVOS
             var appleExtensions = _storeExtensionProvider.GetExtension<IAppleExtensions>();
@@ -194,39 +200,39 @@ namespace TirexGame.Utils.IAP
 #else
             OnRestoreResult(true);
 #endif
-            
+
             return await _restoreTcs.Task;
 #else
             LogError("Unity Purchasing is not available on this platform");
             return new RestoreResult(false, errorMessage: "Platform not supported");
 #endif
         }
-        
+
         #endregion
-        
+
         #region Product Info
-        
+
         public bool IsProductAvailable(string productId)
         {
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             if (!_isInitialized || _storeController == null)
                 return false;
-                
+
             var product = _storeController.products.WithID(productId);
             return product != null && product.availableToPurchase;
 #else
             return false;
 #endif
         }
-        
+
         public ProductInfo GetProductInfo(string productId)
         {
             if (_productCatalog.TryGetValue(productId, out var productInfo))
             {
                 return productInfo;
             }
-            
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             if (_isInitialized && _storeController != null)
             {
                 var product = _storeController.products.WithID(productId);
@@ -238,15 +244,15 @@ namespace TirexGame.Utils.IAP
                 }
             }
 #endif
-            
+
             return new ProductInfo(productId, "", "", "", "", 0, ProductType.Consumable, false);
         }
-        
+
         public ProductInfo[] GetAllProducts()
         {
             var products = new List<ProductInfo>();
-            
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             if (_isInitialized && _storeController != null)
             {
                 foreach (var product in _storeController.products.all)
@@ -255,14 +261,14 @@ namespace TirexGame.Utils.IAP
                 }
             }
 #endif
-            
+
             return products.ToArray();
         }
-        
+
         #endregion
-        
+
         #region Validation
-        
+
         public async UniTask<ValidationResult> ValidatePurchaseAsync(string receipt, string productId)
         {
             if (!config.EnableReceiptValidation)
@@ -270,16 +276,16 @@ namespace TirexGame.Utils.IAP
                 Log("Receipt validation is disabled");
                 return new ValidationResult(true, productId);
             }
-            
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
             try
             {
                 // Basic client-side validation using Unity's built-in validator
-                var validator = new CrossPlatformValidator(GooglePlayTangle.Data(), 
+                var validator = new CrossPlatformValidator(GooglePlayTangle.Data(),
                     AppleTangle.Data(), Application.identifier);
-                
+
                 var validationResult = validator.Validate(receipt, productId);
-                
+
                 Log($"Receipt validation result for {productId}: Valid");
                 return new ValidationResult(true, productId);
             }
@@ -304,38 +310,39 @@ namespace TirexGame.Utils.IAP
             return new ValidationResult(true, productId);
 #endif
         }
-        
+
         #endregion
-        
+
         #region Unity IAP Callbacks
-        
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
         public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
         {
             Log("IAP initialized successfully");
-            
+
             _storeController = controller;
             _storeExtensionProvider = extensions;
             _isInitialized = true;
-            
+
             // Cache product information
             foreach (var product in controller.products.all)
             {
                 _productCatalog[product.definition.id] = CreateProductInfo(product);
-                Log($"Product loaded: {product.definition.id} - {product.metadata.localizedTitle} ({product.metadata.localizedPriceString})");
+                Log(
+                    $"Product loaded: {product.definition.id} - {product.metadata.localizedTitle} ({product.metadata.localizedPriceString})");
             }
-            
+
             OnInitialized?.Invoke();
             _initializationTcs?.TrySetResult(true);
         }
-        
+
         public void OnInitializeFailed(InitializationFailureReason error)
         {
             LogError($"IAP initialization failed: {error}");
             OnInitializationFailed?.Invoke(error.ToString());
             _initializationTcs?.TrySetResult(false);
         }
-        
+
         // Add newer method signature for initialization failure
         public void OnInitializeFailed(InitializationFailureReason error, string message)
         {
@@ -343,17 +350,17 @@ namespace TirexGame.Utils.IAP
             OnInitializationFailed?.Invoke($"{error}: {message}");
             _initializationTcs?.TrySetResult(false);
         }
-        
+
         public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
         {
             var productId = args.purchasedProduct.definition.id;
             var receipt = args.purchasedProduct.receipt;
             var transactionId = args.purchasedProduct.transactionID;
-            
+
             Log($"Purchase completed: {productId}");
-            
+
             var result = new PurchaseResult(true, productId, transactionId, receipt, PurchaseState.Purchased);
-            
+
             // Validate receipt if enabled
             if (config.EnableReceiptValidation)
             {
@@ -365,12 +372,12 @@ namespace TirexGame.Utils.IAP
                     }
                     else
                     {
-                        var errorResult = new PurchaseResult(false, productId, transactionId, receipt, 
+                        var errorResult = new PurchaseResult(false, productId, transactionId, receipt,
                             PurchaseState.Failed, "Receipt validation failed");
                         CompletePurchase(errorResult);
                     }
                 }).Forget();
-                
+
                 return PurchaseProcessingResult.Pending;
             }
             else
@@ -379,29 +386,29 @@ namespace TirexGame.Utils.IAP
                 return PurchaseProcessingResult.Complete;
             }
         }
-        
+
         public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
         {
             var productId = product.definition.id;
             LogError($"Purchase failed: {productId} - {failureReason}");
-            
+
             var result = new PurchaseResult(false, productId, errorMessage: failureReason.ToString());
-            
+
             if (_purchaseTasks.TryGetValue(productId, out var tcs))
             {
                 tcs.TrySetResult(result);
                 _purchaseTasks.Remove(productId);
             }
-            
+
             OnPurchaseFailed?.Invoke(productId, failureReason.ToString());
         }
 #endif
-        
+
         #endregion
-        
+
         #region Helper Methods
-        
-#if UNITY_PURCHASING && (UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS)
+
+#if UNITY_PURCHASING && ((UNITY_ANDROID || UNITY_IOS || UNITY_STANDALONE_OSX || UNITY_TVOS) || UNITY_EDITOR)
         private void CompletePurchase(PurchaseResult result)
         {
             if (_purchaseTasks.TryGetValue(result.ProductId, out var tcs))
@@ -409,15 +416,15 @@ namespace TirexGame.Utils.IAP
                 tcs.TrySetResult(result);
                 _purchaseTasks.Remove(result.ProductId);
             }
-            
+
             OnPurchaseCompleted?.Invoke(result);
         }
-        
+
         private ProductInfo CreateProductInfo(Product product)
         {
             var configProduct = config.GetProduct(product.definition.id);
             var productType = configProduct?.type ?? ProductType.Consumable;
-            
+
             return new ProductInfo(
                 product.definition.id,
                 product.metadata.localizedTitle,
@@ -429,7 +436,7 @@ namespace TirexGame.Utils.IAP
                 product.availableToPurchase
             );
         }
-        
+
         private UnityEngine.Purchasing.ProductType ConvertProductType(ProductType type)
         {
             return type switch
@@ -440,7 +447,7 @@ namespace TirexGame.Utils.IAP
                 _ => UnityEngine.Purchasing.ProductType.Consumable
             };
         }
-        
+
         private bool IsCurrentPlatformSupported()
         {
             return Application.platform == RuntimePlatform.Android ||
@@ -448,7 +455,7 @@ namespace TirexGame.Utils.IAP
                    Application.platform == RuntimePlatform.OSXPlayer ||
                    Application.platform == RuntimePlatform.tvOS;
         }
-        
+
         private void OnRestoreResult(bool success)
         {
             if (success)
@@ -467,28 +474,28 @@ namespace TirexGame.Utils.IAP
                 _restoreTcs?.TrySetResult(result);
             }
         }
-        
+
         private PurchaseResult[] GetRestoredPurchases()
         {
             var restored = new List<PurchaseResult>();
-            
+
             if (_storeController != null)
             {
                 foreach (var product in _storeController.products.all)
                 {
                     if (product.hasReceipt)
                     {
-                        var result = new PurchaseResult(true, product.definition.id, 
+                        var result = new PurchaseResult(true, product.definition.id,
                             product.transactionID, product.receipt, PurchaseState.Restored);
                         restored.Add(result);
                     }
                 }
             }
-            
+
             return restored.ToArray();
         }
 #endif
-        
+
         private async UniTask<ValidationResult> ValidateReceiptOnServer(string receipt, string productId)
         {
             try
@@ -504,18 +511,20 @@ namespace TirexGame.Utils.IAP
                 return new ValidationResult(false, productId, ex.Message);
             }
         }
-        
-        private void Log(string message)        {
-            if (config != null && config.EnableLogging)
+
+        private void Log(string message)
+        {
+            if (config && config.EnableLogging)
             {
                 ConsoleLogger.Log($"[IAPManager] {message}");
             }
         }
-          private void LogError(string message)
+
+        private void LogError(string message)
         {
             ConsoleLogger.LogError($"[IAPManager] {message}");
         }
-        
+
         #endregion
     }
 }

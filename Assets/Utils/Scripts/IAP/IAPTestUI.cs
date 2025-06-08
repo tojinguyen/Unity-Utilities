@@ -60,13 +60,13 @@ namespace TirexGame.Utils.IAP
         
         private void SetupUI()
         {
-            if (initializeButton != null)
+            if (initializeButton)
                 initializeButton.onClick.AddListener(() => InitializeIAP().Forget());
                 
-            if (refreshProductsButton != null)
+            if (refreshProductsButton)
                 refreshProductsButton.onClick.AddListener(RefreshProducts);
                 
-            if (restorePurchasesButton != null)
+            if (restorePurchasesButton)
                 restorePurchasesButton.onClick.AddListener(() => RestorePurchases().Forget());
         }
         
@@ -133,7 +133,7 @@ namespace TirexGame.Utils.IAP
         {
             foreach (var button in _productButtons)
             {
-                if (button != null)
+                if (button)
                     DestroyImmediate(button);
             }
             _productButtons.Clear();
@@ -209,8 +209,7 @@ namespace TirexGame.Utils.IAP
         private void OnPurchaseRestoreFailed(string error)
         {
             UpdateStatus($"Restore failed: {error}");
-        }
-        
+        }        
         #endregion
     }
 }
