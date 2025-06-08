@@ -1,9 +1,8 @@
 using System;
-using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-
-#if UNITY_ANDROID || UNITY_IOS
+ 
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
 using GoogleMobileAds.Api;
 using GoogleMobileAds.Common;
 #endif
@@ -20,7 +19,7 @@ namespace TirexGame.Utils.Ads
         
         private bool _isInitialized;
         
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
         private BannerView _bannerView;
         private InterstitialAd _interstitialAd;
         private RewardedAd _rewardedAd;
@@ -60,9 +59,9 @@ namespace TirexGame.Utils.Ads
         {
             base.Awake();
             
-            if (config == null)
+            if (!config)
             {
-                Debug.LogError("[AdManager] AdMobConfig is not assigned!");
+                ConsoleLogger.LogError("[AdManager] AdMobConfig is not assigned!");
                 return;
             }
             
@@ -72,13 +71,14 @@ namespace TirexGame.Utils.Ads
             }
         }
         
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             DestroyBanner();
             _interstitialAd?.Destroy();
             _rewardedAd?.Destroy();
 #endif
+            base.OnDestroy();
         }
         
         #endregion
@@ -90,7 +90,7 @@ namespace TirexGame.Utils.Ads
             if (_isInitialized)
                 return;
                 
-            if (config == null)
+            if (!config)
             {
                 Debug.LogError("[AdManager] AdMobConfig is not assigned!");
                 return;
@@ -98,10 +98,9 @@ namespace TirexGame.Utils.Ads
             
             Log("Initializing AdMob...");
             
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             try
             {
-                // Initialize the Google Mobile Ads SDK
                 var tcs = new UniTaskCompletionSource();
                 
                 MobileAds.Initialize(initStatus =>
@@ -114,16 +113,15 @@ namespace TirexGame.Utils.Ads
                 
                 await tcs.Task;
                 
-                // Pre-load ads
                 LoadInterstitialAsync().Forget();
                 LoadRewardedAsync().Forget();
             }
             catch (Exception e)
             {
-                Debug.LogError($"[AdManager] Failed to initialize AdMob: {e.Message}");
+                ConsoleLogger.LogError($"[AdManager] Failed to initialize AdMob: {e.Message}");
             }
 #else
-            Debug.LogWarning("[AdManager] AdMob is only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] AdMob is only supported on Android and iOS platforms");
             _isInitialized = true;
             OnInitialized?.Invoke();
 #endif
@@ -135,10 +133,10 @@ namespace TirexGame.Utils.Ads
         
         public void ShowBanner(AdPosition position = AdPosition.Bottom)
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!_isInitialized)
             {
-                Debug.LogWarning("[AdManager] AdMob is not initialized yet");
+                ConsoleLogger.LogWarning("[AdManager] AdMob is not initialized yet");
                 return;
             }
             
@@ -162,20 +160,20 @@ namespace TirexGame.Utils.Ads
             var request = new AdRequest();
             _bannerView.LoadAd(request);
 #else
-            Debug.LogWarning("[AdManager] Banner ads are only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] Banner ads are only supported on Android and iOS platforms");
 #endif
         }
         
         public void HideBanner()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             _bannerView?.Hide();
 #endif
         }
         
         public void DestroyBanner()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (_bannerView != null)
             {
                 _bannerView.OnBannerAdLoaded -= OnBannerLoaded;
@@ -192,10 +190,10 @@ namespace TirexGame.Utils.Ads
         
         public async UniTask<bool> LoadInterstitialAsync()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!_isInitialized)
             {
-                Debug.LogWarning("[AdManager] AdMob is not initialized yet");
+                ConsoleLogger.LogWarning("[AdManager] AdMob is not initialized yet");
                 return false;
             }
             
@@ -230,7 +228,7 @@ namespace TirexGame.Utils.Ads
                     if (_interstitialRetryAttempts < config.InterstitialLoadRetryAttempts)
                     {
                         _interstitialRetryAttempts++;
-                        StartCoroutine(RetryLoadInterstitial());
+                        RetryLoadInterstitial().Forget();
                         return;
                     }
                     
@@ -252,14 +250,14 @@ namespace TirexGame.Utils.Ads
             
             return await _interstitialLoadTcs.Task;
 #else
-            Debug.LogWarning("[AdManager] Interstitial ads are only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] Interstitial ads are only supported on Android and iOS platforms");
             return false;
 #endif
         }
         
         public bool IsInterstitialReady()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             return _interstitialAd != null && _interstitialAd.CanShowAd();
 #else
             return false;
@@ -268,7 +266,7 @@ namespace TirexGame.Utils.Ads
         
         public async UniTask<bool> ShowInterstitialAsync()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!IsInterstitialReady())
             {
                 Debug.LogWarning("[AdManager] Interstitial ad is not ready");
@@ -280,7 +278,7 @@ namespace TirexGame.Utils.Ads
             
             return await _interstitialShowTcs.Task;
 #else
-            Debug.LogWarning("[AdManager] Interstitial ads are only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] Interstitial ads are only supported on Android and iOS platforms");
             return false;
 #endif
         }
@@ -291,10 +289,10 @@ namespace TirexGame.Utils.Ads
         
         public async UniTask<bool> LoadRewardedAsync()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!_isInitialized)
             {
-                Debug.LogWarning("[AdManager] AdMob is not initialized yet");
+                ConsoleLogger.LogWarning("[AdManager] AdMob is not initialized yet");
                 return false;
             }
             
@@ -329,7 +327,7 @@ namespace TirexGame.Utils.Ads
                     if (_rewardedRetryAttempts < config.RewardedLoadRetryAttempts)
                     {
                         _rewardedRetryAttempts++;
-                        StartCoroutine(RetryLoadRewarded());
+                        RetryLoadRewarded().Forget();
                         return;
                     }
                     
@@ -351,14 +349,14 @@ namespace TirexGame.Utils.Ads
             
             return await _rewardedLoadTcs.Task;
 #else
-            Debug.LogWarning("[AdManager] Rewarded ads are only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] Rewarded ads are only supported on Android and iOS platforms");
             return false;
 #endif
         }
         
         public bool IsRewardedReady()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             return _rewardedAd != null && _rewardedAd.CanShowAd();
 #else
             return false;
@@ -367,7 +365,7 @@ namespace TirexGame.Utils.Ads
         
         public async UniTask<AdResult> ShowRewardedAsync()
         {
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!IsRewardedReady())
             {
                 Debug.LogWarning("[AdManager] Rewarded ad is not ready");
@@ -384,7 +382,7 @@ namespace TirexGame.Utils.Ads
             
             return await _rewardedShowTcs.Task;
 #else
-            Debug.LogWarning("[AdManager] Rewarded ads are only supported on Android and iOS platforms");
+            ConsoleLogger.LogWarning("[AdManager] Rewarded ads are only supported on Android and iOS platforms");
             return new AdResult(false, errorMessage: "Platform not supported");
 #endif
         }
@@ -393,7 +391,7 @@ namespace TirexGame.Utils.Ads
         
         #region Event Handlers
         
-#if UNITY_ANDROID || UNITY_IOS
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
         private void OnBannerLoaded()
         {
             Log("Banner ad loaded successfully");
@@ -485,8 +483,8 @@ namespace TirexGame.Utils.Ads
         
         #region Helper Methods
         
-#if UNITY_ANDROID || UNITY_IOS
-        private AdPosition ConvertAdPosition(AdPosition position)
+#if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
+        private GoogleMobileAds.Api.AdPosition ConvertAdPosition(AdPosition position)
         {
             return position switch
             {
@@ -501,22 +499,22 @@ namespace TirexGame.Utils.Ads
             };
         }
         
-        private IEnumerator RetryLoadInterstitial()
+        private async UniTaskVoid RetryLoadInterstitial()
         {
-            yield return new WaitForSeconds(config.RetryDelay);
-            LoadInterstitialAsync().Forget();
+           await UniTask.WaitForSeconds(config.RetryDelay);
+           LoadInterstitialAsync().Forget();
         }
         
-        private IEnumerator RetryLoadRewarded()
+        private async UniTaskVoid RetryLoadRewarded()
         {
-            yield return new WaitForSeconds(config.RetryDelay);
+            await UniTask.WaitForSeconds(config.RetryDelay);
             LoadRewardedAsync().Forget();
         }
 #endif
         
         private void Log(string message)
         {
-            if (config != null && config.EnableLogging)
+            if (config && config.EnableLogging)
             {
                 Debug.Log($"[AdManager] {message}");
             }
@@ -524,7 +522,7 @@ namespace TirexGame.Utils.Ads
         
         private void LogError(string message)
         {
-            if (config != null && config.EnableLogging)
+            if (config && config.EnableLogging)
             {
                 Debug.LogError($"[AdManager] {message}");
             }
