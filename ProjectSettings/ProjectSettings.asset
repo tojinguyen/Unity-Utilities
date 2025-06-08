@@ -849,7 +849,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Standalone: AUTO_APPLY_SPRITE_SETTINGS
+    Standalone: AUTO_APPLY_SPRITE_SETTINGS;UNITY_PURCHASING
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -949,11 +949,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 2
   windowsGamepadBackendHint: 0
-  cloudProjectId: 
+  cloudProjectId: 40ef76a4-ed71-493f-8af3-2f48c21bfb9a
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: 
-  organizationId: 
+  projectName: Last Step Boom
+  organizationId: toainguyenprogramminggame
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

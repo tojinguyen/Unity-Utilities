@@ -43,10 +43,10 @@ namespace TirexGame.Utils.IAP
 
         #region Events
 
-        public event Action OnInitialized;
+        public event Action OnIAPInitialized;
         public event Action<string> OnInitializationFailed;
         public event Action<PurchaseResult> OnPurchaseCompleted;
-        public event Action<string, string> OnPurchaseFailed;
+        public event Action<string, string> OnIAPPurchaseFailed;
         public event Action<RestoreResult> OnPurchasesRestored;
         public event Action<string> OnPurchaseRestoreFailed;
 
@@ -58,7 +58,7 @@ namespace TirexGame.Utils.IAP
         {
             base.Awake();
 
-            if (config == null)
+            if (!config)
             {
                 ConsoleLogger.LogError("[IAPManager] IAPConfig is not assigned!");
                 return;
@@ -400,7 +400,7 @@ namespace TirexGame.Utils.IAP
                 _purchaseTasks.Remove(productId);
             }
 
-            OnPurchaseFailed?.Invoke(productId, failureReason.ToString());
+            OnIAPPurchaseFailed?.Invoke(productId, failureReason.ToString());
         }
 #endif
 

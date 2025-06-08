@@ -22,10 +22,10 @@ namespace TirexGame.Utils.IAP
         UniTask<ValidationResult> ValidatePurchaseAsync(string receipt, string productId);
         
         // Events
-        event Action OnInitialized;
+        event Action OnIAPInitialized;
         event Action<string> OnInitializationFailed;
         event Action<PurchaseResult> OnPurchaseCompleted;
-        event Action<string, string> OnPurchaseFailed;
+        event Action<string, string> OnIAPPurchaseFailed;
         event Action<RestoreResult> OnPurchasesRestored;
         event Action<string> OnPurchaseRestoreFailed;
     }
