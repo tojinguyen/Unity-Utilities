@@ -4,7 +4,6 @@ using UnityEngine;
  
 #if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
 using GoogleMobileAds.Api;
-using GoogleMobileAds.Common;
 #endif
 
 namespace TirexGame.Utils.Ads
