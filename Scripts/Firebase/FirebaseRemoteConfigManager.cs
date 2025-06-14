@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEngine;
 using TirexGame.Utilities.Patterns;
 
 namespace TirexGame.Utilities.Firebase
