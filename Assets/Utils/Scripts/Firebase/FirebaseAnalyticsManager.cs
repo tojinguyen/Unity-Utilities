@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using TirexGame.Utilities.Patterns;
 
 namespace TirexGame.Utilities.Firebase

@@ -15,12 +15,20 @@ namespace TirexGame.Utilities.Firebase
         [SerializeField] private bool enableAnalytics = true;
         [SerializeField] private bool enableRemoteConfig = true;
 
+        // Reference to ensure the singletons are instantiated
+        private FirebaseAnalyticsManager _analyticsManager;
+        private FirebaseRemoteConfigManager _remoteConfigManager;
+
         private bool _isInitialized = false;
         public bool IsInitialized => _isInitialized;
 
         protected override void Initialize()
         {
             base.Initialize();
+            
+            // Force instantiation of the singleton instances
+            _analyticsManager = FirebaseAnalyticsManager.Instance;
+            _remoteConfigManager = FirebaseRemoteConfigManager.Instance;
             
             if (initializeOnAwake)
             {
