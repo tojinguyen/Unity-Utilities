@@ -71,10 +71,11 @@ namespace Tirex.Game.Utils.Localization.Examples
 
         /// <summary>
         /// Update dynamic text with formatted localization
+        /// This is called automatically when language changes if using AutoUpdater
         /// </summary>
         private void UpdateDynamicText()
         {
-            if (dynamicText != null)
+            if (dynamicText != null && LocalizationManager.Instance.IsInitialized)
             {
                 // Example of using formatted text
                 string localizedText = LocalizationManager.GetLocalizedText("ui_player_score", playerName, score);
@@ -83,16 +84,19 @@ namespace Tirex.Game.Utils.Localization.Examples
         }
 
         /// <summary>
-        /// Called when language changes
+        /// Called when language changes - only needed for manual updates
+        /// Most UI elements will auto-update via LocalizedText components
         /// </summary>
         private void OnLanguageChanged(LanguageCode newLanguage)
         {
             Debug.Log($"Language changed to: {newLanguage}");
             
-            // Update dynamic content when language changes
+            // Only manually update elements that aren't using LocalizedText components
+            // or need special formatting/logic
             UpdateDynamicText();
 
-            // You can also manually update specific UI elements here
+            // Note: titleText should use LocalizedText component instead of manual update
+            // This is just for demonstration purposes
             if (titleText != null)
             {
                 titleText.text = LocalizationManager.GetLocalizedText("ui_welcome_title");
@@ -133,6 +137,26 @@ namespace Tirex.Game.Utils.Localization.Examples
         {
             var languageInfo = LocalizationManager.Instance.GetCurrentLanguageInfo();
             Debug.Log($"Current language: {languageInfo.displayName} ({languageInfo.nativeName})");
+        }
+
+        /// <summary>
+        /// Update player data and refresh dynamic text
+        /// </summary>
+        public void UpdatePlayerData(string newPlayerName, int newScore)
+        {
+            playerName = newPlayerName;
+            score = newScore;
+            UpdateDynamicText(); // Refresh the display with new data
+        }
+
+        /// <summary>
+        /// Increment score and update display
+        /// </summary>
+        [ContextMenu("Add Score")]
+        public void AddScore()
+        {
+            score += 100;
+            UpdateDynamicText();
         }
 
         /// <summary>
