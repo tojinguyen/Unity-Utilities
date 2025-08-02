@@ -77,8 +77,8 @@ namespace Tirex.Game.Utils.Localization.Examples
         {
             if (dynamicText != null && LocalizationManager.Instance.IsInitialized)
             {
-                // Example of using formatted text
-                string localizedText = LocalizationManager.GetLocalizedText("ui_player_score", playerName, score);
+                // Example of using formatted text with enum
+                string localizedText = LocalizationKeys.UiPlayerScore.GetText(playerName, score);
                 dynamicText.text = localizedText;
             }
         }
@@ -99,26 +99,37 @@ namespace Tirex.Game.Utils.Localization.Examples
             // This is just for demonstration purposes
             if (titleText != null)
             {
-                titleText.text = LocalizationManager.GetLocalizedText("ui_welcome_title");
+                // Using enum for strongly-typed access
+                titleText.text = LocalizationKeys.UiWelcomeTitle.GetText();
             }
         }
 
         /// <summary>
-        /// Example of programmatically getting localized text
+        /// Example of programmatically getting localized text using enum
         /// </summary>
         public void ShowLocalizedMessage()
         {
-            string message = LocalizationManager.GetLocalizedText("ui_example_message");
-            Debug.Log($"Localized message: {message}");
+            // Using generated enum (strongly-typed)
+            string message = LocalizationKeys.UiExampleMessage.GetText();
+            Debug.Log($"Localized message (enum): {message}");
+            
+            // Using string key (fallback)
+            string message2 = LocalizationManager.GetLocalizedText("ui_example_message");
+            Debug.Log($"Localized message (string): {message2}");
         }
 
         /// <summary>
-        /// Example of getting localized text with parameters
+        /// Example of getting localized text with parameters using enum
         /// </summary>
         public void ShowFormattedMessage()
         {
-            string message = LocalizationManager.GetLocalizedText("ui_time_remaining", "5", "30");
-            Debug.Log($"Formatted message: {message}");
+            // Using generated enum with formatting
+            string message = LocalizationKeys.UiTimeRemaining.GetText("5", "30");
+            Debug.Log($"Formatted message (enum): {message}");
+            
+            // Using string key
+            string message2 = LocalizationManager.GetLocalizedText("ui_time_remaining", "5", "30");
+            Debug.Log($"Formatted message (string): {message2}");
         }
 
         /// <summary>
