@@ -15,6 +15,7 @@ namespace Tirex.Game.Utils.Localization.Components
         [SerializeField] private string localizationKey;
         [SerializeField] private bool updateOnLanguageChange = true;
         [SerializeField] private bool preserveAspectRatio = true;
+        [SerializeField] private bool useAutoUpdater = true;
 
         [Header("Fallback")]
         [SerializeField] private Sprite fallbackSprite;
@@ -55,15 +56,31 @@ namespace Tirex.Game.Utils.Localization.Components
 
         private void OnEnable()
         {
-            if (updateOnLanguageChange)
+            // Choose between manual event handling or auto-updater
+            if (useAutoUpdater)
+            {
+                LocalizationAutoUpdater.RegisterLocalizedImage(this);
+            }
+            else if (updateOnLanguageChange)
             {
                 LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+            }
+            
+            // Auto-update when enabled if manager is ready
+            if (LocalizationManager.Instance != null && LocalizationManager.Instance.IsInitialized)
+            {
+                UpdateSprite();
             }
         }
 
         private void OnDisable()
         {
-            if (updateOnLanguageChange)
+            // Unregister from appropriate system
+            if (useAutoUpdater)
+            {
+                LocalizationAutoUpdater.UnregisterLocalizedImage(this);
+            }
+            else if (updateOnLanguageChange)
             {
                 LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
             }

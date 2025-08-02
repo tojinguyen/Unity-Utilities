@@ -19,6 +19,7 @@ namespace Tirex.Game.Utils.Localization.Components
 
         [Header("Auto-detect Components")]
         [SerializeField] private bool autoDetectTextComponent = true;
+        [SerializeField] private bool useAutoUpdater = true;
 
         // Component references
         private Text unityText;
@@ -60,15 +61,31 @@ namespace Tirex.Game.Utils.Localization.Components
 
         private void OnEnable()
         {
-            if (updateOnLanguageChange)
+            // Choose between manual event handling or auto-updater
+            if (useAutoUpdater)
+            {
+                LocalizationAutoUpdater.RegisterLocalizedText(this);
+            }
+            else if (updateOnLanguageChange)
             {
                 LocalizationManager.OnLanguageChanged += OnLanguageChanged;
+            }
+            
+            // Auto-update when enabled if manager is ready
+            if (LocalizationManager.Instance != null && LocalizationManager.Instance.IsInitialized)
+            {
+                UpdateText();
             }
         }
 
         private void OnDisable()
         {
-            if (updateOnLanguageChange)
+            // Unregister from appropriate system
+            if (useAutoUpdater)
+            {
+                LocalizationAutoUpdater.UnregisterLocalizedText(this);
+            }
+            else if (updateOnLanguageChange)
             {
                 LocalizationManager.OnLanguageChanged -= OnLanguageChanged;
             }
