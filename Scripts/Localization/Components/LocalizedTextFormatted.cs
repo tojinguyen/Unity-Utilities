@@ -12,6 +12,7 @@ namespace Tirex.Game.Utils.Localization.Components
     public class LocalizedTextFormatted : MonoBehaviour
     {
         [Header("Localization Settings")]
+        [LocalizationKey(textKeysOnly: true)]
         [SerializeField] private string localizationKey;
         [SerializeField] private bool useAutoUpdater = true;
 

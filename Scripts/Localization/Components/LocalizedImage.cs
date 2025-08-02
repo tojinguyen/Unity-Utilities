@@ -12,6 +12,7 @@ namespace Tirex.Game.Utils.Localization.Components
     public class LocalizedImage : MonoBehaviour
     {
         [Header("Localization Settings")]
+        [LocalizationKey(spriteKeysOnly: true)]
         [SerializeField] private string localizationKey;
         [SerializeField] private bool updateOnLanguageChange = true;
         [SerializeField] private bool preserveAspectRatio = true;

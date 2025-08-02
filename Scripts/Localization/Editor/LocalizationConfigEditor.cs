@@ -64,6 +64,14 @@ namespace Tirex.Game.Utils.Localization.Editor
 
             EditorGUILayout.Space(5);
 
+            // Code Generation Section
+            EditorGUILayout.LabelField("Code Generation", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical("box");
+            DrawCodeGeneration();
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.Space(5);
+
             // Quick Actions
             EditorGUILayout.LabelField("Quick Actions", EditorStyles.boldLabel);
             EditorGUILayout.BeginVertical("box");
@@ -203,8 +211,44 @@ namespace Tirex.Game.Utils.Localization.Editor
         }
 
         /// <summary>
-        /// Draw quick action buttons
+        /// Draw code generation tools
         /// </summary>
+        private void DrawCodeGeneration()
+        {
+            EditorGUILayout.LabelField("Generate strongly-typed keys for better intellisense", EditorStyles.helpBox);
+            
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Generate Enum Keys"))
+            {
+                GenerateKeys(true);
+            }
+            if (GUILayout.Button("Generate Constants"))
+            {
+                GenerateKeys(false);
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Open Generated Folder"))
+            {
+                string generatedPath = Path.Combine(Application.dataPath, "Utils", "Scripts", "Localization", "Generated");
+                if (Directory.Exists(generatedPath))
+                {
+                    EditorUtility.RevealInFinder(generatedPath);
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("Folder Not Found", 
+                        "Generated folder not found. Generate keys first.", "OK");
+                }
+            }
+            
+            bool isUpToDate = LocalizationKeysGenerator.IsGeneratedFileUpToDate(config);
+            EditorGUI.BeginDisabledGroup(true);
+            EditorGUILayout.Toggle("Keys Up to Date", isUpToDate);
+            EditorGUI.EndDisabledGroup();
+            EditorGUILayout.EndHorizontal();
+        }
         private void DrawQuickActions()
         {
             EditorGUILayout.BeginHorizontal();
@@ -235,6 +279,24 @@ namespace Tirex.Game.Utils.Localization.Editor
             if (GUILayout.Button("Create Test Manager"))
             {
                 CreateTestManager();
+            }
+        }
+
+        /// <summary>
+        /// Generate localization keys
+        /// </summary>
+        private void GenerateKeys(bool useEnum)
+        {
+            if (LocalizationKeysGenerator.GenerateKeys(config, null, useEnum))
+            {
+                string keyType = useEnum ? "enum" : "constants";
+                EditorUtility.DisplayDialog("Generation Successful", 
+                    $"Successfully generated {keyType} keys!\nCheck the Generated folder for the new file.", "OK");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog("Generation Failed", 
+                    "Failed to generate keys. Check the console for details.", "OK");
             }
         }
 
@@ -275,9 +337,15 @@ namespace Tirex.Game.Utils.Localization.Editor
             {
                 if (LocalizationCSVUtility.ImportFromCSV(config, csvImportPath, clearExisting))
                 {
-                    EditorUtility.DisplayDialog("Import Successful", 
-                        "Localization data imported successfully!", "OK");
                     EditorUtility.SetDirty(config);
+                    
+                    // Auto-generate keys after successful import
+                    if (EditorUtility.DisplayDialog("Import Successful", 
+                        "Localization data imported successfully!\n\nWould you like to auto-generate keys for better intellisense?", 
+                        "Yes", "No"))
+                    {
+                        GenerateKeys(true); // Generate enum by default
+                    }
                 }
                 else
                 {
