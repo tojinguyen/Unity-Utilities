@@ -24,7 +24,7 @@ public static class AddressablesObjectPooling
         var tasks = new List<UniTask<GameObject>>();
         for (var i = 0; i < count; i++)
         {
-            var task = AddressablesHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+            var task = AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
             tasks.Add(task);
         }
 
@@ -62,7 +62,7 @@ public static class AddressablesObjectPooling
             return obj;
         }
 
-        var newObject = await AddressablesHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+        var newObject = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
         return newObject;
     }
 
@@ -124,7 +124,7 @@ public static class AddressablesObjectPooling
         }
 
         _pools.Remove(assetRef);
-        AddressablesHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+        AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
     }
 
     /// <summary>
@@ -143,7 +143,7 @@ public static class AddressablesObjectPooling
                 Object.Destroy(obj);
             }
             
-            AddressablesHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+            AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
         }
 
         _pools.Clear();

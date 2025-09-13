@@ -8,9 +8,9 @@ namespace Utils.Scripts.UIManager.UINavigator
     public class UIView : MonoBehaviour
     {
         protected CanvasGroup ViewCanvasGroup;
-        protected bool IsInitialized;
+        public bool IsInitialized;
 
-        protected void Awake()
+        protected virtual void Awake()
         {
             IsInitialized = false;
             if (ViewCanvasGroup == null)

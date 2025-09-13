@@ -150,7 +150,7 @@ namespace TirexGame.Utils.Patterns.Factory
                 try
                 {
                     var assetRef = _addressableRegistry[id];
-                    var prefab = await AddressablesHelper.GetAssetAsync<GameObject>(assetRef, "GameObjectFactory");
+                    var prefab = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, "GameObjectFactory");
                     
                     if (enablePooling)
                     {

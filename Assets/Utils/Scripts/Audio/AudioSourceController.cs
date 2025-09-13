@@ -100,7 +100,7 @@ public class AudioSourceController : MonoBehaviour
         {
             try
             {
-                var clip = await AddressablesHelper.GetAssetAsync<AudioClip>(
+                var clip = await AddressableHelper.GetAssetAsync<AudioClip>(
                     currentClipData.audioClipReference, 
                     $"AudioSystem_{currentClipData.audioType}"
                 );
