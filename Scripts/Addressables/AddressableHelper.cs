@@ -5,7 +5,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 using Cysharp.Threading.Tasks;
 using Object = UnityEngine.Object;
 
-public static class AddressablesHelper
+public static class AddressableHelper
 {
     private class _featureAddressableCache
     {
@@ -21,7 +21,7 @@ public static class AddressablesHelper
 
     private static readonly Dictionary<string, _featureAddressableCache> FeatureAddressableCaches;
 
-    static AddressablesHelper()
+    static AddressableHelper()
     {
         FeatureAddressableCaches = new Dictionary<string, _featureAddressableCache>(DefaultFeatureAmount);
     }
