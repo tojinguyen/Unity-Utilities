@@ -6,27 +6,32 @@ namespace Utils.Scripts.UIManager.UINavigator
 {
     public class ScreenContainer : UIContainer
     {
-        private static Stack<Screen> stackScreen = new();
+        private static Stack<Screen> _stackScreen = new();
         internal static UIContainer Container;
         
-        public static int Count => stackScreen.Count;
+        public static int Count => _stackScreen.Count;
 
         protected override void Awake()
         {
             base.Awake();
-            stackScreen = new();
-            Container = GetComponent<ScreenContainer>();
+            _stackScreen = new();
+            Container = this;
         }
 
-        private async void Start()
+        private void Start()
+        {
+            SetupStateScreen().Forget();
+        }
+        
+        private async UniTaskVoid SetupStateScreen()
         {
             foreach (Transform screenTf in Container.transform)
             {
                 var scr = screenTf.GetComponent<Screen>();
                 if (scr)
-                    stackScreen.Push(scr);
+                    _stackScreen.Push(scr);
             }
-            if (stackScreen.TryPeek(out var screen))
+            if (_stackScreen.TryPeek(out var screen))
             {
                 await screen.OnPushEnter();
             }
@@ -37,17 +42,18 @@ namespace Utils.Scripts.UIManager.UINavigator
             var screenSpawn = await SpawnUIGo(keyAddressable, Container.TransformContainer);
 
             var screen = screenSpawn.GetComponent<Screen>();
-            if (screen is null) return null;
-            if (stackScreen.TryPeek(out var screenToHide))
+            if (screen is null)
+                return null;
+            if (_stackScreen.TryPeek(out var screenToHide))
             {
                 if (screenToHide != null)
                     await screenToHide.OnPushExit(screen);
                 else
-                    stackScreen.Pop();
+                    _stackScreen.Pop();
             }
 
             await screen.OnPushEnter();
-            stackScreen.Push(screen);
+            _stackScreen.Push(screen);
 
             await UniTask.Yield();
             return screen;
@@ -55,11 +61,11 @@ namespace Utils.Scripts.UIManager.UINavigator
 
         public static async UniTask Pop()
         {
-            if (stackScreen.TryPeek(out var screen))
+            if (_stackScreen.TryPeek(out var screen))
             {
-                stackScreen.Pop();
+                _stackScreen.Pop();
 
-                if (stackScreen.TryPeek(out var screenToShow))
+                if (_stackScreen.TryPeek(out var screenToShow))
                 {
                     if (screenToShow != null)
                     {
@@ -71,7 +77,7 @@ namespace Utils.Scripts.UIManager.UINavigator
                     } 
                     else
                     {
-                        stackScreen.Pop();
+                        _stackScreen.Pop();
                     }
                 }
 
@@ -80,12 +86,12 @@ namespace Utils.Scripts.UIManager.UINavigator
             }
             await UniTask.Yield();
         }
+        
         private void OnDestroy()
         {
-            foreach (var item in stackScreen)
+            foreach (var item in _stackScreen)
                 Destroy(item.gameObject);
-            stackScreen.Clear();
+            _stackScreen.Clear();
         }
-
     }
 }

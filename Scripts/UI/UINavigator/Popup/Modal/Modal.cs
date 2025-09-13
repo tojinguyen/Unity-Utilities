@@ -12,6 +12,7 @@ namespace Utils.Scripts.UIManager.UINavigator.Popup.Modal
         {
             if (closeBtn)
                 closeBtn.onClick.AddListener(OnClose);
+            base.Start();
         }
         
         public async UniTask Init()
