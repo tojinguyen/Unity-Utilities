@@ -16,14 +16,10 @@ namespace Utils.Scripts.UIManager.UINavigator
             if (ViewCanvasGroup == null)
                 ViewCanvasGroup = this.GetComponent<CanvasGroup>();
             ViewCanvasGroup.alpha = 0;
-        }
-
-        protected virtual void Start()
-        {
             Initialize().Forget();
         }
 
-        protected async virtual UniTask Initialize()
+        protected virtual async UniTask Initialize()
         {
             IsInitialized = true;
             await UniTask.CompletedTask;

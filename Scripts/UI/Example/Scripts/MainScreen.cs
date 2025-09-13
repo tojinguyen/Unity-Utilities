@@ -22,9 +22,8 @@ namespace Utils.Scripts.UI.Example.Scripts
 
         [SerializeField] private TooltipPosition tooltipPosition;
 
-        protected override void Start()
+        protected virtual void Start()
         {
-            base.Start();
             pushBtn.onClick.AddListener(Push);
             alertBtn.onClick.AddListener(Alert);
             modalBtn.onClick.AddListener(ShowModalAsync);

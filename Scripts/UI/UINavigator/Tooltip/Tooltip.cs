@@ -12,7 +12,6 @@ namespace Utils.Scripts.UIManager.UINavigator.Tooltip
         {
             if (contentTxt)
                 contentTxt.text = content;
-            await UniTask.NextFrame();
             await OnShow(position, isLocalPosition);
         }
     }
