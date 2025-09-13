@@ -39,9 +39,9 @@ namespace Utils.Scripts.UIManager.UINavigator.Tooltip
             var tooltipSpawn = Instantiate(tooltipPrefab, parent ? parent : _container.TransformContainer);
             tooltipSpawn.transform.SetParent(parent);
 
-            var tooltip = tooltipPrefab.GetComponent<Tooltip>();
+            var tooltip = tooltipSpawn.GetComponent<Tooltip>();
             _currentTooltip = tooltip;
-            var tooltipRect = tooltipPrefab.GetComponent<RectTransform>();
+            var tooltipRect = tooltipSpawn.GetComponent<RectTransform>();
             if (tooltip)
             {
                 var hPos = 0f;
