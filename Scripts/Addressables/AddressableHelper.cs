@@ -7,7 +7,7 @@ using Object = UnityEngine.Object;
 
 public static class AddressableHelper
 {
-    private class _featureAddressableCache
+    private class FeatureAddressableCache
     {
         public Dictionary<AssetReference, AsyncOperationHandle> LoadedAsset;
         public Dictionary<AssetReference, AsyncOperationHandle> LoadingAsset;
@@ -19,11 +19,11 @@ public static class AddressableHelper
 
     private static readonly Dictionary<AssetReference, int> RefCountAssetRef = new(20);
 
-    private static readonly Dictionary<string, _featureAddressableCache> FeatureAddressableCaches;
+    private static readonly Dictionary<string, FeatureAddressableCache> FeatureAddressableCaches;
 
     static AddressableHelper()
     {
-        FeatureAddressableCaches = new Dictionary<string, _featureAddressableCache>(DefaultFeatureAmount);
+        FeatureAddressableCaches = new Dictionary<string, FeatureAddressableCache>(DefaultFeatureAmount);
     }
 
     /// <summary>
@@ -140,7 +140,7 @@ public static class AddressableHelper
             var isFeatureExists = FeatureAddressableCaches.TryGetValue(featureName, out var featureCache);
             if (!isFeatureExists)
             {
-                featureCache = new _featureAddressableCache
+                featureCache = new FeatureAddressableCache
                 {
                     LoadedAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DefaultExpectedLoadAssets),
                     LoadingAsset = new Dictionary<AssetReference, AsyncOperationHandle>(DefaultExpectedLoadAssets)
