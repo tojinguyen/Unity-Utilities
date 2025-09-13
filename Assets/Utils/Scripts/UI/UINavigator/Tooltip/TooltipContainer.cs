@@ -9,32 +9,39 @@ namespace Utils.Scripts.UIManager.UINavigator.Tooltip
 {
     public class TooltipContainer : UIContainer
     {
-        public static UIContainer Container;
-        protected const string KeyTooltipBlockOverlay = "TooltipBlockOverlay";
-        private static Tooltip _currentTooltip = null;
+        private static UIContainer _container;
+        private static Tooltip _currentTooltip;
         private static CancellationTokenSource _cancelToken;
         
         protected override void Awake()
         {
             base.Awake();
-            Container = this;
+            _container = this;
             _currentTooltip = null;
         }
         
-        public static async UniTask Show(string keyAddressable, string content, RectTransform parent, TooltipPosition tooltipPosition, bool isCloseAnyClick = false)
+        public static async UniTask Show(string keyAddressable, string content, RectTransform parent, TooltipPosition tooltipPosition)
         {
-            await Show(keyAddressable, content, parent, tooltipPosition, Vector2.zero, isCloseAnyClick);
+            await Show(keyAddressable, content, parent, tooltipPosition, Vector2.zero);
             await UniTask.CompletedTask;
         }
 
-        public static async UniTask Show(string keyAddressable, string content, RectTransform parent, TooltipPosition tooltipPosition, Vector2 offset, bool isCloseAnyClick = false)
+        public static async UniTask Show(string keyAddressable, string content, RectTransform parent, TooltipPosition tooltipPosition, Vector2 offset)
         {
             await UniTask.WaitUntil(() => _currentTooltip == null);
-            var tooltipSpawn = await Addressables.InstantiateAsync(keyAddressable, parent).Task;
+            var tooltipPrefab = await AddressableHelper.GetAssetAsync<GameObject>(keyAddressable);
+            if (tooltipPrefab == null)
+            {
+                Debug.LogError($"Tooltip prefab with key '{keyAddressable}' could not be loaded.");
+                return;
+            }
+            
+            var tooltipSpawn = Instantiate(tooltipPrefab, parent ? parent : _container.TransformContainer);
+            tooltipSpawn.transform.SetParent(parent);
 
-            var tooltip = tooltipSpawn.GetComponent<Tooltip>();
+            var tooltip = tooltipPrefab.GetComponent<Tooltip>();
             _currentTooltip = tooltip;
-            var tooltipRect = tooltipSpawn.GetComponent<RectTransform>();
+            var tooltipRect = tooltipPrefab.GetComponent<RectTransform>();
             if (tooltip)
             {
                 var hPos = 0f;

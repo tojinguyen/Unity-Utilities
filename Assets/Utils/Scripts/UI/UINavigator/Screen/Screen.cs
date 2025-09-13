@@ -6,13 +6,14 @@ namespace Utils.Scripts.UIManager.UINavigator
 {
     public class Screen : ScreenView
     {
-        [SerializeField] protected Button[] btnsBack;
+        [SerializeField] protected Button[] buttonsBack;
+        
         protected override void Awake()
         {
             base.Awake();
-            if (btnsBack != null)
+            if (buttonsBack != null)
             {
-                foreach (var item in btnsBack)
+                foreach (var item in buttonsBack)
                     item.onClick.AddListener(OnBack);
             }
         }
