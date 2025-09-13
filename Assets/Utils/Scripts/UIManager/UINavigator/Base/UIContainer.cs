@@ -19,9 +19,8 @@ namespace Utils.Scripts.UIManager.UINavigator
 
         internal static async UniTask<GameObject> SpawnUIGo(string key, Transform parent)
         {
-            // var res = await AddressableHelper.GetAssetAsync<GameObject>(key, parent);
-            // return Instantiate(res, parent);
-            return null;
+            var res = await AddressableHelper.GetAssetAsync<GameObject>(key);
+            return Instantiate(res, parent);
         }
     }
 }
