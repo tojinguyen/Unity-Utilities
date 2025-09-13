@@ -2,7 +2,6 @@
     "name": "TirexGame.Utilities",
     "rootNamespace": "",
     "references": [
-        "UniTask",
         "UniTask.Addressables",
         "Unity.Addressables",
         "Unity.ResourceManager",
@@ -13,7 +12,11 @@
         "UnityEngine.Purchasing.Apple",
         "Purchasing.Common",
         "UnityEngine.Purchasing.AppleCore",
-        "UnityEngine.Purchasing.SecurityCore"
+        "UnityEngine.Purchasing.SecurityCore",
+        "UniTask",
+        "UniTask.DOTween",
+        "DOTween.Modules",
+        "DOTweenPro.Scripts"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
