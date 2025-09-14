@@ -13,7 +13,7 @@ public static class DataEncryptor
     {
         if (_key != null) return _key;
 
-        const string salt = "your_unique_salt_here_1a2b3c";
+        const string salt = "VO-dS2ceMoc-OeZf?!rxrF1tcqr=rrWx";
         
         var deviceId = SystemInfo.deviceUniqueIdentifier;
         
@@ -23,9 +23,6 @@ public static class DataEncryptor
         return _key;
     }
     
-    private static readonly byte[] DefaultKey = Encoding.UTF8.GetBytes("1234567890123456"); // Key 16 bytes
-    private static readonly byte[] DefaultIv = Encoding.UTF8.GetBytes("6543210987654321"); // IV 16 bytes
-
     public static byte[] Encrypt(byte[] dataToEncrypt)
     {
         using var aes = Aes.Create();
@@ -36,7 +33,6 @@ public static class DataEncryptor
         using var encryptor = aes.CreateEncryptor(aes.Key, iv);
         using var ms = new MemoryStream();
         
-        // Ghi IV vào đầu stream
         ms.Write(iv, 0, iv.Length);
 
         using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
@@ -50,7 +46,7 @@ public static class DataEncryptor
     {
         if (dataToDecrypt == null || dataToDecrypt.Length <= IvSizeBytes)
         {
-            throw new ArgumentException("Dữ liệu cần giải mã không hợp lệ.");
+            throw new ArgumentException("Data to decrypt is invalid or too short.");
         }
 
         using var aes = Aes.Create();
