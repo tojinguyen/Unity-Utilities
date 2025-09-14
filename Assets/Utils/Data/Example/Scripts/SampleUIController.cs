@@ -36,7 +36,7 @@ public class SampleUIController : MonoBehaviour
         takeDamageButton.onClick.AddListener(OnTakeDamageButtonClicked);
         saveInvalidButton.onClick.AddListener(OnSaveInvalidDataClicked);
 
-        DataManager.Instance.SubscribeToDataEvents<PlayerData>(
+        DataManager.SubscribeToDataEvents<PlayerData>(
             onSaved: OnPlayerDataSaved,
             onLoaded: OnPlayerDataLoaded,
             onDeleted: OnPlayerDataDeleted
@@ -47,21 +47,18 @@ public class SampleUIController : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (DataManager.Instance != null)
-        {
-            DataManager.Instance.UnsubscribeFromDataEvents<PlayerData>(
-                onSaved: OnPlayerDataSaved,
-                onLoaded: OnPlayerDataLoaded,
-                onDeleted: OnPlayerDataDeleted
-            );
-        }
+        DataManager.UnsubscribeFromDataEvents<PlayerData>(
+            onSaved: OnPlayerDataSaved,
+            onLoaded: OnPlayerDataLoaded,
+            onDeleted: OnPlayerDataDeleted
+        );
     }
 
     private async void OnLoadButtonClicked()
     {
         SetStatus("Loading data...", Color.yellow);
         
-        _playerData = await DataManager.Instance.GetDataAsync<PlayerData>(DefaultPlayerKey);
+        _playerData = await DataManager.GetDataAsync<PlayerData>(DefaultPlayerKey);
         
         UpdateUI();
         
@@ -74,7 +71,7 @@ public class SampleUIController : MonoBehaviour
         
         UpdateDataFromUI();
 
-        var success = await DataManager.Instance.SaveDataAsync(_playerData, DefaultPlayerKey);
+        var success = await DataManager.SaveDataAsync(_playerData, DefaultPlayerKey);
 
         if (success)
         {
@@ -89,7 +86,7 @@ public class SampleUIController : MonoBehaviour
     private async void OnDeleteButtonClicked()
     {
         SetStatus("Deleting data...", Color.yellow);
-        var success = await DataManager.Instance.DeleteDataAsync<PlayerData>(DefaultPlayerKey);
+        var success = await DataManager.DeleteDataAsync<PlayerData>(DefaultPlayerKey);
 
         if (success)
         {
