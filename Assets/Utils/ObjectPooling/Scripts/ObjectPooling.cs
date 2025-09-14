@@ -1,10 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public static class ObjectPooling
+namespace Tirex.Utils.ObjectPooling
 {
-    private static readonly Dictionary<GameObject, Queue<Component>> Pools = new();
-    private static readonly Dictionary<Component, GameObject> InstanceToPrefab = new();
+    public static class ObjectPooling
+    {
+        private static readonly Dictionary<GameObject, Queue<Component>> Pools = new();
+        private static readonly Dictionary<Component, GameObject> InstanceToPrefab = new();
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
     // ======= PERFORMANCE TRACKING =======
@@ -25,22 +27,24 @@ public static class ObjectPooling
     }
 #endif
 
-    // ======= COMPONENT VERSIONS =======    
-    public static void Prewarm<T>(T prefab, int count) where T : Component
-    {
-        var prefabGo = prefab.gameObject;
+        // ======= COMPONENT VERSIONS =======
+        public static void Prewarm<T>(T prefab, int count) where T : Component
+        {
+            var prefabGo = prefab.gameObject;
 
-        if (!Pools.TryGetValue(prefabGo, out var pool))
-        {
-            pool = new Queue<Component>();
-            Pools[prefabGo] = pool;
-        }        for (var i = 0; i < count; i++)
-        {
-            var instance = Object.Instantiate(prefab);
-            instance.gameObject.SetActive(false);
-            pool.Enqueue(instance);
-            InstanceToPrefab[instance] = prefabGo;
-        }
+            if (!Pools.TryGetValue(prefabGo, out var pool))
+            {
+                pool = new Queue<Component>();
+                Pools[prefabGo] = pool;
+            }
+
+            for (var i = 0; i < count; i++)
+            {
+                var instance = Object.Instantiate(prefab);
+                instance.gameObject.SetActive(false);
+                pool.Enqueue(instance);
+                InstanceToPrefab[instance] = prefabGo;
+            }
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
@@ -56,23 +60,24 @@ public static class ObjectPooling
         ConsoleLogger.Log(
             $"[ObjectPooling] Prewarmed pool for {prefabGo.name} with {count} objects. Pool size: {pool.Count}");
 #endif
-    }
-
-    public static T GetObject<T>(T prefab) where T : Component
-    {
-        var prefabGo = prefab.gameObject;
-
-        if (!Pools.TryGetValue(prefabGo, out var pool))
-        {
-            pool = new Queue<Component>();
-            Pools[prefabGo] = pool;
         }
 
-        var wasPoolHit = pool.Count > 0;
-        var instance = wasPoolHit
-            ? (T)pool.Dequeue()
-            : Object.Instantiate(prefab);        instance.gameObject.SetActive(true);
-        InstanceToPrefab[instance] = prefabGo;
+        public static T GetObject<T>(T prefab) where T : Component
+        {
+            var prefabGo = prefab.gameObject;
+
+            if (!Pools.TryGetValue(prefabGo, out var pool))
+            {
+                pool = new Queue<Component>();
+                Pools[prefabGo] = pool;
+            }
+
+            var wasPoolHit = pool.Count > 0;
+            var instance = wasPoolHit
+                ? (T)pool.Dequeue()
+                : Object.Instantiate(prefab);
+            instance.gameObject.SetActive(true);
+            InstanceToPrefab[instance] = prefabGo;
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
@@ -103,171 +108,173 @@ public static class ObjectPooling
         PoolStatistics[prefabGo] = stats;
 #endif
 
-        return instance;
-    }
-
-
-    public static T GetObject<T>(T prefab, Transform parent) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Vector3 position) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = position;
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Quaternion rotation) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.rotation = rotation;
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Vector3 position, Quaternion rotation) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = position;
-        instance.transform.rotation = rotation;
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Vector2 position) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = new Vector3(position.x, position.y, instance.transform.position.z);
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Transform parent, Vector3 localPosition) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = localPosition;
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Transform parent, Vector3 localPosition, Quaternion localRotation)
-        where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = localPosition;
-        instance.transform.localRotation = localRotation;
-        return instance;
-    }
-
-    public static T GetObject<T>(T prefab, Transform parent, Vector2 localPosition) where T : Component
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = new Vector3(localPosition.x, localPosition.y, 0f);
-        return instance;
-    }
-
-    // ======= GAME OBJECT VERSIONS =======
-
-    public static void Prewarm(GameObject prefab, int count)
-    {
-        var component = prefab.GetComponent<Component>();
-        if (component == null)
-        {
-            ConsoleLogger.LogError("[ObjectPooling] GameObject has no Component to pool.");
-            return;
+            return instance;
         }
 
-        Prewarm(component, count);
-    }
 
-    public static GameObject GetObject(GameObject prefab)
-    {
-        var component = prefab.GetComponent<Component>();
-        if (component == null)
+        public static T GetObject<T>(T prefab, Transform parent) where T : Component
         {
-            ConsoleLogger.LogError("[ObjectPooling] GameObject has no Component to pool.");
-            return null;
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            return instance;
         }
 
-        var instance = GetObject(component);
-        return instance.gameObject;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Transform parent)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Vector3 position)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = position;
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Quaternion rotation)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.rotation = rotation;
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Vector3 position, Quaternion rotation)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = position;
-        instance.transform.rotation = rotation;
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Vector2 position)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.position = new Vector3(position.x, position.y, instance.transform.position.z);
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Transform parent, Vector3 localPosition)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = localPosition;
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Transform parent, Vector3 localPosition,
-        Quaternion localRotation)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = localPosition;
-        instance.transform.localRotation = localRotation;
-        return instance;
-    }
-
-    public static GameObject GetObject(GameObject prefab, Transform parent, Vector2 localPosition)
-    {
-        var instance = GetObject(prefab);
-        instance.transform.SetParent(parent, false);
-        instance.transform.localPosition = new Vector3(localPosition.x, localPosition.y, 0f);
-        return instance;
-    }
-
-    // ======= RETURN & CLEAR =======
-    public static void ReturnObject(Component instance)
-    {
-        if (!InstanceToPrefab.TryGetValue(instance, out var prefabGo))
+        public static T GetObject<T>(T prefab, Vector3 position) where T : Component
         {
-            ConsoleLogger.LogWarning($"[ObjectPooling] Tried to return unknown object: {instance.name}");
-            Object.Destroy(instance.gameObject);
-            return;
-        }        instance.gameObject.SetActive(false);
-        Pools[prefabGo].Enqueue(instance);
+            var instance = GetObject(prefab);
+            instance.transform.position = position;
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Quaternion rotation) where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.rotation = rotation;
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Vector3 position, Quaternion rotation) where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.position = position;
+            instance.transform.rotation = rotation;
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Vector2 position) where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.position = new Vector3(position.x, position.y, instance.transform.position.z);
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Transform parent, Vector3 localPosition) where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = localPosition;
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Transform parent, Vector3 localPosition, Quaternion localRotation)
+            where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = localPosition;
+            instance.transform.localRotation = localRotation;
+            return instance;
+        }
+
+        public static T GetObject<T>(T prefab, Transform parent, Vector2 localPosition) where T : Component
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = new Vector3(localPosition.x, localPosition.y, 0f);
+            return instance;
+        }
+
+        // ======= GAME OBJECT VERSIONS =======
+
+        public static void Prewarm(GameObject prefab, int count)
+        {
+            var component = prefab.GetComponent<Component>();
+            if (component == null)
+            {
+                ConsoleLogger.LogError("[ObjectPooling] GameObject has no Component to pool.");
+                return;
+            }
+
+            Prewarm(component, count);
+        }
+
+        public static GameObject GetObject(GameObject prefab)
+        {
+            var component = prefab.GetComponent<Component>();
+            if (component == null)
+            {
+                ConsoleLogger.LogError("[ObjectPooling] GameObject has no Component to pool.");
+                return null;
+            }
+
+            var instance = GetObject(component);
+            return instance.gameObject;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Transform parent)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Vector3 position)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.position = position;
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Quaternion rotation)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.rotation = rotation;
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Vector3 position, Quaternion rotation)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.position = position;
+            instance.transform.rotation = rotation;
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Vector2 position)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.position = new Vector3(position.x, position.y, instance.transform.position.z);
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Transform parent, Vector3 localPosition)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = localPosition;
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Transform parent, Vector3 localPosition,
+            Quaternion localRotation)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = localPosition;
+            instance.transform.localRotation = localRotation;
+            return instance;
+        }
+
+        public static GameObject GetObject(GameObject prefab, Transform parent, Vector2 localPosition)
+        {
+            var instance = GetObject(prefab);
+            instance.transform.SetParent(parent, false);
+            instance.transform.localPosition = new Vector3(localPosition.x, localPosition.y, 0f);
+            return instance;
+        }
+
+        // ======= RETURN & CLEAR =======
+        public static void ReturnObject(Component instance)
+        {
+            if (!InstanceToPrefab.TryGetValue(instance, out var prefabGo))
+            {
+                ConsoleLogger.LogWarning($"[ObjectPooling] Tried to return unknown object: {instance.name}");
+                Object.Destroy(instance.gameObject);
+                return;
+            }
+
+            instance.gameObject.SetActive(false);
+            Pools[prefabGo].Enqueue(instance);
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
@@ -281,34 +288,36 @@ public static class ObjectPooling
                 $"[ObjectPooling] Object returned to pool for {prefabGo.name} - Pool size: {Pools[prefabGo].Count}, Active: {stats.CurrentActiveCount}");
         }
 #endif
-    }
-
-    public static void ReturnObject(GameObject obj)
-    {
-        var component = obj.GetComponent<Component>();
-        if (component == null)
-        {
-            ConsoleLogger.LogWarning("[ObjectPooling] Tried to return a GameObject with no Component.");
-            Object.Destroy(obj);
-            return;
         }
 
-        ReturnObject(component);
-    }
-
-    public static void ClearPool<T>(T prefab) where T : Component
-    {
-        var prefabGo = prefab.gameObject;
-
-        if (!Pools.TryGetValue(prefabGo, out var pool))
-            return;
-
-        while (pool.Count > 0)
+        public static void ReturnObject(GameObject obj)
         {
-            var instance = pool.Dequeue();
-            InstanceToPrefab.Remove(instance);
-            Object.Destroy(instance.gameObject);
-        }        Pools.Remove(prefabGo);
+            var component = obj.GetComponent<Component>();
+            if (component == null)
+            {
+                ConsoleLogger.LogWarning("[ObjectPooling] Tried to return a GameObject with no Component.");
+                Object.Destroy(obj);
+                return;
+            }
+
+            ReturnObject(component);
+        }
+
+        public static void ClearPool<T>(T prefab) where T : Component
+        {
+            var prefabGo = prefab.gameObject;
+
+            if (!Pools.TryGetValue(prefabGo, out var pool))
+                return;
+
+            while (pool.Count > 0)
+            {
+                var instance = pool.Dequeue();
+                InstanceToPrefab.Remove(instance);
+                Object.Destroy(instance.gameObject);
+            }
+
+            Pools.Remove(prefabGo);
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
@@ -319,8 +328,21 @@ public static class ObjectPooling
             PoolStatistics.Remove(prefabGo);
         }
 #endif
-    }    public static void ClearAllPools()
-    {
+        }
+        public static void ClearPool(GameObject prefab)
+        {
+            var component = prefab.GetComponent<Component>();
+            if (component == null)
+            {
+                ConsoleLogger.LogError("[ObjectPooling] GameObject has no Component to pool.");
+                return;
+            }
+
+            ClearPool(component);
+        }
+
+        public static void ClearAllPools()
+        {
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         // ======= PERFORMANCE TRACKING =======
         ConsoleLogger.Log("[ObjectPooling] Clearing all pools - Final summary:");
@@ -333,32 +355,32 @@ public static class ObjectPooling
         }
 #endif
 
-        foreach (var pool in Pools.Values)
-        {
-            while (pool.Count > 0)
+            foreach (var pool in Pools.Values)
             {
-                var instance = pool.Dequeue();
-                InstanceToPrefab.Remove(instance);
-                Object.Destroy(instance.gameObject);
+                while (pool.Count > 0)
+                {
+                    var instance = pool.Dequeue();
+                    InstanceToPrefab.Remove(instance);
+                    Object.Destroy(instance.gameObject);
+                }
             }
-        }
 
-        Pools.Clear();
-        InstanceToPrefab.Clear();
+            Pools.Clear();
+            InstanceToPrefab.Clear();
 #if OBJECT_POOLING_TRACK_PERFORMANCE
         PoolStatistics.Clear();
 #endif
-    }
+        }
 
-    public static int GetPoolSize<T>(T prefab) where T : Component
-    {
-        return Pools.TryGetValue(prefab.gameObject, out var pool) ? pool.Count : 0;
-    }
+        public static int GetPoolSize<T>(T prefab) where T : Component
+        {
+            return Pools.TryGetValue(prefab.gameObject, out var pool) ? pool.Count : 0;
+        }
 
-    public static int GetPoolSize(GameObject prefab)
-    {
-        return Pools.TryGetValue(prefab, out var pool) ? pool.Count : 0;
-    }    // ======= DEBUG & PERFORMANCE TRACKING =======
+        public static int GetPoolSize(GameObject prefab)
+        {
+            return Pools.TryGetValue(prefab, out var pool) ? pool.Count : 0;
+        } // ======= DEBUG & PERFORMANCE TRACKING =======
 
 #if OBJECT_POOLING_TRACK_PERFORMANCE
     public static void LogPoolStats(GameObject prefab)
@@ -421,13 +443,38 @@ public static class ObjectPooling
         return GetHitRate(prefab.gameObject);
     }
 #else
-    // Stub methods when performance tracking is disabled
-    public static void LogPoolStats(GameObject prefab) { }
-    public static void LogPoolStats<T>(T prefab) where T : Component { }
-    public static void LogAllPoolStats() { }
-    public static int GetActiveCount(GameObject prefab) { return 0; }
-    public static int GetActiveCount<T>(T prefab) where T : Component { return 0; }
-    public static float GetHitRate(GameObject prefab) { return 0f; }
-    public static float GetHitRate<T>(T prefab) where T : Component { return 0f; }
+        // Stub methods when performance tracking is disabled
+        public static void LogPoolStats(GameObject prefab)
+        {
+        }
+
+        public static void LogPoolStats<T>(T prefab) where T : Component
+        {
+        }
+
+        public static void LogAllPoolStats()
+        {
+        }
+
+        public static int GetActiveCount(GameObject prefab)
+        {
+            return 0;
+        }
+
+        public static int GetActiveCount<T>(T prefab) where T : Component
+        {
+            return 0;
+        }
+
+        public static float GetHitRate(GameObject prefab)
+        {
+            return 0f;
+        }
+
+        public static float GetHitRate<T>(T prefab) where T : Component
+        {
+            return 0f;
+        }
 #endif
+    }
 }
