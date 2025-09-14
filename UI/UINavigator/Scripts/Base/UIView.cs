@@ -14,7 +14,7 @@ namespace Utils.Scripts.UIManager.UINavigator
         {
             IsInitialized = false;
             if (ViewCanvasGroup == null)
-                ViewCanvasGroup = this.GetComponent<CanvasGroup>();
+                ViewCanvasGroup = GetComponent<CanvasGroup>();
             ViewCanvasGroup.alpha = 0;
             Initialize().Forget();
         }

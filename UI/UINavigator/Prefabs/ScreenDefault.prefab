@@ -107,10 +107,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: TirexGame.Utilities::Utils.Scripts.UIManager.UINavigator.Screen
   IsInitialized: 0
   animationTransition:
-    PushEnterAnimation: {fileID: 0}
-    PushExitAnimation: {fileID: 0}
-    PopEnterAnimation: {fileID: 0}
-    PopExitAnimation: {fileID: 0}
+    PushEnterAnimation: {fileID: 11400000, guid: 68d503bb2619d17449a50e2d10a2e5de, type: 2}
+    PushExitAnimation: {fileID: 11400000, guid: 37b3f4bd7923a6840951b8129da36c91, type: 2}
+    PopEnterAnimation: {fileID: 11400000, guid: 2104d89dc2a62324f84bce3de838870d, type: 2}
+    PopExitAnimation: {fileID: 11400000, guid: 5775c7536d953764791e5ac612d2e854, type: 2}
   buttonsBack:
   - {fileID: 6017795023300841421}
 --- !u!1 &241537716460074
