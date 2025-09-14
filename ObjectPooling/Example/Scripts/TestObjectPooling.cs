@@ -37,6 +37,7 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log($"Prewarmed addressable pool with {count} objects. Pool size: {AddressableObjectPooling.GetPoolSize(addressablePrefab)}");
         }
         
+        [ContextMenu("Spawn Regular Object")]
         public void SpawnRegularObject()
         {
             if (regularPrefab == null) return;
@@ -48,6 +49,7 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log($"Spawned regular object. Active objects: {_spawnedObjects.Count}, Pool size: {ObjectPooling.GetPoolSize(regularPrefab)}");
         }
         
+        [ContextMenu("Return All Regular Objects")]
         public void ReturnAllRegularObjects()
         {
             foreach (var obj in _spawnedObjects)
@@ -62,6 +64,7 @@ namespace Tirex.Utils.ObjectPooling
             _spawnedObjects.Clear();
         }
         
+        [ContextMenu("Spawn Addressable Object")]
         public async UniTaskVoid SpawnAddressableObject()
         {
             if (addressablePrefab == null) return;
@@ -73,6 +76,7 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log($"Spawned addressable object. Active objects: {_spawnedObjects.Count}, Pool size: {AddressableObjectPooling.GetPoolSize(addressablePrefab)}");
         }
         
+        [ContextMenu("Return All Addressable Objects")]
         public void ReturnAllAddressableObjects()
         {
             foreach (var obj in _spawnedObjects)
@@ -87,6 +91,7 @@ namespace Tirex.Utils.ObjectPooling
             _spawnedObjects.Clear();
         }
         
+        [ContextMenu("Clear Regular Pool")]
         public void ClearRegularPool()
         {
             if (regularPrefab == null) return;
@@ -95,6 +100,7 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log("Regular object pool cleared");
         }
         
+        [ContextMenu("Clear Addressable Pool")]
         public void ClearAddressablePool()
         {
             if (addressablePrefab == null) return;
@@ -103,7 +109,8 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log("Addressable object pool cleared");
         }
 
-        private void ClearAllPools()
+        [ContextMenu("Clear All Pools")]
+        public void ClearAllPools()
         {
             ObjectPooling.ClearAllPools();
             AddressableObjectPooling.UnloadAllPools();
