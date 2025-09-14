@@ -5,52 +5,71 @@ using UnityEngine;
 
 namespace TirexGame.Utils.Data
 {
-    public class DataManager : MonoSingleton<DataManager>
+    public class DataManagerConfig
     {
-        [Header("Configuration")]
-        [SerializeField] private bool enableLogging = true;
-        [SerializeField] private bool enableCaching = true;
-        [SerializeField] private int defaultCacheExpirationMinutes = 30;
-        [SerializeField] private bool enableAutoSave = true;
-        [SerializeField] private float autoSaveIntervalSeconds = 300f; 
+        public bool EnableLogging { get; set; } = true;
+        public bool EnableCaching { get; set; } = true;
+        public int DefaultCacheExpirationMinutes { get; set; } = 30;
+        public bool EnableAutoSave { get; set; } = true;
+        public float AutoSaveIntervalSeconds { get; set; } = 300f;
+    }
+
+    public static class DataManager
+    {
+        private static DataManagerConfig _config = new();
+        private static readonly Dictionary<Type, IDataRepository> _repositories = new();
+        private static readonly DataCacheManager _cacheManager = new();
+        private static readonly DataEventManager _eventManager = new();
+        private static readonly DataValidator _validator = new();
+        private static bool _isInitialized = false;
+        private static readonly object _lockObject = new object();
         
-        private readonly Dictionary<Type, IDataRepository> _repositories = new();
-        private readonly DataCacheManager _cacheManager = new();
-        private readonly DataEventManager _eventManager = new();
-        private readonly DataValidator _validator = new();
+        public static event Action<Type, object> OnDataSaved;
+        public static event Action<Type, object> OnDataLoaded;
+        public static event Action<Type, Exception> OnDataError;
         
-        public event Action<Type, object> OnDataSaved;
-        public event Action<Type, object> OnDataLoaded;
-        public event Action<Type, Exception> OnDataError;
-        
-        protected override void Initialize()
+        public static void Initialize(DataManagerConfig config = null)
         {
-            base.Initialize();
-            
-            if (enableAutoSave)
+            lock (_lockObject)
             {
-                StartAutoSave().Forget();
+                if (_isInitialized)
+                {
+                    Log("DataManager already initialized");
+                    return;
+                }
+
+                _config = config ?? new DataManagerConfig();
+                
+                if (_config.EnableAutoSave)
+                {
+                    StartAutoSave().Forget();
+                }
+                
+                _isInitialized = true;
+                Log("DataManager initialized");
             }
-            
-            Log("DataManager initialized");
         }
         
-        public void RegisterRepository<T>(IDataRepository<T> repository) where T : class, IDataModel<T>, new()
+        public static void RegisterRepository<T>(IDataRepository<T> repository) where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             _repositories[type] = repository;
             Log($"Repository registered for type: {type.Name}");
         }
         
-        public async UniTask<T> GetDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
+        public static async UniTask<T> GetDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             key ??= type.Name;
             
             try
             {
                 // Check cache first
-                if (enableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
+                if (_config.EnableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
                 {
                     Log($"Data retrieved from cache: {key}");
                     return cachedData;
@@ -75,9 +94,9 @@ namespace TirexGame.Utils.Data
                         }
                         
                         // Cache data
-                        if (enableCaching)
+                        if (_config.EnableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_config.DefaultCacheExpirationMinutes));
                         }
                         
                         OnDataLoaded?.Invoke(type, data);
@@ -105,8 +124,10 @@ namespace TirexGame.Utils.Data
             }
         }
         
-        public async UniTask<bool> SaveDataAsync<T>(T data, string key = null) where T : class, IDataModel<T>, new()
+        public static async UniTask<bool> SaveDataAsync<T>(T data, string key = null) where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             key ??= type.Name;
             
@@ -134,9 +155,9 @@ namespace TirexGame.Utils.Data
                     if (success)
                     {
                         // Update cache
-                        if (enableCaching)
+                        if (_config.EnableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_config.DefaultCacheExpirationMinutes));
                         }
                         
                         OnDataSaved?.Invoke(type, data);
@@ -158,8 +179,10 @@ namespace TirexGame.Utils.Data
             }
         }
         
-        public async UniTask<bool> DeleteDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
+        public static async UniTask<bool> DeleteDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             key ??= type.Name;
             
@@ -191,12 +214,14 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        public async UniTask<bool> ExistsAsync<T>(string key = null) where T : class, IDataModel<T>, new()
+        public static async UniTask<bool> ExistsAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             key ??= type.Name;
             
-            if (enableCaching && _cacheManager.ContainsKey(key))
+            if (_config.EnableCaching && _cacheManager.ContainsKey(key))
             {
                 return true;
             }
@@ -209,8 +234,10 @@ namespace TirexGame.Utils.Data
             return false;
         }
 
-        public async UniTask<IEnumerable<string>> GetAllKeysAsync<T>() where T : class, IDataModel<T>, new()
+        public static async UniTask<IEnumerable<string>> GetAllKeysAsync<T>() where T : class, IDataModel<T>, new()
         {
+            EnsureInitialized();
+            
             var type = typeof(T);
             
             if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepository<T> typedRepo)
@@ -221,8 +248,10 @@ namespace TirexGame.Utils.Data
             return Array.Empty<string>();
         }
 
-        public void ClearCache(string key = null)
+        public static void ClearCache(string key = null)
         {
+            EnsureInitialized();
+            
             if (string.IsNullOrEmpty(key))
             {
                 _cacheManager.ClearAll();
@@ -235,8 +264,10 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        public async UniTask SaveAllAsync()
+        public static async UniTask SaveAllAsync()
         {
+            EnsureInitialized();
+            
             Log("Auto-saving all pending data...");
             var tasks = new List<UniTask>();
             
@@ -253,61 +284,80 @@ namespace TirexGame.Utils.Data
             Log("Auto-save complete.");
         }
 
-        public void SubscribeToDataEvents<T>(
+        public static void SubscribeToDataEvents<T>(
             Action<T> onSaved = null,
             Action<T> onLoaded = null,
             Action<string> onDeleted = null) where T : class
         {
+            EnsureInitialized();
             _eventManager.Subscribe(onSaved, onLoaded, onDeleted);
         }
 
-        public void UnsubscribeFromDataEvents<T>(
+        public static void UnsubscribeFromDataEvents<T>(
             Action<T> onSaved = null,
             Action<T> onLoaded = null,
             Action<string> onDeleted = null) where T : class
         {
+            EnsureInitialized();
             _eventManager.Unsubscribe(onSaved, onLoaded, onDeleted);
         }
 
-        public DataCacheStats GetCacheStats()
+        public static DataCacheStats GetCacheStats()
         {
+            EnsureInitialized();
             return _cacheManager.GetStats();
         }
         
-        private async UniTaskVoid StartAutoSave()
+        private static async UniTaskVoid StartAutoSave()
         {
-            while (this != null && gameObject.activeInHierarchy)
+            while (_isInitialized)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(autoSaveIntervalSeconds), ignoreTimeScale: true, cancellationToken: this.GetCancellationTokenOnDestroy());
+                await UniTask.Delay(TimeSpan.FromSeconds(_config.AutoSaveIntervalSeconds), ignoreTimeScale: true);
                 
-                if (this != null)
+                if (_isInitialized)
                 {
                     await SaveAllAsync();
                 }
             }
         }
         
-        private void Log(string message)
+        private static void EnsureInitialized()
         {
-            if (enableLogging)
+            if (!_isInitialized)
+            {
+                throw new InvalidOperationException("DataManager must be initialized before use. Call DataManager.Initialize() first.");
+            }
+        }
+        
+        private static void Log(string message)
+        {
+            if (_config.EnableLogging)
             {
                 Debug.Log($"[DataManager] {message}");
             }
         }
         
-        private void LogError(string message)
+        private static void LogError(string message)
         {
-            if (enableLogging)
+            if (_config.EnableLogging)
             {
                 Debug.LogError($"[DataManager] {message}");
             }
         }
         
-        protected override void OnDestroy()
+        public static void Shutdown()
         {
-            _cacheManager.ClearAll();
-            _eventManager.ClearAll();
-            base.OnDestroy();
+            lock (_lockObject)
+            {
+                if (!_isInitialized) return;
+                
+                _cacheManager.ClearAll();
+                _eventManager.ClearAll();
+                _repositories.Clear();
+                _isInitialized = false;
+                
+                Log("DataManager shutdown");
+            }
         }
     }
 }
