@@ -104,8 +104,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: TirexGame.Utilities::Utils.Scripts.UIManager.UINavigator.Toast.Toast
   IsInitialized: 0
   animationTransition:
-    ShowAnimation: {fileID: 0}
-    HideAnimation: {fileID: 0}
+    ShowAnimation: {fileID: 11400000, guid: f9dcf4e21b148ec41956f514aab72592, type: 2}
+    HideAnimation: {fileID: 11400000, guid: b3db4494d0197e24697d136d9b8180eb, type: 2}
   contentTxt: {fileID: 2914400718501595631}
 --- !u!1 &2914400718501595625
 GameObject:

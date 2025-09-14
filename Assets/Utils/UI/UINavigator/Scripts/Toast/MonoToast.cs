@@ -10,12 +10,12 @@ namespace Utils.Scripts.UIManager.UINavigator.Toast
         private static Toast _currentToast = null;
         private static CancellationTokenSource _cancelToken;
         private static bool _isCurrentToastShowed = false;
-        public static UIContainer Container;
+        private static UIContainer _container;
         
         protected override void Awake()
         {
             base.Awake();
-            Container = this;
+            _container = this;
         }
         
         public static async UniTask ShowToast(
@@ -35,8 +35,14 @@ namespace Utils.Scripts.UIManager.UINavigator.Toast
             }
             _isCurrentToastShowed = false;
             _cancelToken = new CancellationTokenSource();
-            var parentSpawn = parent ? parent : Container.TransformContainer;
-            var toastSpawn = await Addressables.InstantiateAsync(keyAddressable, parentSpawn).Task;
+            var parentSpawn = parent ? parent : _container.TransformContainer;
+            var toastPrefab = await AddressableHelper.GetAssetAsync<GameObject>(keyAddressable);
+            if (toastPrefab is null)
+            {
+                Debug.LogError($"[Toast] Can't load toast prefab with key addressable: {keyAddressable}");
+                return;
+            }
+            var toastSpawn = Instantiate(toastPrefab, parentSpawn);
 
             var toast = toastSpawn.GetComponent<Toast>();
             if (toast is null) 

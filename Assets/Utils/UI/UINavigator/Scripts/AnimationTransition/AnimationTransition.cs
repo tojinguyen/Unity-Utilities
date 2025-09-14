@@ -27,15 +27,16 @@ namespace Utils.Scripts.UIManager.AnimationTransition
 
         public virtual async UniTask Execute(CanvasGroup target, RectTransform container = null)
         {
+            var rectContainer = container ?? (RectTransform)target.transform.parent;
             // Set initial state
-            SetInitialState(target, container);
+            SetInitialState(target, rectContainer);
 
             // Start parallel animations
             AnimateFade(target);
             AnimateScale(target);
     
             // Wait for position animation to complete
-            await AnimatePosition(target, container ?? (RectTransform)target.transform);
+            await AnimatePosition(target, rectContainer);
         }
 
         public async UniTask Execute(CanvasGroup target, Vector2 position, bool isLocalPosition = false)
@@ -50,13 +51,12 @@ namespace Utils.Scripts.UIManager.AnimationTransition
             await AnimateScale(target).AsyncWaitForCompletion();
         }
 
-        private Vector3 GetPosition(PositionTransitionEnum position, RectTransform target, RectTransform container,
-            Vector3 offset)
+        private Vector3 GetPosition(PositionTransitionEnum position, RectTransform target, RectTransform container, Vector3 offset)
         {
             var targetSize = target.rect;
             var containerSize = container.rect;
 
-            Vector3 calculatedPosition = position switch
+            var calculatedPosition = position switch
             {
                 PositionTransitionEnum.Center => Vector3.zero,
                 PositionTransitionEnum.Top => new Vector3(0, (targetSize.height + containerSize.height) / 2, 0),
@@ -73,8 +73,7 @@ namespace Utils.Scripts.UIManager.AnimationTransition
         {
             target.alpha = alphaBefore;
             target.transform.localScale = scaleBefore;
-            target.transform.localPosition =
-                GetPosition(positionBefore, (RectTransform)target.transform, container, offsetBefore);
+            target.transform.localPosition = GetPosition(positionBefore, (RectTransform)target.transform, container, offsetBefore);
         }
 
         private void SetInitialState(CanvasGroup target, Vector2 position, bool isLocalPosition)
