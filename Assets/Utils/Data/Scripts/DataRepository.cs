@@ -1,20 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Generic data repository interface for CRUD operations
-    /// </summary>
+    public class DataAccessException : Exception
+    {
+        public DataAccessException(string message, Exception innerException) : base(message, innerException) { }
+    }
+    
     public interface IDataRepository
     {
         UniTask SaveAllAsync();
+        Type GetDataType();
     }
     
-    /// <summary>
-    /// Generic data repository interface for specific data type
-    /// </summary>
     public interface IDataRepository<T> : IDataRepository where T : class, IDataModel<T>
     {
         UniTask<T> LoadAsync(string key);
@@ -24,69 +26,57 @@ namespace TirexGame.Utils.Data
         UniTask<IEnumerable<string>> GetAllKeysAsync();
     }
     
-    /// <summary>
-    /// File-based implementation of data repository
-    /// </summary>
     public class FileDataRepository<T> : IDataRepository<T> where T : class, IDataModel<T>, new()
     {
         private readonly string _basePath;
         private readonly bool _useEncryption;
         private readonly bool _useCompression;
-        private readonly string _encryptionKey;
-        private readonly string _encryptionIv;
         
-        public FileDataRepository(string basePath = null, bool useEncryption = false, bool useCompression = false, 
-            string encryptionKey = null, string encryptionIv = null)
+        public FileDataRepository(string basePath = null, bool useEncryption = true, bool useCompression = true)
         {
             _basePath = basePath ?? UnityEngine.Application.persistentDataPath;
             _useEncryption = useEncryption;
             _useCompression = useCompression;
-            _encryptionKey = encryptionKey ?? "1234567890123456";
-            _encryptionIv = encryptionIv ?? "6543210987654321";
         }
+        
+        public Type GetDataType() => typeof(T);
         
         public async UniTask<T> LoadAsync(string key)
         {
             try
             {
                 var filePath = GetFilePath(key);
-                
                 if (!System.IO.File.Exists(filePath))
                 {
                     return null;
                 }
                 
-                var data = await System.IO.File.ReadAllBytesAsync(filePath);
+                var fileBytes = await System.IO.File.ReadAllBytesAsync(filePath);
                 
-                if (_useEncryption)
+                // Flow Decode: File Bytes -> Decrypt -> Compressed Bytes -> Decompress -> JSON String
+                var dataBytes = _useEncryption ? DataEncryptor.Decrypt(fileBytes) : fileBytes;
+                string json;
+                
+                if (_useCompression)
                 {
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes(_encryptionKey);
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes(_encryptionIv);
-                    var json = DataEncryptor.Decrypt(data, keyBytes, ivBytes);
-                    
-                    if (_useCompression)
+                    var decompressedResult = await DataCompressor.DecompressBytesAsync(dataBytes);
+                    if (!decompressedResult.Success)
                     {
-                        json = DataCompressor.Decompress(json);
+                        throw new Exception($"Decompression failed: {decompressedResult.Error}");
                     }
-                    
-                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                    json = Encoding.UTF8.GetString(decompressedResult.Data);
                 }
                 else
                 {
-                    var json = System.Text.Encoding.UTF8.GetString(data);
-                    
-                    if (_useCompression)
-                    {
-                        json = DataCompressor.Decompress(json);
-                    }
-                    
-                    return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
+                    json = Encoding.UTF8.GetString(dataBytes);
                 }
+                
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(json);
             }
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogError($"[FileDataRepository] Failed to load {key}: {ex.Message}");
-                return null;
+                throw new DataAccessException($"Failed to load data for key '{key}'.", ex);
             }
         }
         
@@ -104,33 +94,31 @@ namespace TirexGame.Utils.Data
                 
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented);
                 
+                // Flow encode: JSON String -> Compress -> Compressed Bytes -> Encrypt -> File Bytes
+                var dataBytes = Encoding.UTF8.GetBytes(json);
+                
                 if (_useCompression)
                 {
-                    json = DataCompressor.Compress(json);
+                    var compressedResult = await DataCompressor.CompressBytesAsync(dataBytes);
+                    if (!compressedResult.Success)
+                    {
+                        throw new Exception($"Compression failed: {compressedResult.Error}");
+                    }
+                    dataBytes = compressedResult.Data;
                 }
-                
-                if (_useEncryption)
-                {
-                    var keyBytes = System.Text.Encoding.UTF8.GetBytes(_encryptionKey);
-                    var ivBytes = System.Text.Encoding.UTF8.GetBytes(_encryptionIv);
-                    var encryptedData = DataEncryptor.Encrypt(json, keyBytes, ivBytes);
-                    await System.IO.File.WriteAllBytesAsync(filePath, encryptedData);
-                }
-                else
-                {
-                    var dataBytes = System.Text.Encoding.UTF8.GetBytes(json);
-                    await System.IO.File.WriteAllBytesAsync(filePath, dataBytes);
-                }
-                
+
+                var fileBytes = _useEncryption ? DataEncryptor.Encrypt(dataBytes) : dataBytes;
+
+                await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
                 return true;
             }
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogError($"[FileDataRepository] Failed to save {key}: {ex.Message}");
-                return false;
+                throw new DataAccessException($"Failed to save data for key '{key}'.", ex);
             }
         }
-        
+
         public async UniTask<bool> DeleteAsync(string key)
         {
             try
@@ -166,37 +154,28 @@ namespace TirexGame.Utils.Data
                 
                 if (!System.IO.Directory.Exists(typeFolder))
                 {
-                    return new string[0];
+                    return Enumerable.Empty<string>();
                 }
                 
-                var files = await UniTask.RunOnThreadPool(() => System.IO.Directory.GetFiles(typeFolder, "*.json"));
-                var keys = new List<string>();
-                
-                foreach (var file in files)
-                {
-                    var fileName = System.IO.Path.GetFileNameWithoutExtension(file);
-                    keys.Add(fileName);
-                }
-                
-                return keys;
+                var files = await UniTask.RunOnThreadPool(() => System.IO.Directory.GetFiles(typeFolder, "*.dat"));
+                return files.Select(System.IO.Path.GetFileNameWithoutExtension).ToList();
             }
             catch (Exception ex)
             {
                 UnityEngine.Debug.LogError($"[FileDataRepository] Failed to get all keys: {ex.Message}");
-                return new string[0];
+                return Enumerable.Empty<string>();
             }
         }
         
         public async UniTask SaveAllAsync()
         {
-            // For file repository, individual saves are already persistent
             await UniTask.CompletedTask;
         }
         
         private string GetFilePath(string key)
         {
             var sanitizedKey = SanitizeFileName(key);
-            return System.IO.Path.Combine(_basePath, typeof(T).Name, $"{sanitizedKey}.json");
+            return System.IO.Path.Combine(_basePath, typeof(T).Name, $"{sanitizedKey}.dat");
         }
         
         private string SanitizeFileName(string fileName)
@@ -213,17 +192,16 @@ namespace TirexGame.Utils.Data
         }
     }
     
-    /// <summary>
-    /// Memory-based implementation of data repository (for testing or temporary data)
-    /// </summary>
     public class MemoryDataRepository<T> : IDataRepository<T> where T : class, IDataModel<T>
     {
         private readonly Dictionary<string, T> _data = new();
         
+        public Type GetDataType() => typeof(T);
+        
         public async UniTask<T> LoadAsync(string key)
         {
             await UniTask.CompletedTask;
-            return _data.TryGetValue(key, out var data) ? data : null;
+            return _data.GetValueOrDefault(key);
         }
         
         public async UniTask<bool> SaveAsync(string key, T data)
@@ -254,7 +232,6 @@ namespace TirexGame.Utils.Data
         public async UniTask SaveAllAsync()
         {
             await UniTask.CompletedTask;
-            // Memory repository doesn't need to save
         }
     }
 }

@@ -8,9 +8,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Compression statistics for monitoring performance
-    /// </summary>
     public class CompressionStats
     {
         public long OriginalSize { get; set; }
@@ -21,9 +18,6 @@ namespace TirexGame.Utils.Data
         public TimeSpan DecompressionTime { get; internal set; }
     }
 
-    /// <summary>
-    /// Compression result containing data and statistics
-    /// </summary>
     public class CompressionResult
     {
         public byte[] Data { get; internal set; }
@@ -32,9 +26,6 @@ namespace TirexGame.Utils.Data
         public string Error { get; internal set; }
     }
 
-    /// <summary>
-    /// Decompression result containing data and statistics
-    /// </summary>
     public class DecompressionResult
     {
         public byte[] Data { get; set; }
@@ -43,14 +34,8 @@ namespace TirexGame.Utils.Data
         public string Error { get; set; }
     }
 
-    /// <summary>
-    /// Data compression utility with multiple algorithms and performance monitoring
-    /// </summary>
     public static class DataCompressor
     {
-        /// <summary>
-        /// Available compression algorithms
-        /// </summary>
         public enum CompressionAlgorithm
         {
             GZip,
@@ -58,9 +43,6 @@ namespace TirexGame.Utils.Data
             Brotli
         }
 
-        /// <summary>
-        /// Compression levels for algorithms that support it
-        /// </summary>
         public enum CompressionLevel
         {
             Optimal = 0,
@@ -69,9 +51,6 @@ namespace TirexGame.Utils.Data
             MaxCompression = 3
         }
 
-        /// <summary>
-        /// Compress string data using specified algorithm
-        /// </summary>
         public static async Task<CompressionResult> CompressStringAsync(
             string data,
             CompressionAlgorithm algorithm = CompressionAlgorithm.GZip,
@@ -101,9 +80,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Compress byte array using specified algorithm
-        /// </summary>
         public static async Task<CompressionResult> CompressBytesAsync(
             byte[] data,
             CompressionAlgorithm algorithm = CompressionAlgorithm.GZip,
@@ -172,9 +148,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Decompress data to string using specified algorithm
-        /// </summary>
         public static async Task<DecompressionResult> DecompressToStringAsync(
             byte[] compressedData,
             CompressionAlgorithm algorithm = CompressionAlgorithm.GZip)
@@ -194,7 +167,7 @@ namespace TirexGame.Utils.Data
                 var stringData = Encoding.UTF8.GetString(result.Data);
                 return new DecompressionResult
                 {
-                    Data = Encoding.UTF8.GetBytes(stringData), // Return as bytes for consistency
+                    Data = Encoding.UTF8.GetBytes(stringData),
                     Stats = result.Stats,
                     Success = true
                 };
@@ -210,9 +183,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Decompress byte array using specified algorithm
-        /// </summary>
         public static async Task<DecompressionResult> DecompressBytesAsync(
             byte[] compressedData,
             CompressionAlgorithm algorithm = CompressionAlgorithm.GZip)
@@ -280,18 +250,11 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Compress JSON string with optimal settings for JSON data
-        /// </summary>
         public static async Task<CompressionResult> CompressJsonAsync(string jsonData)
         {
-            // JSON typically compresses well with GZip at optimal level
             return await CompressStringAsync(jsonData);
         }
 
-        /// <summary>
-        /// Decompress JSON data back to string
-        /// </summary>
         public static async Task<string> DecompressJsonAsync(byte[] compressedJsonData)
         {
             var result = await DecompressToStringAsync(compressedJsonData);
@@ -305,9 +268,6 @@ namespace TirexGame.Utils.Data
             return Encoding.UTF8.GetString(result.Data);
         }
 
-        /// <summary>
-        /// Test compression efficiency for given data with different algorithms
-        /// </summary>
         public static async Task<Dictionary<CompressionAlgorithm, CompressionStats>> TestCompressionEfficiencyAsync(byte[] data)
         {
             var results = new Dictionary<CompressionAlgorithm, CompressionStats>();
@@ -331,42 +291,28 @@ namespace TirexGame.Utils.Data
             return results;
         }
 
-        /// <summary>
-        /// Get recommended compression algorithm for given data size
-        /// </summary>
         public static CompressionAlgorithm GetRecommendedAlgorithm(long dataSize)
         {
-            // Small data: Use Deflate for speed
-            if (dataSize < 1024) // < 1KB
+            if (dataSize < 1024)
                 return CompressionAlgorithm.Deflate;
             
-            // Medium data: Use GZip for balance
-            if (dataSize < 1024 * 1024) // < 1MB
+            if (dataSize < 1024 * 1024)
                 return CompressionAlgorithm.GZip;
             
-            // Large data: Use Brotli for best compression
             return CompressionAlgorithm.Brotli;
         }
 
-        /// <summary>
-        /// Check if compression would be beneficial for given data
-        /// </summary>
         public static bool ShouldCompress(byte[] data, double minCompressionRatio = 0.8)
         {
-            if (data == null || data.Length < 100) // Don't compress very small data
+            if (data == null || data.Length < 100) 
                 return false;
 
-            // Quick heuristic: Check entropy of first 1KB
             var sampleSize = Math.Min(1024, data.Length);
             var entropy = CalculateEntropy(data, sampleSize);
             
-            // High entropy data (like already compressed or encrypted) won't compress well
-            return entropy < 7.5; // Threshold for compressible data
+            return entropy < 7.5;
         }
 
-        /// <summary>
-        /// Calculate Shannon entropy for data sample
-        /// </summary>
         private static double CalculateEntropy(byte[] data, int sampleSize)
         {
             var frequency = new int[256];
@@ -389,9 +335,6 @@ namespace TirexGame.Utils.Data
             return entropy;
         }
 
-        /// <summary>
-        /// Convert compression level enum to system compression level
-        /// </summary>
         private static System.IO.Compression.CompressionLevel GetCompressionLevel(CompressionLevel level)
         {
             return level switch
@@ -404,9 +347,6 @@ namespace TirexGame.Utils.Data
             };
         }
 
-        /// <summary>
-        /// Format file size for human-readable display
-        /// </summary>
         public static string FormatFileSize(long bytes)
         {
             string[] sizes = { "B", "KB", "MB", "GB", "TB" };
@@ -420,37 +360,6 @@ namespace TirexGame.Utils.Data
             }
 
             return $"{len:0.##} {sizes[order]}";
-        }
-        
-        /// <summary>
-        /// Helper methods for DataRepository compatibility
-        /// </summary>
-        public static string Compress(string data)
-        {
-            var result = CompressStringAsync(data).GetAwaiter().GetResult();
-            if (result.Success)
-            {
-                return Convert.ToBase64String(result.Data);
-            }
-            return data;
-        }
-        
-        public static string Decompress(string compressedData)
-        {
-            try
-            {
-                var bytes = Convert.FromBase64String(compressedData);
-                var result = DecompressBytesAsync(bytes).GetAwaiter().GetResult();
-                if (result.Success)
-                {
-                    return Encoding.UTF8.GetString(result.Data);
-                }
-            }
-            catch
-            {
-                // If decompression fails, return original data
-            }
-            return compressedData;
         }
     }
 }
