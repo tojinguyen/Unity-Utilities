@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -82,7 +81,7 @@ namespace TirexGame.Utils.LoadingScene
         private ILoadingUIController _uiController;
         private CancellationTokenSource _cancellationTokenSource;
         private bool _isLoading;
-        private Stopwatch _loadingStopwatch;
+        private System.Diagnostics.Stopwatch _loadingStopwatch;
         
         #endregion
 
@@ -236,7 +235,7 @@ namespace TirexGame.Utils.LoadingScene
         
         private void Initialize()
         {
-            _loadingStopwatch = new Stopwatch();
+            _loadingStopwatch = new System.Diagnostics.Stopwatch();
             DebugLog("LoadingManager initialized");
         }
         

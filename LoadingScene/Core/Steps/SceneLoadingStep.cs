@@ -147,7 +147,7 @@ namespace TirexGame.Utils.LoadingScene
         private async Task UnloadSceneAsync()
         {
             DebugLog($"Unloading scene: {_sceneToUnload}");
-            UpdateProgress(0.1f);
+            UpdateProgressInternal(0.1f);
             
             ThrowIfCancelled();
             
@@ -162,7 +162,7 @@ namespace TirexGame.Utils.LoadingScene
             while (!_unloadOperation.isDone && !_isCancelled)
             {
                 float unloadProgress = Mathf.Clamp01(_unloadOperation.progress / 0.9f);
-                UpdateProgress(0.1f + unloadProgress * 0.2f); // 10% to 30%
+                UpdateProgressInternal(0.1f + unloadProgress * 0.2f); // 10% to 30%
                 await Task.Yield();
             }
             
@@ -175,7 +175,7 @@ namespace TirexGame.Utils.LoadingScene
             DebugLog($"Starting scene load: {(_useSceneName ? _sceneName : _sceneBuildIndex.ToString())}");
             
             float startProgress = _loadMode == SceneLoadMode.Replace && !string.IsNullOrEmpty(_sceneToUnload) ? 0.3f : 0.1f;
-            UpdateProgress(startProgress);
+            UpdateProgressInternal(startProgress);
             
             ThrowIfCancelled();
             
@@ -209,7 +209,7 @@ namespace TirexGame.Utils.LoadingScene
                 float normalizedProgress = rawProgress < 0.9f ? rawProgress / 0.9f : 1f;
                 
                 float totalProgress = startProgress + normalizedProgress * (0.8f - startProgress); // startProgress to 80%
-                UpdateProgress(totalProgress);
+                UpdateProgressInternal(totalProgress);
                 
                 // If we're waiting for manual activation and loading is ready
                 if (!_allowSceneActivation && rawProgress >= 0.9f)
@@ -224,14 +224,14 @@ namespace TirexGame.Utils.LoadingScene
             
             ThrowIfCancelled();
             
-            UpdateProgress(0.8f);
+            UpdateProgressInternal(0.8f);
             DebugLog($"Scene loaded: {(_useSceneName ? _sceneName : _sceneBuildIndex.ToString())}");
         }
         
         private async Task UnloadUnusedAssetsAsync()
         {
             DebugLog("Unloading unused assets...");
-            UpdateProgress(0.85f);
+            UpdateProgressInternal(0.85f);
             
             ThrowIfCancelled();
             
@@ -240,7 +240,7 @@ namespace TirexGame.Utils.LoadingScene
             while (!unloadAssetsOperation.isDone && !_isCancelled)
             {
                 float unloadProgress = unloadAssetsOperation.progress;
-                UpdateProgress(0.85f + unloadProgress * 0.15f); // 85% to 100%
+                UpdateProgressInternal(0.85f + unloadProgress * 0.15f); // 85% to 100%
                 await Task.Yield();
             }
             

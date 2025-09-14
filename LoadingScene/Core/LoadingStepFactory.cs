@@ -78,7 +78,7 @@ namespace TirexGame.Utils.LoadingScene
         /// <param name="description">Mô tả step</param>
         /// <param name="weight">Trọng số</param>
         /// <returns>CustomLoadingStep instance</returns>
-        public static CustomLoadingStep CreateCustom(System.Action<ILoadingStep> action, 
+        public static CustomLoadingStep CreateCustomSync(System.Action<ILoadingStep> action, 
             string stepName, string description = "", float weight = 1f)
         {
             return new CustomLoadingStep(action, stepName, description, weight);

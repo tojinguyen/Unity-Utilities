@@ -113,10 +113,19 @@ namespace TirexGame.Utils.LoadingScene
         protected abstract Task ExecuteStepAsync();
         
         /// <summary>
+        /// Cập nhật tiến độ của step này (Implementation của ILoadingStep)
+        /// </summary>
+        /// <param name="progress">Progress value (0-1)</param>
+        public void UpdateProgress(float progress)
+        {
+            UpdateProgressInternal(progress);
+        }
+        
+        /// <summary>
         /// Helper method để cập nhật progress an toàn
         /// </summary>
         /// <param name="progress">Progress value (0-1)</param>
-        protected void UpdateProgress(float progress)
+        protected void UpdateProgressInternal(float progress)
         {
             if (!_isCancelled && !_isCompleted)
             {

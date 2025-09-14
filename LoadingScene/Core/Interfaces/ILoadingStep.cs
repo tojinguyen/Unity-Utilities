@@ -64,5 +64,11 @@ namespace TirexGame.Utils.LoadingScene
         /// Reset bước loading về trạng thái ban đầu
         /// </summary>
         void Reset();
+        
+        /// <summary>
+        /// Cập nhật tiến độ của step này
+        /// </summary>
+        /// <param name="progress">Giá trị tiến độ (0-1)</param>
+        void UpdateProgress(float progress);
     }
 }

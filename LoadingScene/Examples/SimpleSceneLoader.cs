@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -53,7 +54,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
         /// Load scene theo tên
         /// </summary>
         /// <param name="sceneName">Tên scene cần load</param>
-        public async void LoadSceneByName(string sceneName)
+        public async UniTask LoadSceneByName(string sceneName)
         {
             if (string.IsNullOrEmpty(sceneName))
             {
