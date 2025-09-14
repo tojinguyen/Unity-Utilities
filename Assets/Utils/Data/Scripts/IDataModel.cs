@@ -1,4 +1,7 @@
-public interface IDataModel<T>
+namespace TirexGame.Utils.Data
 {
-    public void SetDefaultData();
+    public interface IDataModel<T>
+    {
+        public void SetDefaultData();
+    }
 }

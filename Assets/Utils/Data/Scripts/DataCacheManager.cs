@@ -4,9 +4,6 @@ using System.Linq;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Statistics for data cache performance monitoring
-    /// </summary>
     public class DataCacheStats
     {
         public int TotalItems { get; set; }
@@ -19,9 +16,6 @@ namespace TirexGame.Utils.Data
         public DateTime LastCleanup { get; set; }
     }
 
-    /// <summary>
-    /// Cached data entry with expiration support
-    /// </summary>
     internal class CacheEntry
     {
         public object Data { get; set; }
@@ -59,9 +53,6 @@ namespace TirexGame.Utils.Data
         }
     }
 
-    /// <summary>
-    /// High-performance data cache manager with expiration and statistics
-    /// </summary>
     public class DataCacheManager
     {
         private readonly Dictionary<string, CacheEntry> _cache = new();
@@ -74,7 +65,7 @@ namespace TirexGame.Utils.Data
         private DateTime _lastCleanup = DateTime.UtcNow;
 
         public DataCacheManager(
-            long maxMemoryBytes = 50 * 1024 * 1024, // 50MB default
+            long maxMemoryBytes = 50 * 1024 * 1024, 
             TimeSpan? defaultExpiration = null,
             TimeSpan? cleanupInterval = null)
         {
@@ -83,9 +74,6 @@ namespace TirexGame.Utils.Data
             _cleanupInterval = cleanupInterval ?? TimeSpan.FromMinutes(5);
         }
 
-        /// <summary>
-        /// Cache data with specified expiration
-        /// </summary>
         public void Cache<T>(string key, T data, TimeSpan? expiration = null) where T : class
         {
             if (string.IsNullOrEmpty(key) || data == null) return;
@@ -95,7 +83,6 @@ namespace TirexGame.Utils.Data
                 var exp = expiration ?? _defaultExpiration;
                 var entry = new CacheEntry(data, exp);
 
-                // Check memory constraints
                 if (_stats.MemoryUsageBytes + entry.SizeBytes > _maxMemoryBytes)
                 {
                     EvictLeastRecentlyUsed();
@@ -107,9 +94,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Try to get cached data
-        /// </summary>
         public bool TryGetCached<T>(string key, out T data) where T : class
         {
             data = null;
@@ -143,9 +127,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Check if key exists in cache (without updating access stats)
-        /// </summary>
         public bool ContainsKey(string key)
         {
             if (string.IsNullOrEmpty(key)) return false;
@@ -167,9 +148,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Remove specific item from cache
-        /// </summary>
         public bool RemoveFromCache(string key)
         {
             if (string.IsNullOrEmpty(key)) return false;
@@ -185,9 +163,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Clear all cached data
-        /// </summary>
         public void ClearAll()
         {
             lock (_lock)
@@ -198,9 +173,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get cache statistics
-        /// </summary>
         public DataCacheStats GetStats()
         {
             lock (_lock)
@@ -219,9 +191,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Manually trigger cache cleanup
-        /// </summary>
         public void Cleanup()
         {
             lock (_lock)
@@ -242,9 +211,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get all cached keys
-        /// </summary>
         public IEnumerable<string> GetAllKeys()
         {
             lock (_lock)
@@ -253,9 +219,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get cache entry information
-        /// </summary>
         public bool TryGetCacheInfo(string key, out DateTime cachedAt, out DateTime expiresAt, out int accessCount)
         {
             cachedAt = default;
@@ -294,7 +257,6 @@ namespace TirexGame.Utils.Data
         {
             if (_cache.Count == 0) return;
 
-            // Find least recently used entry
             var lruEntry = _cache
                 .OrderBy(kvp => kvp.Value.LastAccessed)
                 .First();
