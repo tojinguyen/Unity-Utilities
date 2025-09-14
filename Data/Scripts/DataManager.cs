@@ -5,25 +5,20 @@ using UnityEngine;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Centralized data management service that provides unified access to all data operations
-    /// </summary>
     public class DataManager : MonoSingleton<DataManager>
     {
         [Header("Configuration")]
-        [SerializeField] private bool _enableLogging = true;
-        [SerializeField] private bool _enableCaching = true;
-        [SerializeField] private int _defaultCacheExpirationMinutes = 30;
-        [SerializeField] private bool _enableAutoSave = true;
-        [SerializeField] private float _autoSaveIntervalSeconds = 300f; // 5 minutes
+        [SerializeField] private bool enableLogging = true;
+        [SerializeField] private bool enableCaching = true;
+        [SerializeField] private int defaultCacheExpirationMinutes = 30;
+        [SerializeField] private bool enableAutoSave = true;
+        [SerializeField] private float autoSaveIntervalSeconds = 300f; 
         
         private readonly Dictionary<Type, IDataRepository> _repositories = new();
         private readonly DataCacheManager _cacheManager = new();
         private readonly DataEventManager _eventManager = new();
         private readonly DataValidator _validator = new();
-        private readonly DataBackupManager _backupManager = new();
         
-        // Events
         public event Action<Type, object> OnDataSaved;
         public event Action<Type, object> OnDataLoaded;
         public event Action<Type, Exception> OnDataError;
@@ -32,17 +27,14 @@ namespace TirexGame.Utils.Data
         {
             base.Initialize();
             
-            if (_enableAutoSave)
+            if (enableAutoSave)
             {
-                StartAutoSave();
+                StartAutoSave().Forget();
             }
             
             Log("DataManager initialized");
         }
         
-        /// <summary>
-        /// Register a data repository for a specific data type
-        /// </summary>
         public void RegisterRepository<T>(IDataRepository<T> repository) where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
@@ -50,9 +42,6 @@ namespace TirexGame.Utils.Data
             Log($"Repository registered for type: {type.Name}");
         }
         
-        /// <summary>
-        /// Get data with caching support
-        /// </summary>
         public async UniTask<T> GetDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
@@ -61,7 +50,7 @@ namespace TirexGame.Utils.Data
             try
             {
                 // Check cache first
-                if (_enableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
+                if (enableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
                 {
                     Log($"Data retrieved from cache: {key}");
                     return cachedData;
@@ -79,17 +68,20 @@ namespace TirexGame.Utils.Data
                         if (!validationResult.IsValid)
                         {
                             LogError($"Data validation failed for {key}: {string.Join(", ", validationResult.Errors)}");
-                            return null;
+                            // Trả về dữ liệu mặc định nếu dữ liệu đã lưu bị lỗi
+                            var defaultDataOnFail = new T();
+                            defaultDataOnFail.SetDefaultData();
+                            return defaultDataOnFail;
                         }
                         
                         // Cache data
-                        if (_enableCaching)
+                        if (enableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
                         }
                         
                         OnDataLoaded?.Invoke(type, data);
-                        _eventManager.RaiseDataLoaded(type, data);
+                        _eventManager.RaiseDataLoaded(type, data, key);
                         
                         Log($"Data loaded: {key}");
                         return data;
@@ -97,21 +89,22 @@ namespace TirexGame.Utils.Data
                 }
                 
                 // Return default if not found
+                Log($"No data found for {key}, creating default.");
                 var defaultData = new T();
                 defaultData.SetDefaultData();
                 return defaultData;
             }
-            catch (Exception ex)
+            catch (DataAccessException ex) // Bắt lỗi cụ thể từ repository
             {
                 LogError($"Failed to get data {key}: {ex.Message}");
                 OnDataError?.Invoke(type, ex);
-                throw;
+                // Nếu load lỗi, trả về dữ liệu mặc định để game không bị crash
+                var defaultDataOnError = new T();
+                defaultDataOnError.SetDefaultData();
+                return defaultDataOnError;
             }
         }
         
-        /// <summary>
-        /// Save data with validation and caching
-        /// </summary>
         public async UniTask<bool> SaveDataAsync<T>(T data, string key = null) where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
@@ -133,9 +126,6 @@ namespace TirexGame.Utils.Data
                     return false;
                 }
                 
-                // Create backup before saving
-                await _backupManager.CreateBackupAsync(key, data);
-                
                 // Save through repository
                 if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepository<T> typedRepo)
                 {
@@ -144,13 +134,13 @@ namespace TirexGame.Utils.Data
                     if (success)
                     {
                         // Update cache
-                        if (_enableCaching)
+                        if (enableCaching)
                         {
-                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_defaultCacheExpirationMinutes));
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(defaultCacheExpirationMinutes));
                         }
                         
                         OnDataSaved?.Invoke(type, data);
-                        _eventManager.RaiseDataSaved(type, data);
+                        _eventManager.RaiseDataSaved(type, data, key);
                         
                         Log($"Data saved: {key}");
                         return true;
@@ -160,7 +150,7 @@ namespace TirexGame.Utils.Data
                 LogError($"No repository found for type: {type.Name}");
                 return false;
             }
-            catch (Exception ex)
+            catch (DataAccessException ex)
             {
                 LogError($"Failed to save data {key}: {ex.Message}");
                 OnDataError?.Invoke(type, ex);
@@ -168,9 +158,6 @@ namespace TirexGame.Utils.Data
             }
         }
         
-        /// <summary>
-        /// Delete data
-        /// </summary>
         public async UniTask<bool> DeleteDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
@@ -178,13 +165,6 @@ namespace TirexGame.Utils.Data
             
             try
             {
-                // Create backup before deletion
-                var existingData = await GetDataAsync<T>(key);
-                if (existingData != null)
-                {
-                    await _backupManager.CreateBackupAsync(key, existingData);
-                }
-                
                 // Delete from repository
                 if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepository<T> typedRepo)
                 {
@@ -210,22 +190,17 @@ namespace TirexGame.Utils.Data
                 return false;
             }
         }
-        
-        /// <summary>
-        /// Check if data exists
-        /// </summary>
+
         public async UniTask<bool> ExistsAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
             key ??= type.Name;
             
-            // Check cache first
-            if (_enableCaching && _cacheManager.ContainsKey(key))
+            if (enableCaching && _cacheManager.ContainsKey(key))
             {
                 return true;
             }
             
-            // Check repository
             if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepository<T> typedRepo)
             {
                 return await typedRepo.ExistsAsync(key);
@@ -233,10 +208,7 @@ namespace TirexGame.Utils.Data
             
             return false;
         }
-        
-        /// <summary>
-        /// Get all data keys for a type
-        /// </summary>
+
         public async UniTask<IEnumerable<string>> GetAllKeysAsync<T>() where T : class, IDataModel<T>, new()
         {
             var type = typeof(T);
@@ -246,12 +218,9 @@ namespace TirexGame.Utils.Data
                 return await typedRepo.GetAllKeysAsync();
             }
             
-            return new string[0];
+            return Array.Empty<string>();
         }
-        
-        /// <summary>
-        /// Clear cache for a specific key or all cache
-        /// </summary>
+
         public void ClearCache(string key = null)
         {
             if (string.IsNullOrEmpty(key))
@@ -265,12 +234,10 @@ namespace TirexGame.Utils.Data
                 Log($"Cache cleared for key: {key}");
             }
         }
-        
-        /// <summary>
-        /// Save all cached data
-        /// </summary>
+
         public async UniTask SaveAllAsync()
         {
+            Log("Auto-saving all pending data...");
             var tasks = new List<UniTask>();
             
             foreach (var kvp in _repositories)
@@ -283,12 +250,9 @@ namespace TirexGame.Utils.Data
             }
             
             await UniTask.WhenAll(tasks);
-            Log("All data saved");
+            Log("Auto-save complete.");
         }
-        
-        /// <summary>
-        /// Subscribe to data events
-        /// </summary>
+
         public void SubscribeToDataEvents<T>(
             Action<T> onSaved = null,
             Action<T> onLoaded = null,
@@ -296,53 +260,25 @@ namespace TirexGame.Utils.Data
         {
             _eventManager.Subscribe(onSaved, onLoaded, onDeleted);
         }
-        
-        /// <summary>
-        /// Unsubscribe from data events
-        /// </summary>
-        public void UnsubscribeFromDataEvents<T>() where T : class
+
+        public void UnsubscribeFromDataEvents<T>(
+            Action<T> onSaved = null,
+            Action<T> onLoaded = null,
+            Action<string> onDeleted = null) where T : class
         {
-            _eventManager.Unsubscribe<T>();
+            _eventManager.Unsubscribe(onSaved, onLoaded, onDeleted);
         }
-        
-        /// <summary>
-        /// Get cache statistics
-        /// </summary>
+
         public DataCacheStats GetCacheStats()
         {
             return _cacheManager.GetStats();
         }
         
-        /// <summary>
-        /// Create a backup of all data
-        /// </summary>
-        public async UniTask<string> CreateFullBackupAsync()
-        {
-            var backupId = await _backupManager.CreateFullBackupAsync(_repositories);
-            Log("Full backup created");
-            return backupId;
-        }
-        
-        /// <summary>
-        /// Restore data from backup
-        /// </summary>
-        public async UniTask<bool> RestoreFromBackupAsync(string backupId)
-        {
-            var result = await _backupManager.RestoreFromBackupAsync(backupId, _repositories);
-            if (result.Success)
-            {
-                ClearCache(); // Clear cache after restore
-                Log($"Data restored from backup: {backupId}");
-                return true;
-            }
-            return false;
-        }
-        
-        private async void StartAutoSave()
+        private async UniTaskVoid StartAutoSave()
         {
             while (this != null && gameObject.activeInHierarchy)
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(_autoSaveIntervalSeconds));
+                await UniTask.Delay(TimeSpan.FromSeconds(autoSaveIntervalSeconds), ignoreTimeScale: true, cancellationToken: this.GetCancellationTokenOnDestroy());
                 
                 if (this != null)
                 {
@@ -353,7 +289,7 @@ namespace TirexGame.Utils.Data
         
         private void Log(string message)
         {
-            if (_enableLogging)
+            if (enableLogging)
             {
                 Debug.Log($"[DataManager] {message}");
             }
@@ -361,7 +297,7 @@ namespace TirexGame.Utils.Data
         
         private void LogError(string message)
         {
-            if (_enableLogging)
+            if (enableLogging)
             {
                 Debug.LogError($"[DataManager] {message}");
             }

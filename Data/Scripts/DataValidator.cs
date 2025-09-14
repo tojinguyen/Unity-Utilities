@@ -7,9 +7,6 @@ using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Data validation result
-    /// </summary>
     public class DataValidationResult
     {
         public bool IsValid { get; set; }
@@ -17,18 +14,12 @@ namespace TirexGame.Utils.Data
         public List<string> Warnings { get; set; } = new();
     }
     
-    /// <summary>
-    /// Base validation attribute
-    /// </summary>
     public abstract class DataValidationAttribute : Attribute
     {
         public string ErrorMessage { get; set; }
         public abstract bool IsValid(object value);
     }
     
-    /// <summary>
-    /// Required field validation
-    /// </summary>
     public class RequiredAttribute : DataValidationAttribute
     {
         public RequiredAttribute()
@@ -43,10 +34,7 @@ namespace TirexGame.Utils.Data
             return true;
         }
     }
-    
-    /// <summary>
-    /// Range validation for numeric values
-    /// </summary>
+
     public class RangeAttribute : DataValidationAttribute
     {
         public double Min { get; }
@@ -67,10 +55,7 @@ namespace TirexGame.Utils.Data
             return doubleValue >= Min && doubleValue <= Max;
         }
     }
-    
-    /// <summary>
-    /// String length validation
-    /// </summary>
+
     public class StringLengthAttribute : DataValidationAttribute
     {
         public int MaxLength { get; }
@@ -89,10 +74,7 @@ namespace TirexGame.Utils.Data
             return str.Length >= MinLength && str.Length <= MaxLength;
         }
     }
-    
-    /// <summary>
-    /// Email format validation
-    /// </summary>
+
     public class EmailAttribute : DataValidationAttribute
     {
         public EmailAttribute()
@@ -115,10 +97,7 @@ namespace TirexGame.Utils.Data
             }
         }
     }
-    
-    /// <summary>
-    /// Custom validation using a method
-    /// </summary>
+
     public class CustomValidationAttribute : DataValidationAttribute
     {
         public string MethodName { get; }
@@ -131,19 +110,12 @@ namespace TirexGame.Utils.Data
         
         public override bool IsValid(object value)
         {
-            // This will be handled by the validator using reflection
             return true;
         }
     }
-    
-    /// <summary>
-    /// Data validator that validates objects using validation attributes
-    /// </summary>
+
     public class DataValidator
     {
-        /// <summary>
-        /// Validate an object asynchronously
-        /// </summary>
         public async UniTask<DataValidationResult> ValidateAsync<T>(T obj) where T : class
         {
             var result = new DataValidationResult { IsValid = true };
@@ -185,10 +157,7 @@ namespace TirexGame.Utils.Data
             
             return result;
         }
-        
-        /// <summary>
-        /// Validate an object synchronously
-        /// </summary>
+
         public DataValidationResult Validate<T>(T obj) where T : class
         {
             return ValidateAsync(obj).GetAwaiter().GetResult();

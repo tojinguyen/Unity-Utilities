@@ -4,9 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.Data
 {
-    /// <summary>
-    /// Event arguments for data operations
-    /// </summary>
     public class DataEventArgs<T> : EventArgs where T : class
     {
         public T Data { get; }
@@ -23,9 +20,6 @@ namespace TirexGame.Utils.Data
         }
     }
 
-    /// <summary>
-    /// Event arguments for data deletion
-    /// </summary>
     public class DataDeletedEventArgs : EventArgs
     {
         public string Key { get; }
@@ -42,9 +36,6 @@ namespace TirexGame.Utils.Data
         }
     }
 
-    /// <summary>
-    /// Event arguments for data errors
-    /// </summary>
     public class DataErrorEventArgs : EventArgs
     {
         public Exception Exception { get; }
@@ -63,9 +54,6 @@ namespace TirexGame.Utils.Data
         }
     }
 
-    /// <summary>
-    /// Generic event subscription wrapper
-    /// </summary>
     internal class DataEventSubscription<T> where T : class
     {
         public Action<T> OnSaved { get; set; }
@@ -76,23 +64,16 @@ namespace TirexGame.Utils.Data
         public bool HasSubscriptions => OnSaved != null || OnLoaded != null || OnDeleted != null || OnError != null;
     }
 
-    /// <summary>
-    /// Advanced event manager for data operations with type-safe subscriptions
-    /// </summary>
     public class DataEventManager
     {
         private readonly Dictionary<Type, object> _subscriptions = new();
         private readonly object _lock = new object();
 
-        // Global events for all data types
         public event EventHandler<DataEventArgs<object>> OnAnyDataSaved;
         public event EventHandler<DataEventArgs<object>> OnAnyDataLoaded;
         public event EventHandler<DataDeletedEventArgs> OnAnyDataDeleted;
         public event EventHandler<DataErrorEventArgs> OnAnyDataError;
 
-        /// <summary>
-        /// Subscribe to events for a specific data type
-        /// </summary>
         public void Subscribe<T>(
             Action<T> onSaved = null,
             Action<T> onLoaded = null,
@@ -126,9 +107,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Unsubscribe from events for a specific data type
-        /// </summary>
         public void Unsubscribe<T>(
             Action<T> onSaved = null,
             Action<T> onLoaded = null,
@@ -165,9 +143,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Unsubscribe all events for a specific data type
-        /// </summary>
         public void Unsubscribe<T>() where T : class
         {
             lock (_lock)
@@ -182,9 +157,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Raise data saved event
-        /// </summary>
         public void RaiseDataSaved<T>(Type dataType, T data, string key = null) where T : class
         {
             if (data == null) return;
@@ -216,9 +188,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Raise data loaded event
-        /// </summary>
         public void RaiseDataLoaded<T>(Type dataType, T data, string key = null) where T : class
         {
             if (data == null) return;
@@ -250,9 +219,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Raise data deleted event
-        /// </summary>
         public void RaiseDataDeleted(Type dataType, string key)
         {
             if (string.IsNullOrEmpty(key)) return;
@@ -285,9 +251,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Raise data error event
-        /// </summary>
         public void RaiseDataError(Type dataType, Exception exception, string key = null, string operation = "Unknown")
         {
             if (exception == null) return;
@@ -325,9 +288,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get subscription count for a specific type
-        /// </summary>
         public int GetSubscriptionCount<T>() where T : class
         {
             lock (_lock)
@@ -347,9 +307,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get total subscription count across all types
-        /// </summary>
         public int GetTotalSubscriptionCount()
         {
             lock (_lock)
@@ -358,9 +315,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Get all subscribed types
-        /// </summary>
         public IEnumerable<Type> GetSubscribedTypes()
         {
             lock (_lock)
@@ -369,9 +323,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Clear all subscriptions
-        /// </summary>
         public void ClearAll()
         {
             lock (_lock)
@@ -390,9 +341,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Check if there are any subscriptions for a specific type
-        /// </summary>
         public bool HasSubscriptions<T>() where T : class
         {
             lock (_lock)
@@ -402,9 +350,6 @@ namespace TirexGame.Utils.Data
             }
         }
 
-        /// <summary>
-        /// Check if there are any global event subscriptions
-        /// </summary>
         public bool HasGlobalSubscriptions()
         {
             return OnAnyDataSaved != null || OnAnyDataLoaded != null || 
