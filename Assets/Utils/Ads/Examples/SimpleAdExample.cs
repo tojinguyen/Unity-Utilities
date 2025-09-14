@@ -1,28 +1,32 @@
+using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Ads.Examples
 {
-    /// <summary>
-    /// Simple example showing basic AdMob integration
-    /// Copy this script and modify it for your game's needs
-    /// </summary>
     public class SimpleAdExample : MonoBehaviour
     {
         [Header("Ad Timing")]
-        [SerializeField] private float interstitialCooldown = 30f; // Minimum time between interstitials
-        [SerializeField] private int gameActionsForInterstitial = 5; // Show interstitial every X actions
+        [SerializeField] private float interstitialCooldown = 30f; 
+        [SerializeField] private int gameActionsForInterstitial = 5; 
         
-        private float lastInterstitialTime;
-        private int gameActionCount;
+        private float _lastInterstitialTime;
+        private int _gameActionCount;
         
         private async void Start()
         {
-            // Initialize ads when the game starts
-            await InitializeAds();
+            try
+            {
+                // Initialize ads when the game starts
+                await InitializeAds();
             
-            // Show banner ad
-            ShowBanner();
+                // Show banner ad
+                ShowBanner();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Error initializing ads: " + e.Message);
+            }
         }
         
         private async UniTask InitializeAds()
@@ -34,7 +38,6 @@ namespace TirexGame.Utils.Ads.Examples
         
         public void ShowBanner()
         {
-            // Show banner at the bottom of the screen
             AdService.ShowBanner(AdPosition.Bottom);
         }
         
@@ -43,16 +46,12 @@ namespace TirexGame.Utils.Ads.Examples
             AdService.HideBanner();
         }
         
-        /// <summary>
-        /// Call this when the player completes a level, dies, or performs any significant action
-        /// </summary>
         public void OnGameAction()
         {
-            gameActionCount++;
+            _gameActionCount++;
             
-            // Show interstitial ad every few actions, with cooldown
-            if (gameActionCount >= gameActionsForInterstitial && 
-                Time.time - lastInterstitialTime > interstitialCooldown)
+            if (_gameActionCount >= gameActionsForInterstitial && 
+                Time.time - _lastInterstitialTime > interstitialCooldown)
             {
                 ShowInterstitialAd().Forget();
             }
@@ -60,7 +59,6 @@ namespace TirexGame.Utils.Ads.Examples
         
         public async UniTaskVoid ShowInterstitialAd()
         {
-            // Make sure ad is ready
             if (!AdService.IsInterstitialReady())
             {
                 ConsoleLogger.Log("Loading interstitial ad...");
@@ -72,95 +70,66 @@ namespace TirexGame.Utils.Ads.Examples
                 }
             }
             
-            // Show the ad
-            bool shown = await AdService.ShowInterstitialAsync();
+            var shown = await AdService.ShowInterstitialAsync();
             if (shown)
             {
-                lastInterstitialTime = Time.time;
-                gameActionCount = 0;
+                _lastInterstitialTime = Time.time;
+                _gameActionCount = 0;
                 ConsoleLogger.Log("Interstitial ad shown");
             }
         }
-        
-        /// <summary>
-        /// Call this when the player wants to watch an ad for a reward
-        /// </summary>
+   
         public async void WatchRewardedAd()
         {
             // Make sure ad is ready
             if (!AdService.IsRewardedReady())
             {
                 ConsoleLogger.Log("Loading rewarded ad...");
-                bool loaded = await AdService.LoadRewardedAsync();
+                var loaded = await AdService.LoadRewardedAsync();
                 if (!loaded)
                 {
                     Debug.Log("No rewarded ad available");
-                    // Show message to player that ad is not available
                     return;
                 }
             }
             
-            // Show the ad and wait for result
             var result = await AdService.ShowRewardedAsync();
             
             if (result.Success)
             {
-                // Give reward to player
                 GiveRewardToPlayer();
                 ConsoleLogger.Log($"Player earned reward: {result.Reward.Type} x{result.Reward.Amount}");
             }
             else
             {
                 ConsoleLogger.Log("Player didn't complete the ad");
-                // Optional: Show message that they need to watch the full ad
             }
         }
         
         private void GiveRewardToPlayer()
         {
-            // Example rewards - modify for your game
-            // GameManager.Instance.AddCoins(100);
-            // GameManager.Instance.AddExtraLife();
-            // GameManager.Instance.UnlockBonus();
-            
             ConsoleLogger.Log("Reward given to player!");
         }
-        
-        /// <summary>
-        /// Example: Show rewarded ad for extra coins
-        /// </summary>
+
         public async void WatchAdForCoins()
         {
             var result = await AdService.ShowRewardedAsync();
             if (result.Success)
             {
-                // Give coins based on reward amount
-                int coinsToGive = (int)(result.Reward.Amount * 10); // Convert reward to coins
+                var coinsToGive = (int)(result.Reward.Amount * 10); 
                 ConsoleLogger.Log($"Player earned {coinsToGive} coins!");
-                
-                // Add coins to player's account
-                // PlayerData.AddCoins(coinsToGive);
             }
         }
-        
-        /// <summary>
-        /// Example: Show rewarded ad for extra life
-        /// </summary>
+  
         public async void WatchAdForExtraLife()
         {
             var result = await AdService.ShowRewardedAsync();
             if (result.Success)
             {
                 ConsoleLogger.Log("Player earned an extra life!");
-                
-                // Give extra life
-                // GameManager.Instance.AddLife();
             }
         }
-        
-        /// <summary>
-        /// Example: Show rewarded ad to continue after game over
-        /// </summary>
+  
         public async void WatchAdToContinue()
         {
             var result = await AdService.ShowRewardedAsync();
