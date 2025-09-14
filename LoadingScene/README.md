@@ -1,241 +1,236 @@
-# Loading Scene System - Unity Package
+# 🎮 Loading Scene System - Unity Package
 
-Hệ thống quản lý loading scene với khả năng tùy chỉnh cao cho Unity.
+**Hệ thống quản lý loading scene chuyên nghiệp với khả năng tùy chỉnh cao cho Unity**
 
-## Tính năng chính
+[![Unity Version](https://img.shields.io/badge/Unity-2020.3%2B-blue.svg)](https://unity3d.com/get-unity/download)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-- **Quản lý loading steps**: Tạo và thực thi các bước loading tuần tự
-- **Progress tracking**: Theo dõi và hiển thị tiến độ loading
-- **Custom UI**: Tùy chỉnh giao diện loading
-- **Async operations**: Hỗ trợ loading bất đồng bộ
-- **Error handling**: Xử lý lỗi và cancellation
-- **Scene management**: Chuyển đổi scene với nhiều chế độ khác nhau
+## ✨ Tính năng chính
 
-## Kiến trúc hệ thống
+- 🔄 **Quản lý loading steps**: Tạo và thực thi các bước loading tuần tự với Command Pattern
+- 📊 **Progress tracking**: Theo dõi và hiển thị tiến độ loading real-time với smooth animation
+- 🎨 **Custom UI**: Tùy chỉnh giao diện loading hoàn toàn hoặc sử dụng UI có sẵn
+- ⚡ **Async operations**: Hỗ trợ loading bất đồng bộ không block UI thread
+- 🛡️ **Error handling**: Xử lý lỗi và cancellation gracefully
+- 🎬 **Scene management**: Chuyển đổi scene với nhiều chế độ (Single, Additive, Replace)
+- 🏭 **Factory Pattern**: Tạo loading steps dễ dàng với LoadingStepFactory
+- 👀 **Observer Pattern**: Theo dõi tiến độ với callbacks
+- 🎯 **Extensible**: Dễ dàng mở rộng với custom loading steps
 
-### Design Patterns được sử dụng:
-- **Singleton Pattern**: `LoadingManager` - quản lý toàn bộ hệ thống
-- **Command Pattern**: `ILoadingStep` - đóng gói mỗi bước loading
-- **Observer Pattern**: `ILoadingProgressCallback` - thông báo tiến độ
-- **Strategy Pattern**: `ILoadingUIController` - tùy chỉnh UI
-- **Factory Pattern**: `LoadingStepFactory` - tạo các loại step
+## 🏗️ Kiến trúc hệ thống
 
-### Cấu trúc thư mục:
+### 🎯 Design Patterns:
+- **🔄 Singleton Pattern**: `LoadingManager` - quản lý toàn bộ hệ thống
+- **⚡ Command Pattern**: `ILoadingStep` - đóng gói mỗi bước loading  
+- **👀 Observer Pattern**: `ILoadingProgressCallback` - thông báo tiến độ
+- **🎨 Strategy Pattern**: `ILoadingUIController` - tùy chỉnh UI
+- **🏭 Factory Pattern**: `LoadingStepFactory` - tạo steps dễ dàng
+
+### 📁 Cấu trúc thư mục:
 ```
-LoadingScene/
-├── Core/
-│   ├── Interfaces/
+📦 LoadingScene/
+├── 🔧 Core/
+│   ├── 📋 Interfaces/
 │   │   ├── ILoadingStep.cs
 │   │   ├── ILoadingProgressCallback.cs
 │   │   └── ILoadingUIController.cs
-│   ├── Steps/
+│   ├── 🔨 Steps/
 │   │   ├── BaseLoadingStep.cs
 │   │   ├── CommonLoadingSteps.cs
 │   │   └── SceneLoadingStep.cs
 │   ├── LoadingManager.cs
 │   └── LoadingStepFactory.cs
-├── UI/
+├── 🎨 UI/
 │   └── DefaultLoadingUIController.cs
-└── Examples/
-    ├── LoadingSceneExample.cs
-    └── SimpleSceneLoader.cs
+├── 📚 Examples/
+│   ├── LoadingSceneExample.cs
+│   ├── SimpleSceneLoader.cs
+│   └── Demo/ (Example scenes)
+├── LoadingManagerHelper.cs
+└── README.md
 ```
 
-## Cách sử dụng cơ bản
+## 🚀 Quick Start
 
-### 1. Load scene đơn giản:
+### 1️⃣ Load scene đơn giản:
 
 ```csharp
 // Load scene với minimum setup
-var steps = LoadingStepFactory.CreateSimpleSceneLoad("GameScene", 2f);
-await LoadingManager.Instance.StartLoadingAsync(steps);
+var steps = LoadingStepFactory.CreateSimpleSceneLoad("GameScene");
+await LoadingManager.Instance.StartLoadingAsync(steps, showUI: true);
 ```
 
-### 2. Load scene với các bước chuẩn:
+### 2️⃣ Load scene với UI button:
 
 ```csharp
-// Load scene với system initialization và asset preloading
-var steps = LoadingStepFactory.CreateStandardSceneTransition("GameScene", true, true);
-await LoadingManager.Instance.StartLoadingAsync(steps);
-```
+using UnityEngine;
+using TirexGame.Utils.LoadingScene;
 
-### 3. Tạo custom loading steps:
-
-```csharp
-var steps = new List<ILoadingStep>();
-
-// Thêm delay step
-steps.Add(LoadingStepFactory.CreateDelay(1f, "Preparing", "Preparing game..."));
-
-// Thêm system initialization
-steps.Add(LoadingStepFactory.CreateSystemInit(new[] { "Audio", "Input", "UI" }));
-
-// Thêm custom step
-steps.Add(LoadingStepFactory.CreateCustom(async (step) => {
-    // Your custom loading logic here
-    step.UpdateProgress(0.5f);
-    await SomeAsyncOperation();
-    step.UpdateProgress(1f);
-}, "Custom Step", "Doing custom work..."));
-
-// Load scene
-steps.Add(LoadingStepFactory.CreateSceneLoad("GameScene"));
-
-await LoadingManager.Instance.StartLoadingAsync(steps);
-```
-
-### 4. Thiết lập UI Controller:
-
-```csharp
-// Từ prefab
-var uiController = DefaultLoadingUIController.CreateFromPrefab(loadingUIPrefab);
-LoadingManager.Instance.SetUIController(uiController);
-
-// Hoặc tạo UI đơn giản
-var simpleUI = DefaultLoadingUIController.CreateSimpleUI();
-LoadingManager.Instance.SetUIController(simpleUI);
-```
-
-### 5. Theo dõi progress:
-
-```csharp
-// Tạo custom progress callback
-public class MyProgressCallback : ILoadingProgressCallback
+public class MenuController : MonoBehaviour
 {
-    public void OnProgressUpdated(LoadingProgressData progressData)
+    public string targetScene = "GameScene";
+
+    public async void OnPlayButtonClicked()
     {
-        Debug.Log($"Loading: {progressData.TotalProgress:P}");
-    }
-    
-    public void OnStepStarted(ILoadingStep step, LoadingProgressData progressData)
-    {
-        Debug.Log($"Started: {step.StepName}");
-    }
-    
-    public void OnStepCompleted(ILoadingStep step, LoadingProgressData progressData)
-    {
-        Debug.Log($"Completed: {step.StepName}");
-    }
-    
-    public void OnLoadingCompleted(LoadingProgressData progressData)
-    {
-        Debug.Log("Loading completed!");
-    }
-    
-    public void OnLoadingError(ILoadingStep step, Exception exception, LoadingProgressData progressData)
-    {
-        Debug.LogError($"Error: {exception.Message}");
+        var steps = LoadingStepFactory.CreateStandardSceneTransition(targetScene);
+        await LoadingManager.Instance.StartLoadingAsync(steps, showUI: true);
     }
 }
-
-// Đăng ký callback
-LoadingManager.Instance.AddProgressCallback(new MyProgressCallback());
 ```
 
-## Các loại Loading Steps có sẵn
+### 3️⃣ Custom loading steps:
 
-### 1. SceneLoadingStep
-Load scene với các chế độ khác nhau:
+```csharp
+var steps = new List<ILoadingStep>
+{
+    LoadingStepFactory.CreateDelay(1f, "Preparing", "Getting ready..."),
+    LoadingStepFactory.CreateCustom(async (step) => {
+        step.UpdateProgress(0.5f);
+        await InitializeGameSystems();
+        step.UpdateProgress(1f);
+    }, "Initialize", "Setting up game..."),
+    LoadingStepFactory.CreateSceneLoad("GameScene")
+};
+
+await LoadingManager.Instance.StartLoadingAsync(steps, showUI: true);
+```
+
+## 📚 Example Scenes
+
+Package bao gồm 3 example scenes hoàn chỉnh:
+
+### 🏠 MainMenu Scene
+- Demo tất cả các loại loading
+- UI buttons cho các test cases
+- Progress tracking và error handling
+
+### ⏳ LoadingScene  
+- Custom Loading UI với animations
+- Progress bar mượt mà
+- Cancel functionality
+- Time tracking (elapsed/estimated)
+
+### 🎮 GameScene
+- Scene đích sau khi loading
+- Demo quay lại menu
+- Animation objects
+
+## 🔧 Các loại Loading Steps
+
+### 🎬 SceneLoadingStep
 ```csharp
 // Load scene thường
 SceneLoadingStep.LoadScene("GameScene");
 
-// Load scene additive
+// Load scene additive  
 SceneLoadingStep.LoadSceneAdditive("UIScene");
 
 // Replace scene
 SceneLoadingStep.ReplaceScene("NewScene", "OldScene");
 ```
 
-### 2. DelayLoadingStep
-Tạo delay với progress tracking:
+### ⏱️ DelayLoadingStep
 ```csharp
+// Delay với progress tracking
 new DelayLoadingStep(2f, "Loading", "Please wait...");
 ```
 
-### 3. ResourceLoadingStep
-Load assets từ Resources folder:
+### 📦 ResourceLoadingStep
 ```csharp
+// Load assets từ Resources
 new ResourceLoadingStep("Prefabs/PlayerPrefab", typeof(GameObject));
 ```
 
-### 4. CustomLoadingStep
-Thực thi custom logic:
+### 🔧 CustomLoadingStep
 ```csharp
-new CustomLoadingStep(async (step) => {
-    // Your async logic
+// Thực thi custom logic
+LoadingStepFactory.CreateCustom(async (step) => {
+    step.UpdateProgress(0.3f);
+    await YourCustomOperation();
+    step.UpdateProgress(1f);
 }, "Custom Step", "Processing...");
 ```
 
-### 5. GameSystemInitializationStep
-Khởi tạo các hệ thống game:
+### 🏗️ GameSystemInitializationStep
 ```csharp
+// Khởi tạo hệ thống game
 new GameSystemInitializationStep(new[] { "Audio", "Input", "Save System" });
 ```
 
-## Tùy chỉnh UI Loading
-
-### Tạo custom UI Controller:
+## 🎨 Custom UI Controller
 
 ```csharp
-public class MyLoadingUIController : MonoBehaviour, ILoadingUIController
+public class MyLoadingUI : MonoBehaviour, ILoadingUIController
 {
     public GameObject UIGameObject => gameObject;
     public bool IsVisible { get; private set; }
-    
+
     public event Action OnCancelRequested;
-    
-    public void ShowUI()
-    {
-        // Show your loading UI
-        IsVisible = true;
-    }
-    
-    public void HideUI()
-    {
-        // Hide your loading UI
-        IsVisible = false;
-    }
-    
-    public void UpdateProgress(LoadingProgressData progressData)
-    {
-        // Update your UI with progress data
-    }
-    
-    public void UpdateStepText(string stepName, string description)
-    {
-        // Update step text
-    }
-    
-    public void UpdateProgressBar(float progress)
-    {
-        // Update progress bar (0-1)
-    }
-    
-    public void ShowError(string errorMessage)
-    {
-        // Show error message
-    }
-    
-    public void HideError()
-    {
-        // Hide error message
-    }
-    
-    public void SetCancelable(bool canCancel)
-    {
-        // Enable/disable cancel button
-    }
-    
-    public void Cleanup()
-    {
-        // Cleanup resources
-    }
+
+    public void ShowUI() { /* Your implementation */ }
+    public void HideUI() { /* Your implementation */ }
+    public void UpdateProgress(LoadingProgressData data) { /* Your implementation */ }
+    // ... other methods
 }
+
+// Register your custom UI
+LoadingManager.Instance.SetUIController(myCustomUI);
 ```
 
-## Error Handling
+## 📊 Progress Tracking
 
+```csharp
+public class MyProgressCallback : ILoadingProgressCallback
+{
+    public void OnProgressUpdated(LoadingProgressData data)
+    {
+        Debug.Log($"Loading: {data.TotalProgress:P} - {data.CurrentStepName}");
+    }
+
+    public void OnStepStarted(ILoadingStep step, LoadingProgressData data)
+    {
+        Debug.Log($"Started: {step.StepName}");
+    }
+
+    public void OnLoadingCompleted(LoadingProgressData data)
+    {
+        Debug.Log($"Completed in {data.ElapsedTime.TotalSeconds:F1}s");
+    }
+
+    // ... other callback methods
+}
+
+// Register callback
+LoadingManager.Instance.AddProgressCallback(new MyProgressCallback());
+```
+
+## 🎯 Common Use Cases
+
+### 🎮 Game Menu → Game Scene
+```csharp
+var steps = LoadingStepFactory.CreateStandardSceneTransition("GameScene");
+await LoadingManager.Instance.StartLoadingAsync(steps);
+```
+
+### 🔄 Level Transition  
+```csharp
+var steps = new List<ILoadingStep>
+{
+    LoadingStepFactory.CreateDelay(0.5f, "Saving Progress"),
+    LoadingStepFactory.CreateCustom(async (step) => await SaveGameData(), "Save Game"),
+    LoadingStepFactory.CreateSceneLoad($"Level{nextLevelIndex}")
+};
+```
+
+### 🔧 Game Restart
+```csharp
+var steps = LoadingStepFactory.CreateGameRestart("MainMenu");
+await LoadingManager.Instance.StartLoadingAsync(steps);
+```
+
+## ⚡ Advanced Features
+
+### 🛡️ Error Handling
 ```csharp
 try
 {
@@ -251,34 +246,72 @@ catch (Exception ex)
 }
 ```
 
-## Cancellation
-
+### ❌ Cancellation
 ```csharp
-// Cancel loading
+// Cancel from code
 LoadingManager.Instance.CancelLoading();
 
-// Hoặc từ UI Controller
-// User clicks cancel button -> OnCancelRequested event -> LoadingManager.CancelLoading()
+// Cancel from UI (automatic with cancel button)
+uiController.SetCancelable(true);
 ```
 
-## Best Practices
+### ⚙️ Custom Loading Step
+```csharp
+public class NetworkLoadingStep : BaseLoadingStep
+{
+    public NetworkLoadingStep() : base("Network", "Connecting to server...") { }
 
-1. **Sử dụng Factory Pattern**: Dùng `LoadingStepFactory` để tạo steps thay vì new trực tiếp
-2. **Weight balancing**: Cân bằng trọng số của các steps để progress bar chính xác
-3. **Error handling**: Luôn wrap loading calls trong try-catch
-4. **UI responsiveness**: Sử dụng async/await để không block UI thread
-5. **Memory management**: Cleanup resources trong UI Controller
-6. **Testing**: Sử dụng example scripts để test các scenarios khác nhau
+    protected override async Task ExecuteStepAsync()
+    {
+        UpdateProgressInternal(0.2f);
+        await ConnectToServer();
+        
+        UpdateProgressInternal(0.6f); 
+        await AuthenticateUser();
+        
+        UpdateProgressInternal(1f);
+    }
+}
+```
 
-## Examples Scripts
+## 📋 Best Practices
 
-- `LoadingSceneExample.cs`: Demo đầy đủ các tính năng
-- `SimpleSceneLoader.cs`: Script đơn giản để đặt trên UI buttons
+✅ **Sử dụng Factory Pattern**: Dùng `LoadingStepFactory` thay vì new trực tiếp  
+✅ **Cân bằng Weight**: Cân bằng trọng số của steps để progress bar chính xác  
+✅ **Error Handling**: Luôn wrap loading calls trong try-catch  
+✅ **UI Responsiveness**: Sử dụng async/await để không block UI  
+✅ **Memory Management**: Cleanup resources trong UI Controller  
+✅ **Testing**: Sử dụng example scenes để test scenarios khác nhau
 
-## Extensibility
+## 🔄 Migration & Updates
 
-Hệ thống được thiết kế để dễ dàng mở rộng:
-- Tạo custom loading steps bằng cách inherit từ `BaseLoadingStep`
-- Tạo custom UI bằng cách implement `ILoadingUIController`
-- Tạo custom progress callbacks bằng cách implement `ILoadingProgressCallback`
-- Sử dụng factory pattern để tạo các helper methods mới
+### Từ version cũ:
+- `UpdateProgress()` method được thêm vào `ILoadingStep` interface
+- `CreateCustomSync()` method để phân biệt sync/async operations
+- Improved error handling và cancellation support
+
+## 📝 Requirements
+
+- Unity 2020.3 LTS hoặc mới hơn
+- .NET Standard 2.1
+- TextMeshPro (cho UI examples)
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Tạo feature branch
+3. Commit changes  
+4. Push to branch
+5. Create Pull Request
+
+## 📄 License
+
+MIT License - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
+
+## 🙏 Credits
+
+Được phát triển bởi TirexGame Team với mục đích cung cấp giải pháp loading scene chuyên nghiệp cho Unity developers.
+
+---
+
+**Happy Loading! 🚀**
