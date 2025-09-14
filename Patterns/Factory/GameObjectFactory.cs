@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using Tirex.Utils.ObjectPooling;
 using UnityEngine.AddressableAssets;
 
 namespace TirexGame.Utils.Patterns.Factory
@@ -98,15 +99,12 @@ namespace TirexGame.Utils.Patterns.Factory
             
             GameObject instance = null;
             
-            // Try pooling first if enabled
-            if (enablePooling && _prefabRegistry.ContainsKey(id))
+            if (enablePooling && _prefabRegistry.TryGetValue(id, out var value))
             {
-                instance = ObjectPooling.GetObject(_prefabRegistry[id]);
+                instance = ObjectPooling.GetObject(value);
             }
-            else if (_prefabRegistry.ContainsKey(id))
+            else if (_prefabRegistry.TryGetValue(id, out var prefab))
             {
-                // Direct instantiation
-                var prefab = _prefabRegistry[id];
                 instance = Instantiate(prefab, defaultParent);
             }
             
@@ -116,7 +114,6 @@ namespace TirexGame.Utils.Patterns.Factory
                 _activeInstances.Add(instance);
                 Log($"Created object: {id}");
                 
-                // Initialize if it has IFactoryCreated interface
                 var factoryCreated = instance.GetComponent<IFactoryCreated>();
                 factoryCreated?.OnFactoryCreated(id);
             }
@@ -144,22 +141,13 @@ namespace TirexGame.Utils.Patterns.Factory
             
             GameObject instance = null;
             
-            // Try addressables first
-            if (_addressableRegistry.ContainsKey(id))
+            if (_addressableRegistry.TryGetValue(id, out var assetRef))
             {
                 try
                 {
-                    var assetRef = _addressableRegistry[id];
                     var prefab = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, "GameObjectFactory");
-                    
-                    if (enablePooling)
-                    {
-                        instance = ObjectPooling.GetObject(prefab);
-                    }
-                    else
-                    {
-                        instance = Instantiate(prefab, defaultParent);
-                    }
+
+                    instance = enablePooling ? ObjectPooling.GetObject(prefab) : Instantiate(prefab, defaultParent);
                 }
                 catch (Exception e)
                 {
@@ -167,7 +155,6 @@ namespace TirexGame.Utils.Patterns.Factory
                 }
             }
             
-            // Fallback to direct prefab creation
             if (instance == null)
             {
                 instance = Create(id);
@@ -197,7 +184,6 @@ namespace TirexGame.Utils.Patterns.Factory
             
             var id = _instanceToId.ContainsKey(obj) ? _instanceToId[obj] : "Unknown";
             
-            // Notify if it has IFactoryCreated interface
             var factoryCreated = obj.GetComponent<IFactoryCreated>();
             factoryCreated?.OnFactoryDestroyed();
             
