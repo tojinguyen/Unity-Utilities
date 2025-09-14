@@ -1,13 +1,8 @@
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene.Examples
 {
-    /// <summary>
-    /// Simple scene loader script để đặt trên các GameObject trong scene.
-    /// Cung cấp interface đơn giản để load scene từ UI buttons hoặc triggers.
-    /// </summary>
     public class SimpleSceneLoader : MonoBehaviour
     {
         [Header("Scene Loading Settings")]
@@ -24,17 +19,14 @@ namespace TirexGame.Utils.LoadingScene.Examples
         [SerializeField] private bool includeSystemInit = true;
         [SerializeField] private bool includeAssetPreload = false;
         [SerializeField] private string[] customSystemNames = { "Audio", "Input", "UI" };
-        
-        /// <summary>
-        /// Load scene được chỉ định trong inspector
-        /// </summary>
-        public async void LoadTargetScene()
+
+        public async UniTaskVoid LoadTargetScene()
         {
             if (useSceneName)
             {
                 if (string.IsNullOrEmpty(targetSceneName))
                 {
-                    Debug.LogWarning("Target scene name is not set!");
+                    ConsoleLogger.LogWarning("Target scene name is not set!");
                     return;
                 }
                 await LoadSceneByName(targetSceneName);
@@ -43,22 +35,18 @@ namespace TirexGame.Utils.LoadingScene.Examples
             {
                 if (targetSceneBuildIndex < 0)
                 {
-                    Debug.LogWarning("Target scene build index is not set!");
+                    ConsoleLogger.LogWarning("Target scene build index is not set!");
                     return;
                 }
                 await LoadSceneByIndex(targetSceneBuildIndex);
             }
         }
-        
-        /// <summary>
-        /// Load scene theo tên
-        /// </summary>
-        /// <param name="sceneName">Tên scene cần load</param>
+
         public async UniTask LoadSceneByName(string sceneName)
         {
             if (string.IsNullOrEmpty(sceneName))
             {
-                Debug.LogWarning("Scene name is empty!");
+                ConsoleLogger.LogWarning("Scene name is empty!");
                 return;
             }
             
@@ -68,16 +56,12 @@ namespace TirexGame.Utils.LoadingScene.Examples
             
             await LoadingManager.Instance.StartLoadingAsync(steps, showLoadingUI);
         }
-        
-        /// <summary>
-        /// Load scene theo build index
-        /// </summary>
-        /// <param name="sceneIndex">Build index của scene</param>
+
         public async UniTask LoadSceneByIndex(int sceneIndex)
         {
             if (sceneIndex < 0)
             {
-                Debug.LogWarning("Invalid scene build index!");
+                ConsoleLogger.LogWarning("Invalid scene build index!");
                 return;
             }
             
@@ -115,30 +99,21 @@ namespace TirexGame.Utils.LoadingScene.Examples
             
             await LoadingManager.Instance.StartLoadingAsync(steps, showLoadingUI);
         }
-        
-        /// <summary>
-        /// Restart game về main menu
-        /// </summary>
-        public async void RestartToMainMenu()
+ 
+        public async UniTaskVoid RestartToMainMenu()
         {
             await LoadSceneByName("MainMenu");
         }
         
-        /// <summary>
-        /// Restart game về scene đầu tiên (build index 0)
-        /// </summary>
-        public async void RestartToFirstScene()
+        public async UniTaskVoid RestartToFirstScene()
         {
             await LoadSceneByIndex(0);
         }
-        
-        /// <summary>
-        /// Load scene tiếp theo trong build settings
-        /// </summary>
-        public async void LoadNextScene()
+
+        public async UniTaskVoid LoadNextScene()
         {
-            int currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
-            int nextSceneIndex = currentSceneIndex + 1;
+            var currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+            var nextSceneIndex = currentSceneIndex + 1;
             
             if (nextSceneIndex < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings)
             {
@@ -146,17 +121,14 @@ namespace TirexGame.Utils.LoadingScene.Examples
             }
             else
             {
-                Debug.LogWarning("No next scene available!");
+                ConsoleLogger.LogWarning("No next scene available!");
             }
         }
         
-        /// <summary>
-        /// Load scene trước đó trong build settings
-        /// </summary>
-        public async void LoadPreviousScene()
+        public async UniTaskVoid LoadPreviousScene()
         {
-            int currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
-            int previousSceneIndex = currentSceneIndex - 1;
+            var currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
+            var previousSceneIndex = currentSceneIndex - 1;
             
             if (previousSceneIndex >= 0)
             {
@@ -164,16 +136,13 @@ namespace TirexGame.Utils.LoadingScene.Examples
             }
             else
             {
-                Debug.LogWarning("No previous scene available!");
+                ConsoleLogger.LogWarning("No previous scene available!");
             }
         }
         
-        /// <summary>
-        /// Reload scene hiện tại
-        /// </summary>
-        public async void ReloadCurrentScene()
+        public async UniTaskVoid ReloadCurrentScene()
         {
-            string currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             await LoadSceneByName(currentSceneName);
         }
         
@@ -182,13 +151,13 @@ namespace TirexGame.Utils.LoadingScene.Examples
         [ContextMenu("Load Target Scene")]
         private void LoadTargetSceneContext()
         {
-            LoadTargetScene();
+            LoadTargetScene().Forget();
         }
         
         [ContextMenu("Reload Current Scene")]
         private void ReloadCurrentSceneContext()
         {
-            ReloadCurrentScene();
+            ReloadCurrentScene().Forget();
         }
         
         #endregion

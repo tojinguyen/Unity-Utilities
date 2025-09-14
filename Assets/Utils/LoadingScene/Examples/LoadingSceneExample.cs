@@ -1,13 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene.Examples
 {
-    /// <summary>
-    /// Example script demonstrating basic usage of the Loading Scene system.
-    /// Attach this to a GameObject in your scene to test the loading functionality.
-    /// </summary>
     public class LoadingSceneExample : MonoBehaviour
     {
         [Header("Test Settings")]
@@ -25,27 +22,22 @@ namespace TirexGame.Utils.LoadingScene.Examples
         
         private void Start()
         {
-            // Setup UI Controller if prefab is provided
             if (loadingUIPrefab != null)
             {
                 var uiController = DefaultLoadingUIController.CreateFromPrefab(loadingUIPrefab);
                 LoadingManager.Instance.SetUIController(uiController);
             }
             
-            // Add a progress callback for debugging
-            LoadingManager.Instance.AddProgressCallback(new DebugProgressCallback());
+            LoadingManager.Instance.AddProgressCallback(new ConsoleLoggerProgressCallback());
         }
         
         #region Public Methods (for UI buttons)
         
-        /// <summary>
-        /// Start standard scene transition
-        /// </summary>
-        public async void StartStandardSceneTransition()
+        public async UniTaskVoid StartStandardSceneTransition()
         {
             if (string.IsNullOrEmpty(targetSceneName))
             {
-                Debug.LogWarning("Target scene name is not set!");
+                ConsoleLogger.LogWarning("Target scene name is not set!");
                 return;
             }
             
@@ -62,7 +54,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
             if (string.IsNullOrEmpty(targetSceneName))
             {
-                Debug.LogWarning("Target scene name is not set!");
+                ConsoleLogger.LogWarning("Target scene name is not set!");
                 return;
             }
             
@@ -109,20 +101,14 @@ namespace TirexGame.Utils.LoadingScene.Examples
             
             await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
         }
-        
-        /// <summary>
-        /// Restart game to main menu
-        /// </summary>
-        public async void RestartGame()
+
+        public async UniTaskVoid RestartGame()
         {
             var steps = LoadingStepFactory.CreateGameRestart("MainMenu");
             await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
         }
         
-        /// <summary>
-        /// Test loading with error handling
-        /// </summary>
-        public async void TestLoadingWithError()
+        public async UniTaskVoid TestLoadingWithError()
         {
             var steps = new List<ILoadingStep>();
             
@@ -141,7 +127,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Loading failed as expected: {ex.Message}");
+                ConsoleLogger.LogError($"Loading failed as expected: {ex.Message}");
             }
         }
         
@@ -168,7 +154,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             }
             catch (System.OperationCanceledException)
             {
-                Debug.Log("Loading was cancelled successfully");
+                ConsoleLogger.Log("Loading was cancelled successfully");
             }
         }
         
@@ -179,7 +165,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
         [ContextMenu("Test Standard Scene Transition")]
         private void TestStandardTransition()
         {
-            StartStandardSceneTransition();
+            StartStandardSceneTransition().Forget();
         }
         
         [ContextMenu("Test Simple Scene Load")]
@@ -209,34 +195,31 @@ namespace TirexGame.Utils.LoadingScene.Examples
         #endregion
     }
     
-    /// <summary>
-    /// Example progress callback for debugging
-    /// </summary>
-    public class DebugProgressCallback : ILoadingProgressCallback
+    public class ConsoleLoggerProgressCallback : ILoadingProgressCallback
     {
         public void OnProgressUpdated(LoadingProgressData progressData)
         {
-            Debug.Log($"[LoadingProgress] {progressData.TotalProgress:P1} - {progressData.CurrentStepName}: {progressData.CurrentStepDescription}");
+            ConsoleLogger.Log($"[LoadingProgress] {progressData.TotalProgress:P1} - {progressData.CurrentStepName}: {progressData.CurrentStepDescription}");
         }
         
         public void OnStepStarted(ILoadingStep step, LoadingProgressData progressData)
         {
-            Debug.Log($"[LoadingStep] Started: {step.StepName}");
+            ConsoleLogger.Log($"[LoadingStep] Started: {step.StepName}");
         }
         
         public void OnStepCompleted(ILoadingStep step, LoadingProgressData progressData)
         {
-            Debug.Log($"[LoadingStep] Completed: {step.StepName}");
+            ConsoleLogger.Log($"[LoadingStep] Completed: {step.StepName}");
         }
         
         public void OnLoadingCompleted(LoadingProgressData progressData)
         {
-            Debug.Log($"[Loading] Completed in {progressData.ElapsedTime.TotalSeconds:F1}s");
+            ConsoleLogger.Log($"[Loading] Completed in {progressData.ElapsedTime.TotalSeconds:F1}s");
         }
         
         public void OnLoadingError(ILoadingStep step, System.Exception exception, LoadingProgressData progressData)
         {
-            Debug.LogError($"[Loading] Error in step '{step?.StepName}': {exception.Message}");
+            ConsoleLogger.LogError($"[Loading] Error in step '{step?.StepName}': {exception.Message}");
         }
     }
 }
