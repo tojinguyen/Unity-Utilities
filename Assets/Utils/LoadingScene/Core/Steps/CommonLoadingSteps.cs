@@ -31,7 +31,7 @@ namespace TirexGame.Utils.LoadingScene
                 float deltaTime = _useRealtime ? Time.unscaledDeltaTime : Time.deltaTime;
                 elapsedTime += deltaTime;
                 
-                UpdateProgress(elapsedTime / _delayTime);
+                UpdateProgressInternal(elapsedTime / _delayTime);
                 
                 await Task.Yield(); // Yield control to allow cancellation
                 ThrowIfCancelled();
@@ -106,13 +106,13 @@ namespace TirexGame.Utils.LoadingScene
             DebugLog($"Loading resource: {_resourcePath}");
             
             ThrowIfCancelled();
-            UpdateProgress(0.1f);
+            UpdateProgressInternal(0.1f);
             
             // Simulate async loading (Resources.Load is synchronous)
             await Task.Yield();
             ThrowIfCancelled();
             
-            UpdateProgress(0.5f);
+            UpdateProgressInternal(0.5f);
             
             try
             {
@@ -125,7 +125,7 @@ namespace TirexGame.Utils.LoadingScene
                     _loadedAsset = Resources.Load(_resourcePath);
                 }
                 
-                UpdateProgress(0.9f);
+                UpdateProgressInternal(0.9f);
                 await Task.Yield();
                 
                 if (_loadedAsset == null)
@@ -182,9 +182,8 @@ namespace TirexGame.Utils.LoadingScene
                     systemProgress = Mathf.Clamp01(systemProgress);
                     
                     float totalProgress = (i + systemProgress) / _systemNames.Length;
-                    UpdateProgress(totalProgress);
                     
-                    await Task.Yield();
+                    UpdateProgressInternal(totalProgress);                    await Task.Yield();
                 }
                 
                 DebugLog($"{systemName} initialized");
