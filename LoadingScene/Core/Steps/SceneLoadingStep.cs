@@ -5,20 +5,13 @@ using UnityEngine.SceneManagement;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Enum định nghĩa các chế độ load scene
-    /// </summary>
     public enum SceneLoadMode
     {
-        Single,      // Load scene mới và unload scene hiện tại
-        Additive,    // Load scene mới mà không unload scene hiện tại
-        Replace      // Unload scene cũ trước, sau đó load scene mới
+        Single,      
+        Additive,   
+        Replace     
     }
-    
-    /// <summary>
-    /// Loading step đặc biệt cho việc load scene.
-    /// Sử dụng Unity's async scene loading với progress tracking.
-    /// </summary>
+
     public class SceneLoadingStep : BaseLoadingStep
     {
         private readonly string _sceneName;
@@ -300,52 +293,34 @@ namespace TirexGame.Utils.LoadingScene
         #endregion
     }
     
-    /// <summary>
-    /// Loading step helper cho các thao tác scene phổ biến
-    /// </summary>
     public static class SceneLoadingStepHelpers
     {
-        /// <summary>
-        /// Tạo chuỗi steps để load nhiều scene additive
-        /// </summary>
-        /// <param name="sceneNames">Danh sách tên scene</param>
-        /// <param name="weightPerScene">Trọng số cho mỗi scene</param>
-        /// <returns>Array của SceneLoadingStep</returns>
         public static SceneLoadingStep[] LoadScenesAdditive(string[] sceneNames, float weightPerScene = 1f)
         {
             if (sceneNames == null || sceneNames.Length == 0)
-                return new SceneLoadingStep[0];
+                return Array.Empty<SceneLoadingStep>();
             
-            SceneLoadingStep[] steps = new SceneLoadingStep[sceneNames.Length];
+            var steps = new SceneLoadingStep[sceneNames.Length];
             
-            for (int i = 0; i < sceneNames.Length; i++)
+            for (var i = 0; i < sceneNames.Length; i++)
             {
                 steps[i] = SceneLoadingStep.LoadSceneAdditive(sceneNames[i], weightPerScene);
             }
             
             return steps;
         }
-        
-        /// <summary>
-        /// Tạo step transition từ scene này sang scene khác với các bước chuẩn bị
-        /// </summary>
-        /// <param name="targetScene">Scene đích</param>
-        /// <param name="preparationSteps">Các bước chuẩn bị trước khi load scene</param>
-        /// <returns>Array của ILoadingStep</returns>
+ 
         public static ILoadingStep[] CreateSceneTransition(string targetScene, ILoadingStep[] preparationSteps = null)
         {
             var steps = new System.Collections.Generic.List<ILoadingStep>();
             
-            // Add preparation steps
-            if (preparationSteps != null && preparationSteps.Length > 0)
+            if (preparationSteps is { Length: > 0 })
             {
                 steps.AddRange(preparationSteps);
             }
             
-            // Add scene loading step
             steps.Add(SceneLoadingStep.LoadScene(targetScene));
             
-            // Add post-loading steps
             steps.Add(new DelayLoadingStep(0.5f, "Finalizing", "Finalizing scene transition...", false, 0.2f));
             
             return steps.ToArray();

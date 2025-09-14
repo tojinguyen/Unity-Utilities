@@ -1,11 +1,8 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// MonoBehaviour wrapper cho LoadingManager để dễ dàng access từ inspector.
-    /// Cung cấp interface đơn giản cho việc setup và test loading system.
-    /// </summary>
     public class LoadingManagerHelper : MonoBehaviour
     {
         [Header("UI Setup")]
@@ -28,32 +25,26 @@ namespace TirexGame.Utils.LoadingScene
             
             if (addDebugProgressCallback)
             {
-                LoadingManager.Instance.AddProgressCallback(new Examples.DebugProgressCallback());
+                LoadingManager.Instance.AddProgressCallback(new Examples.ConsoleLoggerProgressCallback());
             }
         }
         
-        /// <summary>
-        /// Setup UI Controller từ prefab
-        /// </summary>
         public void SetupUIController()
         {
             if (loadingUIPrefab != null)
             {
                 var uiController = DefaultLoadingUIController.CreateFromPrefab(loadingUIPrefab);
                 LoadingManager.Instance.SetUIController(uiController);
-                Debug.Log("Loading UI Controller setup completed");
+                ConsoleLogger.Log("Loading UI Controller setup completed");
             }
             else if (autoSetupUI)
             {
-                Debug.LogWarning("Loading UI Prefab is not assigned but autoSetupUI is enabled!");
+                ConsoleLogger.LogWarning("Loading UI Prefab is not assigned but autoSetupUI is enabled!");
             }
         }
         
-        /// <summary>
-        /// Quick test method để load scene từ inspector
-        /// </summary>
         [ContextMenu("Test Load Scene")]
-        public async void TestLoadScene()
+        public async UniTaskVoid TestLoadScene()
         {
             var steps = LoadingStepFactory.CreateSimpleSceneLoad("TestScene", 2f);
             
@@ -63,15 +54,12 @@ namespace TirexGame.Utils.LoadingScene
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Test loading failed: {ex.Message}");
+                ConsoleLogger.LogError($"Test loading failed: {ex.Message}");
             }
         }
         
-        /// <summary>
-        /// Test standard scene transition
-        /// </summary>
         [ContextMenu("Test Standard Transition")]
-        public async void TestStandardTransition()
+        public async UniTaskVoid TestStandardTransition()
         {
             var steps = LoadingStepFactory.CreateStandardSceneTransition("TestScene", true, true);
             
@@ -81,7 +69,7 @@ namespace TirexGame.Utils.LoadingScene
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Test transition failed: {ex.Message}");
+                ConsoleLogger.LogError($"Test transition failed: {ex.Message}");
             }
         }
     }

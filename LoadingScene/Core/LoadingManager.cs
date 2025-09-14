@@ -584,7 +584,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             if (_enableDebugLogs)
             {
-                Debug.Log($"[LoadingManager] {message}");
+                ConsoleLogger.Log($"[LoadingManager] {message}");
             }
         }
         
@@ -592,7 +592,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             if (_enableDebugLogs)
             {
-                Debug.LogWarning($"[LoadingManager] {message}");
+                ConsoleLogger.LogWarning($"[LoadingManager] {message}");
             }
         }
         
@@ -600,7 +600,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             if (_enableDebugLogs)
             {
-                Debug.LogError($"[LoadingManager] {message}");
+                ConsoleLogger.LogError($"[LoadingManager] {message}");
             }
         }
         

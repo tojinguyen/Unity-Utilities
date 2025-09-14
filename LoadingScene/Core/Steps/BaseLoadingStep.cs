@@ -4,10 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Base class cho tất cả các loading steps.
-    /// Implement Command Pattern để đóng gói các hành động loading.
-    /// </summary>
     public abstract class BaseLoadingStep : ILoadingStep
     {
         #region Protected Fields
@@ -60,13 +56,13 @@ namespace TirexGame.Utils.LoadingScene
         {
             if (_isCompleted)
             {
-                Debug.LogWarning($"Step '{StepName}' is already completed!");
+                ConsoleLogger.LogWarning($"Step '{StepName}' is already completed!");
                 return;
             }
             
             if (_isCancelled)
             {
-                Debug.LogWarning($"Step '{StepName}' was cancelled!");
+                ConsoleLogger.LogWarning($"Step '{StepName}' was cancelled!");
                 return;
             }
             
@@ -84,7 +80,7 @@ namespace TirexGame.Utils.LoadingScene
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error in step '{StepName}': {ex.Message}");
+                ConsoleLogger.LogError($"Error in step '{StepName}': {ex.Message}");
                 OnStepError?.Invoke(this, ex);
                 throw;
             }
@@ -93,7 +89,7 @@ namespace TirexGame.Utils.LoadingScene
         public virtual void Cancel()
         {
             _isCancelled = true;
-            Debug.Log($"Step '{StepName}' cancelled");
+            ConsoleLogger.Log($"Step '{StepName}' cancelled");
         }
         
         public virtual void Reset()
@@ -106,25 +102,14 @@ namespace TirexGame.Utils.LoadingScene
         #endregion
 
         #region Protected Methods
-        
-        /// <summary>
-        /// Override method này để implement logic cụ thể của step
-        /// </summary>
+
         protected abstract Task ExecuteStepAsync();
-        
-        /// <summary>
-        /// Cập nhật tiến độ của step này (Implementation của ILoadingStep)
-        /// </summary>
-        /// <param name="progress">Progress value (0-1)</param>
+  
         public void UpdateProgress(float progress)
         {
             UpdateProgressInternal(progress);
         }
-        
-        /// <summary>
-        /// Helper method để cập nhật progress an toàn
-        /// </summary>
-        /// <param name="progress">Progress value (0-1)</param>
+
         protected void UpdateProgressInternal(float progress)
         {
             if (!_isCancelled && !_isCompleted)
@@ -132,19 +117,12 @@ namespace TirexGame.Utils.LoadingScene
                 Progress = progress;
             }
         }
-        
-        /// <summary>
-        /// Helper method để log debug information
-        /// </summary>
-        /// <param name="message">Debug message</param>
+   
         protected void DebugLog(string message)
         {
-            Debug.Log($"[{StepName}] {message}");
+            ConsoleLogger.Log($"[{StepName}] {message}");
         }
-        
-        /// <summary>
-        /// Kiểm tra xem step có bị cancel không, throw exception nếu có
-        /// </summary>
+
         protected void ThrowIfCancelled()
         {
             if (_isCancelled)
