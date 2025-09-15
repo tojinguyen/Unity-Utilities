@@ -24,7 +24,7 @@ namespace TirexGame.Utils.LoadingScene
 
             var elapsedTime = 0f;
 
-            while (elapsedTime < _delayTime && !_isCancelled)
+            while (elapsedTime < _delayTime && !isCancelled)
             {
                 float deltaTime = _useRealtime ? Time.unscaledDeltaTime : Time.deltaTime;
                 elapsedTime += deltaTime;
@@ -164,7 +164,7 @@ namespace TirexGame.Utils.LoadingScene
                 var systemName = _systemNames[i];
                 DebugLog($"Initializing {systemName}...");
 
-                while (systemProgress < 1f && !_isCancelled)
+                while (systemProgress < 1f && !isCancelled)
                 {
                     systemProgress += Time.unscaledDeltaTime / _timePerSystem;
                     systemProgress = Mathf.Clamp01(systemProgress);

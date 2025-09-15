@@ -152,7 +152,7 @@ namespace TirexGame.Utils.LoadingScene
                 return;
             }
             
-            while (!_unloadOperation.isDone && !_isCancelled)
+            while (!_unloadOperation.isDone && !isCancelled)
             {
                 float unloadProgress = Mathf.Clamp01(_unloadOperation.progress / 0.9f);
                 UpdateProgressInternal(0.1f + unloadProgress * 0.2f); // 10% to 30%
@@ -195,7 +195,7 @@ namespace TirexGame.Utils.LoadingScene
             _loadOperation.allowSceneActivation = _allowSceneActivation;
             
             // Wait for loading to complete
-            while (!_loadOperation.isDone && !_isCancelled)
+            while (!_loadOperation.isDone && !isCancelled)
             {
                 // Unity reports progress from 0 to 0.9, then jumps to 1 when activation is allowed
                 float rawProgress = _loadOperation.progress;
@@ -230,7 +230,7 @@ namespace TirexGame.Utils.LoadingScene
             
             AsyncOperation unloadAssetsOperation = Resources.UnloadUnusedAssets();
             
-            while (!unloadAssetsOperation.isDone && !_isCancelled)
+            while (!unloadAssetsOperation.isDone && !isCancelled)
             {
                 float unloadProgress = unloadAssetsOperation.progress;
                 UpdateProgressInternal(0.85f + unloadProgress * 0.15f); // 85% to 100%
