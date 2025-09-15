@@ -88,26 +88,32 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void SetupEventListeners()
         {
-            // 1. Đăng ký lắng nghe event PlayerJumped
-            // Subscribe to PlayerJumped event
-            EventSystem.Subscribe<PlayerJumped>(OnPlayerJumped);
+            // 🎯 SỬ DỤNG EXTENSION METHODS - TỰ ĐỘNG CLEANUP KHI OBJECT BỊ HỦY!
+            // 🎯 USING EXTENSION METHODS - AUTO CLEANUP WHEN OBJECT IS DESTROYED!
             
-            // 2. Đăng ký lắng nghe event ItemCollected
-            // Subscribe to ItemCollected event  
-            EventSystem.Subscribe<ItemCollected>(OnItemCollected);
+            // 1. Đăng ký lắng nghe event PlayerJumped (tự động unsubscribe)
+            // Subscribe to PlayerJumped event (auto unsubscribe)
+            this.SubscribeWithCleanup<PlayerJumped>(OnPlayerJumped);
             
-            // 3. Đăng ký lắng nghe event GamePaused
-            // Subscribe to GamePaused event
-            EventSystem.Subscribe<GamePaused>(OnGamePaused);
+            // 2. Đăng ký lắng nghe event ItemCollected (tự động unsubscribe)
+            // Subscribe to ItemCollected event (auto unsubscribe)
+            this.SubscribeWithCleanup<ItemCollected>(OnItemCollected);
             
-            // 4. Ví dụ về conditional subscription - chỉ lắng nghe item hiếm
-            // Example of conditional subscription - only listen to rare items
-            EventSystem.SubscribeWhen<ItemCollected>(OnRareItemCollected, 
+            // 3. Đăng ký lắng nghe event GamePaused (tự động unsubscribe)
+            // Subscribe to GamePaused event (auto unsubscribe)
+            this.SubscribeWithCleanup<GamePaused>(OnGamePaused);
+            
+            // 4. Ví dụ về conditional subscription - chỉ lắng nghe item hiếm (tự động unsubscribe)
+            // Example of conditional subscription - only listen to rare items (auto unsubscribe)
+            this.SubscribeWhenWithCleanup<ItemCollected>(OnRareItemCollected, 
                 item => item.IsRare);
             
-            // 5. Ví dụ về one-time subscription - chỉ lắng nghe lần đầu
-            // Example of one-time subscription - only listen once
-            EventSystem.SubscribeOnce<PlayerJumped>(OnFirstJump);
+            // 5. Ví dụ về one-time subscription - chỉ lắng nghe lần đầu (tự động unsubscribe)
+            // Example of one-time subscription - only listen once (auto unsubscribe)
+            this.SubscribeOnceWithCleanup<PlayerJumped>(OnFirstJump);
+            
+            // 💡 KHÔNG CẦN GỌI UNSUBSCRIBE TRONG OnDestroy NỮA!
+            // 💡 NO NEED TO CALL UNSUBSCRIBE IN OnDestroy ANYMORE!
         }
         
         #endregion
@@ -277,15 +283,17 @@ namespace TirexGame.Utils.EventCenter.Examples
             }
         }
         
-        // Cleanup khi object bị destroy
-        // Cleanup when object is destroyed
-        private void OnDestroy()
+        [ContextMenu("Debug Cleanup Info")]
+        private void DebugCleanupInfo()
         {
-            // Tự động unsubscribe khi object bị destroy
-            // Automatically unsubscribe when object is destroyed
-            // (EventSystem sẽ tự động cleanup, nhưng best practice là explicit unsubscribe)
-            // (EventSystem will auto cleanup, but best practice is explicit unsubscribe)
+            Log("🔧 Using CancellationTokenOnDestroy for auto cleanup");
+            Log("✨ No extra components needed - cleanup happens automatically!");
+            Log("💡 Events will be unsubscribed when this GameObject is destroyed");
         }
+        
+        // 🎉 KHÔNG CẦN OnDestroy NỮA! EXTENSION METHODS SẼ TỰ ĐỘNG CLEANUP!
+        // 🎉 NO MORE OnDestroy NEEDED! EXTENSION METHODS WILL AUTO CLEANUP!
+        // private void OnDestroy() { /* No longer needed! */ }
         
         #endregion
     }
