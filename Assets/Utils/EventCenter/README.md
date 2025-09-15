@@ -21,6 +21,7 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 - ✅ **Zero Allocation**: Sử dụng struct thay vì class để tránh GC
 - ✅ **Type Safe**: Compile-time safety với generics
 - ✅ **API đơn giản**: Static methods dễ sử dụng
+- ✅ **Auto Cleanup**: Tự động unsubscribe với CancellationTokenOnDestroy
 - ✅ **Flexible Subscriptions**: Normal, conditional, và one-time listeners
 - ✅ **Batch Operations**: Publish nhiều events cùng lúc
 - ✅ **Thread Safe**: An toàn khi sử dụng đa luồng
@@ -123,12 +124,34 @@ EventSystem.PublishBatch(events);
 
 ### 4. Unsubscribe (Hủy đăng ký)
 
+#### Cách truyền thống (Traditional way):
 ```csharp
 private void OnDestroy()
 {
     // Hủy đăng ký để tránh memory leak
     EventSystem.Unsubscribe<ScoreChanged>(OnScoreChanged);
 }
+```
+
+#### 🎯 Cách mới - Tự động Cleanup (New way - Auto Cleanup):
+```csharp
+// Sử dụng extension methods - KHÔNG CẦN OnDestroy!
+// Use extension methods - NO NEED FOR OnDestroy!
+private void Start()
+{
+    // Tự động unsubscribe khi GameObject bị destroy
+    this.SubscribeWithCleanup<ScoreChanged>(OnScoreChanged);
+    
+    // Conditional subscription với auto cleanup
+    this.SubscribeWhenWithCleanup<ItemCollected>(OnRareItem, 
+        item => item.IsRare);
+    
+    // One-time subscription với auto cleanup
+    this.SubscribeOnceWithCleanup<PlayerJumped>(OnFirstJump);
+}
+
+// Không cần OnDestroy nữa! 🎉
+// No more OnDestroy needed! 🎉
 ```
 
 ## 📖 API Reference
@@ -146,6 +169,19 @@ EventSystem.SubscribeWhen<T>(Action<T> callback, Func<T, bool> condition)
 // Đăng ký một lần (tự động unsubscribe sau lần đầu)
 EventSystem.SubscribeOnce<T>(Action<T> callback)
 EventSystem.SubscribeOnce<T>(Action<T> callback, Func<T, bool> condition)
+```
+
+#### 🎯 Extension Methods (Auto Cleanup)
+```csharp
+// Đăng ký với tự động cleanup khi MonoBehaviour bị destroy
+this.SubscribeWithCleanup<T>(Action<T> callback)
+
+// Conditional subscription với auto cleanup
+this.SubscribeWhenWithCleanup<T>(Action<T> callback, Func<T, bool> condition)
+
+// One-time subscription với auto cleanup
+this.SubscribeOnceWithCleanup<T>(Action<T> callback)
+this.SubscribeOnceWithCleanup<T>(Action<T> callback, Func<T, bool> condition)
 ```
 
 #### Publish
@@ -300,7 +336,16 @@ public struct PlayerMoved
     public float Speed;
 }
 
-// ✅ Unsubscribe trong OnDestroy
+// ✅ 🎯 SỬ DỤNG EXTENSION METHODS CHO AUTO CLEANUP (KHUYÊN DÙNG!)
+private void Start()
+{
+    // Tự động unsubscribe khi GameObject destroy - Không cần OnDestroy!
+    this.SubscribeWithCleanup<PlayerMoved>(OnPlayerMoved);
+    this.SubscribeWhenWithCleanup<ItemCollected>(OnRareItem, item => item.IsRare);
+    this.SubscribeOnceWithCleanup<PlayerJumped>(OnFirstJump);
+}
+
+// ✅ Hoặc unsubscribe thủ công trong OnDestroy (cách cũ)
 private void OnDestroy()
 {
     EventSystem.Unsubscribe<PlayerMoved>(OnPlayerMoved);
@@ -345,7 +390,7 @@ public struct BadEvent
 
 ### 🏗️ Architecture Patterns
 
-#### 1. Component Communication
+#### 1. Component Communication (Auto Cleanup)
 ```csharp
 // Player Controller
 public class PlayerController : MonoBehaviour
@@ -360,18 +405,21 @@ public class PlayerController : MonoBehaviour
     }
 }
 
-// Audio Manager
+// Audio Manager  
 public class AudioManager : MonoBehaviour
 {
     private void Start()
     {
-        EventSystem.Subscribe<PlayerJumped>(OnPlayerJumped);
+        // 🎯 Auto cleanup - không cần OnDestroy!
+        this.SubscribeWithCleanup<PlayerJumped>(OnPlayerJumped);
     }
     
     private void OnPlayerJumped(PlayerJumped jumpEvent)
     {
         PlayJumpSound();
     }
+    
+    // Không cần OnDestroy! Extension method sẽ tự cleanup
 }
 ```
 
