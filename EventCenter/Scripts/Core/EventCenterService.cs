@@ -1,0 +1,240 @@
+using System;
+using UnityEngine;
+
+namespace TirexGame.Utils.EventCenter
+{
+    /// <summary>
+    /// Service locator for EventCenter - provides access to event system without singleton
+    /// Supports dependency injection and better testability
+    /// </summary>
+    public static class EventCenterService
+    {
+        #region Service Locator
+        
+        private static IEventCenter _current;
+        
+        /// <summary>
+        /// Current active EventCenter instance
+        /// </summary>
+        public static IEventCenter Current
+        {
+            get
+            {
+                if (_current == null)
+                {
+                    // Try to find EventCenter in scene
+                    var eventCenter = UnityEngine.Object.FindObjectOfType<EventCenter>();
+                    if (eventCenter != null)
+                    {
+                        SetCurrent(eventCenter);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[EventCenterService] No EventCenter found in scene. Consider adding one or setting manually.");
+                    }
+                }
+                return _current;
+            }
+        }
+        
+        /// <summary>
+        /// Check if EventCenter service is available
+        /// </summary>
+        public static bool IsAvailable => _current != null;
+        
+        #endregion
+        
+        #region Service Management
+        
+        /// <summary>
+        /// Set the current EventCenter instance
+        /// </summary>
+        /// <param name="eventCenter">EventCenter instance to use</param>
+        public static void SetCurrent(IEventCenter eventCenter)
+        {
+            if (_current != null && _current != eventCenter)
+            {
+                Debug.Log("[EventCenterService] Replacing current EventCenter instance");
+            }
+            
+            _current = eventCenter;
+            
+            if (eventCenter != null)
+            {
+                Debug.Log("[EventCenterService] EventCenter service is now available");
+            }
+        }
+        
+        /// <summary>
+        /// Clear the current EventCenter instance
+        /// </summary>
+        public static void ClearCurrent()
+        {
+            _current = null;
+            Debug.Log("[EventCenterService] EventCenter service cleared");
+        }
+        
+        /// <summary>
+        /// Create and set a new EventCenter instance
+        /// </summary>
+        /// <param name="name">Name for the EventCenter GameObject</param>
+        /// <param name="dontDestroyOnLoad">Whether to persist across scenes</param>
+        /// <returns>Created EventCenter instance</returns>
+        public static EventCenter CreateAndSetCurrent(string name = "EventCenter", bool dontDestroyOnLoad = true)
+        {
+            var go = new GameObject(name);
+            var eventCenter = go.AddComponent<EventCenter>();
+            
+            if (dontDestroyOnLoad)
+            {
+                UnityEngine.Object.DontDestroyOnLoad(go);
+            }
+            
+            SetCurrent(eventCenter);
+            return eventCenter;
+        }
+        
+        #endregion
+        
+        #region Convenience API
+        
+        /// <summary>
+        /// Publish an event using the current EventCenter
+        /// </summary>
+        /// <param name="eventData">Event to publish</param>
+        public static void Publish(BaseEvent eventData)
+        {
+            Current?.PublishEvent(eventData);
+        }
+        
+        /// <summary>
+        /// Publish an event immediately using the current EventCenter
+        /// </summary>
+        /// <param name="eventData">Event to publish immediately</param>
+        public static void PublishImmediate(BaseEvent eventData)
+        {
+            Current?.PublishEventImmediate(eventData);
+        }
+        
+        /// <summary>
+        /// Subscribe to events using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of event to subscribe to</typeparam>
+        /// <param name="callback">Callback function</param>
+        /// <param name="priority">Priority of the subscription</param>
+        /// <returns>Subscription handle</returns>
+        public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : BaseEvent
+        {
+            return Current?.Subscribe(callback, priority);
+        }
+        
+        /// <summary>
+        /// Subscribe to events using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of event to subscribe to</typeparam>
+        /// <param name="listener">Listener instance</param>
+        /// <returns>Subscription handle</returns>
+        public static IEventSubscription Subscribe<T>(IEventListener<T> listener) where T : BaseEvent
+        {
+            return Current?.Subscribe(listener);
+        }
+        
+        /// <summary>
+        /// Create and publish an event using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of event to create</typeparam>
+        /// <param name="source">Source object for the event</param>
+        /// <returns>Created event instance</returns>
+        public static T CreateAndPublish<T>(object source = null) where T : BaseEvent, new()
+        {
+            if (Current is EventCenter eventCenter)
+            {
+                return eventCenter.CreateAndPublishEvent<T>(source);
+            }
+            
+            // Fallback for other IEventCenter implementations
+            var eventData = new T();
+            eventData.Initialize(source);
+            Current?.PublishEvent(eventData);
+            return eventData;
+        }
+        
+        /// <summary>
+        /// Check if there are listeners for a specific event type
+        /// </summary>
+        /// <typeparam name="T">Type of event to check</typeparam>
+        /// <returns>True if listeners exist</returns>
+        public static bool HasListeners<T>() where T : BaseEvent
+        {
+            if (Current is EventCenter eventCenter)
+            {
+                return eventCenter.HasListeners<T>();
+            }
+            return false;
+        }
+        
+        /// <summary>
+        /// Get number of listeners for a specific event type
+        /// </summary>
+        /// <typeparam name="T">Type of event to check</typeparam>
+        /// <returns>Number of listeners</returns>
+        public static int GetListenerCount<T>() where T : BaseEvent
+        {
+            if (Current is EventCenter eventCenter)
+            {
+                return eventCenter.GetListenerCount<T>();
+            }
+            return 0;
+        }
+        
+        /// <summary>
+        /// Get statistics about the current EventCenter
+        /// </summary>
+        /// <returns>EventCenter statistics</returns>
+        public static EventCenterStats? GetStats()
+        {
+            return Current?.GetStats();
+        }
+        
+        #endregion
+        
+        #region Validation
+        
+        /// <summary>
+        /// Ensure EventCenter service is available, create one if needed
+        /// </summary>
+        /// <param name="autoCreate">Whether to automatically create EventCenter if none exists</param>
+        /// <returns>True if service is available</returns>
+        public static bool EnsureAvailable(bool autoCreate = true)
+        {
+            if (IsAvailable)
+                return true;
+            
+            if (autoCreate)
+            {
+                CreateAndSetCurrent();
+                return IsAvailable;
+            }
+            
+            return false;
+        }
+        
+        /// <summary>
+        /// Validate that EventCenter service is available, log warning if not
+        /// </summary>
+        /// <param name="operation">Name of operation being attempted</param>
+        /// <returns>True if service is available</returns>
+        public static bool ValidateAvailable(string operation = "operation")
+        {
+            if (!IsAvailable)
+            {
+                Debug.LogWarning($"[EventCenterService] Cannot perform {operation} - EventCenter service not available. " +
+                               "Make sure to set up EventCenter in your scene or call EventCenterService.CreateAndSetCurrent()");
+                return false;
+            }
+            return true;
+        }
+        
+        #endregion
+    }
+}
