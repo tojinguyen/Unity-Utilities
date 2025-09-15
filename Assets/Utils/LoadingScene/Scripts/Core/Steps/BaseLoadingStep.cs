@@ -8,9 +8,9 @@ namespace TirexGame.Utils.LoadingScene
     {
         #region Protected Fields
         
-        protected bool _isCompleted;
-        protected bool _isCancelled;
-        protected float _progress;
+        protected bool isCompleted;
+        protected bool isCancelled;
+        protected float progress;
         
         #endregion
 
@@ -23,10 +23,10 @@ namespace TirexGame.Utils.LoadingScene
         
         public float Progress 
         { 
-            get => _progress; 
+            get => progress; 
             protected set 
             { 
-                _progress = Mathf.Clamp01(value);
+                progress = Mathf.Clamp01(value);
                 OnProgressChanged?.Invoke(this);
             } 
         }
@@ -54,13 +54,13 @@ namespace TirexGame.Utils.LoadingScene
         
         public async Task ExecuteAsync()
         {
-            if (_isCompleted)
+            if (isCompleted)
             {
                 ConsoleLogger.LogWarning($"Step '{StepName}' is already completed!");
                 return;
             }
             
-            if (_isCancelled)
+            if (isCancelled)
             {
                 ConsoleLogger.LogWarning($"Step '{StepName}' was cancelled!");
                 return;
@@ -71,10 +71,10 @@ namespace TirexGame.Utils.LoadingScene
                 Progress = 0f;
                 await ExecuteStepAsync();
                 
-                if (!_isCancelled)
+                if (!isCancelled)
                 {
                     Progress = 1f;
-                    _isCompleted = true;
+                    isCompleted = true;
                     OnStepCompleted?.Invoke(this);
                 }
             }
@@ -88,15 +88,15 @@ namespace TirexGame.Utils.LoadingScene
         
         public virtual void Cancel()
         {
-            _isCancelled = true;
+            isCancelled = true;
             ConsoleLogger.Log($"Step '{StepName}' cancelled");
         }
         
         public virtual void Reset()
         {
-            _progress = 0f;
-            _isCompleted = false;
-            _isCancelled = false;
+            progress = 0f;
+            isCompleted = false;
+            isCancelled = false;
         }
         
         #endregion
@@ -112,7 +112,7 @@ namespace TirexGame.Utils.LoadingScene
 
         protected void UpdateProgressInternal(float progress)
         {
-            if (!_isCancelled && !_isCompleted)
+            if (!isCancelled && !isCompleted)
             {
                 Progress = progress;
             }
@@ -125,7 +125,7 @@ namespace TirexGame.Utils.LoadingScene
 
         protected void ThrowIfCancelled()
         {
-            if (_isCancelled)
+            if (isCancelled)
             {
                 throw new OperationCanceledException($"Step '{StepName}' was cancelled");
             }
