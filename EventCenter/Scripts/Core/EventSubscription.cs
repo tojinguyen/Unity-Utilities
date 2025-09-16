@@ -44,7 +44,7 @@ namespace TirexGame.Utils.EventCenter
     /// <summary>
     /// Callback listener wrapper for Action-based subscriptions
     /// </summary>
-    internal class CallbackEventListener<T> : IEventListener<T> where T : BaseEvent
+    internal class CallbackEventListener<T> : IEventListener<T> where T : struct
     {
         public int Priority { get; private set; }
         public bool IsActive => _callback != null;
@@ -52,6 +52,47 @@ namespace TirexGame.Utils.EventCenter
         private readonly Action<T> _callback;
         
         public CallbackEventListener(Action<T> callback, int priority = 0)
+        {
+            _callback = callback;
+            Priority = priority;
+        }
+        
+        public bool HandleEvent(BaseEvent eventData)
+        {
+            // For struct events, we need to unwrap from EventWrapper
+            if (eventData is EventWrapper<T> wrapper)
+            {
+                return HandleEvent(wrapper.Payload);
+            }
+            return false;
+        }
+        
+        public bool HandleEvent(T eventData)
+        {
+            try
+            {
+                _callback?.Invoke(eventData);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Error in event callback: {ex.Message}");
+                return false;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Callback listener wrapper for Action-based legacy subscriptions
+    /// </summary>
+    internal class CallbackEventLegacyListener<T> : IEventListenerLegacy<T> where T : BaseEvent
+    {
+        public int Priority { get; private set; }
+        public bool IsActive => _callback != null;
+        
+        private readonly Action<T> _callback;
+        
+        public CallbackEventLegacyListener(Action<T> callback, int priority = 0)
         {
             _callback = callback;
             Priority = priority;
@@ -75,7 +116,7 @@ namespace TirexGame.Utils.EventCenter
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error in event callback: {ex.Message}");
+                Debug.LogError($"Error in legacy event callback: {ex.Message}");
                 return false;
             }
         }

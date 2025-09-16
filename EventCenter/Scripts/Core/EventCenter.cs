@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
@@ -138,7 +139,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Subscribe to events of a specific type
         /// </summary>
-        public IEventSubscription Subscribe<T>(IEventListener<T> listener) where T : BaseEvent
+        public IEventSubscription Subscribe<T>(IEventListener<T> listener) where T : struct
         {
             if (listener == null) return null;
             
@@ -161,12 +162,12 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Subscribe to events with a callback function
         /// </summary>
-        public IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : BaseEvent
+        public IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : struct
         {
             if (callback == null) return null;
             
             var listener = new CallbackEventListener<T>(callback, priority);
-            return Subscribe(listener);
+            return Subscribe<T>(listener);
         }
         
         /// <summary>
@@ -194,7 +195,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Unsubscribe from a specific event type
         /// </summary>
-        public void Unsubscribe<T>(IEventListener<T> listener) where T : BaseEvent
+        public void Unsubscribe<T>(IEventListener<T> listener) where T : struct
         {
             if (listener == null) return;
             
@@ -275,6 +276,84 @@ namespace TirexGame.Utils.EventCenter
         public EventCenterStats GetStats()
         {
             return _stats;
+        }
+        
+        /// <summary>
+        /// Publish a struct event to the event system
+        /// </summary>
+        /// <typeparam name="T">Type of struct payload</typeparam>
+        /// <param name="payload">The struct payload</param>
+        /// <param name="priority">Event priority (higher value = higher priority)</param>
+        public void PublishEvent<T>(T payload, int priority = 0) where T : struct
+        {
+            var eventWrapper = new EventWrapper<T>(payload, priority);
+            
+            if (priority > 0)
+            {
+                _immediateQueue.Enqueue(eventWrapper);
+            }
+            else
+            {
+                _eventQueue.Enqueue(eventWrapper);
+            }
+            
+            Log($"Published struct event {typeof(T).Name}");
+        }
+        
+        /// <summary>
+        /// Publish a struct event with immediate processing
+        /// </summary>
+        /// <typeparam name="T">Type of struct payload</typeparam>
+        /// <param name="payload">The struct payload to publish immediately</param>
+        /// <param name="priority">Event priority (higher value = higher priority)</param>
+        public void PublishEventImmediate<T>(T payload, int priority = 0) where T : struct
+        {
+            var eventWrapper = new EventWrapper<T>(payload, priority);
+            var listenersNotified = _dispatcher.Dispatch(eventWrapper);
+            _stats.EventsProcessedThisFrame++;
+            
+            Log($"Immediately processed struct event {typeof(T).Name} to {listenersNotified} listeners");
+        }
+        
+        /// <summary>
+        /// Legacy method for subscribing to BaseEvent types
+        /// </summary>
+        /// <typeparam name="T">Type of BaseEvent to subscribe to</typeparam>
+        /// <param name="listener">The listener to register</param>
+        /// <returns>Subscription handle for managing the subscription</returns>
+        public IEventSubscription SubscribeLegacy<T>(IEventListenerLegacy<T> listener) where T : BaseEvent
+        {
+            if (listener == null) return null;
+            
+            var eventType = typeof(T);
+            _dispatcher.Subscribe(eventType, listener);
+            
+            var subscription = new EventSubscription(eventType, listener, () => Unsubscribe(listener));
+            _subscriptions.Add(subscription);
+            
+            if (!_listenerSubscriptions.ContainsKey(listener))
+            {
+                _listenerSubscriptions[listener] = new List<IEventSubscription>();
+            }
+            _listenerSubscriptions[listener].Add(subscription);
+            
+            Log($"Legacy subscribed to {eventType.Name}");
+            return subscription;
+        }
+        
+        /// <summary>
+        /// Legacy method for subscribing to BaseEvent types with callback
+        /// </summary>
+        /// <typeparam name="T">Type of BaseEvent to subscribe to</typeparam>
+        /// <param name="callback">Callback function to invoke</param>
+        /// <param name="priority">Priority of this callback</param>
+        /// <returns>Subscription handle for managing the subscription</returns>
+        public IEventSubscription SubscribeLegacy<T>(Action<T> callback, int priority = 0) where T : BaseEvent
+        {
+            if (callback == null) return null;
+            
+            var listener = new CallbackEventLegacyListener<T>(callback, priority);
+            return SubscribeLegacy<T>(listener);
         }
         
         #endregion
