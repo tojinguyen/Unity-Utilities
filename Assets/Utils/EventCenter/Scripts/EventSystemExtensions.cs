@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.EventCenter
 {
