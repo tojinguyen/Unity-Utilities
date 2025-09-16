@@ -7,7 +7,7 @@ namespace TirexGame.Utils.EventCenter
     /// Wrapper for struct payloads to provide event metadata
     /// Allows any struct to be used as event payload without inheritance
     /// </summary>
-    public class EventWrapper<T> : IDisposable where T : struct
+    public partial class EventWrapper<T> : BaseEvent where T : struct
     {
         #region Properties
         
@@ -16,45 +16,23 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public T Payload { get; set; }
         
-        /// <summary>
-        /// Unique identifier for this event instance
-        /// </summary>
-        public string EventId { get; private set; }
-        
-        /// <summary>
-        /// Timestamp when this event was created
-        /// </summary>
-        public float TimeStamp { get; private set; }
-        
+        private int _priority = 0;
         /// <summary>
         /// Priority of this event (higher value = higher priority)
         /// </summary>
-        public int Priority { get; set; }
+        public override int Priority => _priority;
         
+        private bool _isImmediate = false;
         /// <summary>
         /// Whether this event should be processed immediately or can be batched
         /// </summary>
-        public bool IsImmediate { get; set; }
+        public override bool IsImmediate => _isImmediate;
         
-        /// <summary>
-        /// Source object that raised this event
-        /// </summary>
-        public object Source { get; private set; }
-        
-        /// <summary>
-        /// Whether this event has been handled
-        /// </summary>
-        public bool IsHandled { get; private set; }
-        
-        /// <summary>
-        /// Whether this event is disposed
-        /// </summary>
-        public bool IsDisposed { get; private set; }
-        
+        private bool _isPoolable = true;
         /// <summary>
         /// Whether this event can be pooled for reuse
         /// </summary>
-        public bool IsPoolable { get; set; } = true;
+        public override bool IsPoolable => _isPoolable;
         
         #endregion
         
@@ -72,48 +50,39 @@ namespace TirexGame.Utils.EventCenter
         /// Constructor with payload
         /// </summary>
         /// <param name="payload">The struct payload</param>
-        /// <param name="source">Source object</param>
         /// <param name="priority">Event priority</param>
         /// <param name="isImmediate">Whether to process immediately</param>
-        public EventWrapper(T payload, object source = null, int priority = 0, bool isImmediate = false)
+        public EventWrapper(T payload, int priority = 0, bool isImmediate = false)
         {
-            Initialize(source);
+            Initialize();
             Payload = payload;
-            Priority = priority;
-            IsImmediate = isImmediate;
+            _priority = priority;
+            _isImmediate = isImmediate;
         }
         
         /// <summary>
         /// Initialize event data
         /// Called when event is created or retrieved from pool
         /// </summary>
-        public void Initialize(object source = null)
+        public override void Initialize(object source = null)
         {
-            EventId = Guid.NewGuid().ToString();
-            TimeStamp = Time.unscaledTime;
-            Source = source;
-            IsHandled = false;
-            IsDisposed = false;
-            Priority = 0;
-            IsImmediate = false;
-            IsPoolable = true;
+            base.Initialize(source);
             Payload = default(T);
+            _priority = 0;
+            _isImmediate = false;
+            _isPoolable = true;
         }
         
         /// <summary>
         /// Reset event to default state for pooling
         /// </summary>
-        public void Reset()
+        public override void Reset()
         {
-            EventId = null;
-            TimeStamp = 0f;
-            Source = null;
-            IsHandled = false;
-            IsDisposed = false;
-            Priority = 0;
-            IsImmediate = false;
-            IsPoolable = true;
+            base.Reset();
             Payload = default(T);
+            _priority = 0;
+            _isImmediate = false;
+            _isPoolable = true;
         }
         
         #endregion

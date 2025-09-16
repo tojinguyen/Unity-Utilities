@@ -125,7 +125,7 @@ namespace TirexGame.Utils.EventCenter
         /// <returns>Subscription handle</returns>
         public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : BaseEvent
         {
-            return Current?.Subscribe(callback, priority);
+            return Current?.SubscribeLegacy(callback, priority);
         }
         
         /// <summary>
@@ -134,9 +134,54 @@ namespace TirexGame.Utils.EventCenter
         /// <typeparam name="T">Type of event to subscribe to</typeparam>
         /// <param name="listener">Listener instance</param>
         /// <returns>Subscription handle</returns>
-        public static IEventSubscription Subscribe<T>(IEventListener<T> listener) where T : BaseEvent
+        public static IEventSubscription Subscribe<T>(IEventListenerLegacy<T> listener) where T : BaseEvent
+        {
+            return Current?.SubscribeLegacy(listener);
+        }
+        
+        /// <summary>
+        /// Subscribe to struct events using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
+        /// <param name="callback">Callback function</param>
+        /// <param name="priority">Priority of the subscription</param>
+        /// <returns>Subscription handle</returns>
+        public static IEventSubscription SubscribeToStruct<T>(Action<T> callback, int priority = 0) where T : struct
+        {
+            return Current?.Subscribe(callback, priority);
+        }
+        
+        /// <summary>
+        /// Subscribe to struct events using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
+        /// <param name="listener">Listener instance</param>
+        /// <returns>Subscription handle</returns>
+        public static IEventSubscription SubscribeToStruct<T>(IEventListener<T> listener) where T : struct
         {
             return Current?.Subscribe(listener);
+        }
+        
+        /// <summary>
+        /// Publish a struct event using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of struct to publish</typeparam>
+        /// <param name="payload">The struct payload</param>
+        /// <param name="priority">Event priority</param>
+        public static void PublishStruct<T>(T payload, int priority = 0) where T : struct
+        {
+            Current?.PublishEvent(payload, priority);
+        }
+        
+        /// <summary>
+        /// Publish a struct event immediately using the current EventCenter
+        /// </summary>
+        /// <typeparam name="T">Type of struct to publish</typeparam>
+        /// <param name="payload">The struct payload</param>
+        /// <param name="priority">Event priority</param>
+        public static void PublishStructImmediate<T>(T payload, int priority = 0) where T : struct
+        {
+            Current?.PublishEventImmediate(payload, priority);
         }
         
         /// <summary>
