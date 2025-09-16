@@ -39,17 +39,17 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Source object that raised this event
         /// </summary>
-        public object Source { get; private set; }
+        public object Source { get; protected set; }
         
         /// <summary>
         /// Whether this event has been handled
         /// </summary>
-        public bool IsHandled { get; private set; }
+        public bool IsHandled { get; protected set; }
         
         /// <summary>
         /// Whether this event is disposed
         /// </summary>
-        public bool IsDisposed { get; private set; }
+        public bool IsDisposed { get; protected set; }
         
         #endregion
         

@@ -527,7 +527,7 @@ namespace TirexGame.Utils.EventCenter
         [System.Obsolete("Use EventCenterService.Current.Subscribe() instead")]
         public static IEventSubscription Listen<T>(Action<T> callback, int priority = 0) where T : BaseEvent
         {
-            return EventCenterService.Current?.Subscribe(callback, priority);
+            return EventCenterService.Subscribe(callback, priority);
         }
         
         #endregion

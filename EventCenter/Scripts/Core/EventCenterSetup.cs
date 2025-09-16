@@ -91,12 +91,12 @@ namespace TirexGame.Utils.EventCenter
         private void OnDestroy()
         {
             // Clean up service references
-            if (EventCenterService.Current == _eventCenter)
+            if (ReferenceEquals(EventCenterService.Current, _eventCenter))
             {
                 EventCenterService.ClearCurrent();
             }
             
-            if (EventPoolService.Current == _eventPool)
+            if (ReferenceEquals(EventPoolService.Current, _eventPool))
             {
                 EventPoolService.ClearCurrent();
             }
@@ -133,7 +133,7 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public bool IsInitialized()
         {
-            return _eventCenter != null && EventCenterService.Current == _eventCenter;
+            return _eventCenter != null && ReferenceEquals(EventCenterService.Current, _eventCenter);
         }
         
         #endregion

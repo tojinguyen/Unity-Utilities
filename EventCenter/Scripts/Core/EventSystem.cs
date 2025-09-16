@@ -28,7 +28,7 @@ namespace TirexGame.Utils.EventCenter
             
             try
             {
-                _eventCenter = EventCenterService.Instance.GetEventCenter();
+                _eventCenter = EventCenterService.Current;
                 _isInitialized = true;
                 
                 Debug.Log("[EventSystem] Static event system initialized successfully");
