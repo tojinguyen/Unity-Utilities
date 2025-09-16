@@ -22,7 +22,7 @@ namespace TirexGame.Utils.EventCenter
                 if (_current == null)
                 {
                     // Try to find EventPool in scene
-                    var eventPool = UnityEngine.Object.FindObjectOfType<EventPool>();
+                    var eventPool = UnityEngine.Object.FindFirstObjectByType<EventPool>();
                     if (eventPool != null)
                     {
                         SetCurrent(eventPool);

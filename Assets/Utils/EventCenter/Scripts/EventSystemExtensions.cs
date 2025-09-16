@@ -32,13 +32,13 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
 
-            // Subscribe to the event
-            EventSystem.Subscribe<T>(callback);
+            // Subscribe to the event and store the subscription
+            var subscription = EventSystem.Subscribe<T>(callback);
 
             // Register for auto-cleanup using CancellationTokenOnDestroy
             component.GetCancellationTokenOnDestroy().Register(() => 
             {
-                EventSystem.Unsubscribe<T>(callback);
+                subscription?.Dispose();
             });
         }
 
@@ -55,11 +55,11 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
 
-            EventSystem.SubscribeWhen<T>(callback, condition);
+            var subscription = EventSystem.SubscribeWhen<T>(callback, condition);
 
             component.GetCancellationTokenOnDestroy().Register(() => 
             {
-                EventSystem.Unsubscribe<T>(callback);
+                subscription?.Dispose();
             });
         }
 
@@ -76,13 +76,13 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
 
-            EventSystem.SubscribeOnce<T>(callback);
+            var subscription = EventSystem.SubscribeOnce<T>(callback);
             
             // SubscribeOnce tự động cleanup sau lần đầu, nhưng chúng ta vẫn register
             // để đảm bảo cleanup nếu component bị destroy trước khi event được trigger
             component.GetCancellationTokenOnDestroy().Register(() => 
             {
-                EventSystem.Unsubscribe<T>(callback);
+                subscription?.Dispose();
             });
         }
 
@@ -99,11 +99,19 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
 
-            EventSystem.SubscribeOnce<T>(callback, condition);
+            IEventSubscription subscription = null;
+            subscription = EventSystem.Subscribe<T>((payload) =>
+            {
+                if (condition(payload))
+                {
+                    callback(payload);
+                    subscription?.Dispose();
+                }
+            });
 
             component.GetCancellationTokenOnDestroy().Register(() => 
             {
-                EventSystem.Unsubscribe<T>(callback);
+                subscription?.Dispose();
             });
         }
     }

@@ -23,7 +23,7 @@ namespace TirexGame.Utils.EventCenter
                 if (_current == null)
                 {
                     // Try to find EventCenter in scene
-                    var eventCenter = UnityEngine.Object.FindObjectOfType<EventCenter>();
+                    var eventCenter = UnityEngine.Object.FindFirstObjectByType<EventCenter>();
                     if (eventCenter != null)
                     {
                         SetCurrent(eventCenter);

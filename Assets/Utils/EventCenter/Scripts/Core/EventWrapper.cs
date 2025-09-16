@@ -22,17 +22,41 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public override int Priority => _priority;
         
+        /// <summary>
+        /// Set the priority for this event wrapper
+        /// </summary>
+        public void SetPriority(int priority)
+        {
+            _priority = priority;
+        }
+        
         private bool _isImmediate = false;
         /// <summary>
         /// Whether this event should be processed immediately or can be batched
         /// </summary>
         public override bool IsImmediate => _isImmediate;
         
+        /// <summary>
+        /// Set whether this event is immediate for this event wrapper
+        /// </summary>
+        public void SetIsImmediate(bool isImmediate)
+        {
+            _isImmediate = isImmediate;
+        }
+        
         private bool _isPoolable = true;
         /// <summary>
         /// Whether this event can be pooled for reuse
         /// </summary>
         public override bool IsPoolable => _isPoolable;
+        
+        /// <summary>
+        /// Set whether this event is poolable for this event wrapper
+        /// </summary>
+        public void SetIsPoolable(bool isPoolable)
+        {
+            _isPoolable = isPoolable;
+        }
         
         #endregion
         
@@ -92,7 +116,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Mark this event as handled
         /// </summary>
-        public void MarkAsHandled()
+        public new void MarkAsHandled()
         {
             IsHandled = true;
         }
@@ -100,7 +124,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Validate if this event is in a valid state for processing
         /// </summary>
-        public bool IsValid()
+        public override bool IsValid()
         {
             return !IsDisposed && !string.IsNullOrEmpty(EventId);
         }
@@ -112,7 +136,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Dispose this event
         /// </summary>
-        public void Dispose()
+        public new void Dispose()
         {
             if (IsDisposed) return;
             
@@ -160,6 +184,23 @@ namespace TirexGame.Utils.EventCenter
     /// </summary>
     public partial class EventWrapper<T> : IEventWrapper where T : struct
     {
-        // Interface implementation is already covered by the properties above
+        // Explicit interface implementations for setters
+        int IEventWrapper.Priority
+        {
+            get => Priority;
+            set => _priority = value;
+        }
+        
+        bool IEventWrapper.IsImmediate
+        {
+            get => IsImmediate;
+            set => _isImmediate = value;
+        }
+        
+        bool IEventWrapper.IsPoolable
+        {
+            get => IsPoolable;
+            set => _isPoolable = value;
+        }
     }
 }

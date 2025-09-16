@@ -89,9 +89,9 @@ namespace TirexGame.Utils.EventCenter
         {
             var wrapper = Get();
             wrapper.Payload = payload;
-            wrapper.Source = source;
-            wrapper.Priority = priority;
-            wrapper.IsImmediate = isImmediate;
+            wrapper.Initialize(source);
+            wrapper.SetPriority(priority);
+            wrapper.SetIsImmediate(isImmediate);
             return wrapper;
         }
         
@@ -158,8 +158,7 @@ namespace TirexGame.Utils.EventCenter
             {
                 TotalCreated = _totalCreated,
                 TotalRetrieved = _totalRetrieved,
-                CurrentPoolSize = _currentPoolSize,
-                HitRate = HitRate
+                CurrentPoolSize = _currentPoolSize
             };
         }
         
