@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using TirexGame.Utils.Data;
-using Newtonsoft.Json;
 
 namespace TirexGame.Utils.Data.Editor
 {
@@ -288,7 +287,7 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        private void ValidateDataFile(Type dataType, string key, string filePath)
+        private async void ValidateDataFile(Type dataType, string key, string filePath)
         {
             try
             {
@@ -312,14 +311,14 @@ namespace TirexGame.Utils.Data.Editor
                 object dataInstance;
                 try
                 {
-                    dataInstance = JsonConvert.DeserializeObject(json, dataType);
+                    dataInstance = JsonUtility.FromJson(json, dataType);
                     if (dataInstance == null)
                     {
                         _validationResults.Add(new ValidationResult(dataType.Name, key, false, "Failed to deserialize - null result", filePath));
                         return;
                     }
                 }
-                catch (JsonException jsonEx)
+                catch (Exception jsonEx)
                 {
                     _validationResults.Add(new ValidationResult(dataType.Name, key, false, $"JSON Error: {jsonEx.Message}", filePath));
                     return;
@@ -328,25 +327,31 @@ namespace TirexGame.Utils.Data.Editor
                 // Validate using IValidatable if implemented
                 if (dataInstance is IValidatable validatable)
                 {
-                    var validationResult = validatable.Validate();
-                    if (!validationResult.IsValid)
+                    bool isValid = validatable.Validate(out var errors);
+                    if (!isValid)
                     {
-                        _validationResults.Add(new ValidationResult(dataType.Name, key, false, validationResult.ErrorMessage, filePath));
+                        string errorMessage = errors != null && errors.Count > 0 
+                            ? string.Join("; ", errors) 
+                            : "Unknown validation error";
+                        _validationResults.Add(new ValidationResult(dataType.Name, key, false, errorMessage, filePath));
                         return;
                     }
                 }
                 
                 // Validate using DataValidator
                 var validator = new DataValidator();
-                bool isValid = validator.ValidateData(dataInstance);
+                var validationResult = await validator.ValidateAsync(dataInstance);
                 
-                if (isValid)
+                if (validationResult.IsValid)
                 {
                     _validationResults.Add(new ValidationResult(dataType.Name, key, true, "", filePath));
                 }
                 else
                 {
-                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, "Data validation failed", filePath));
+                    string errorMessage = validationResult.Errors != null && validationResult.Errors.Count > 0 
+                        ? string.Join("; ", validationResult.Errors) 
+                        : "Data validation failed";
+                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, errorMessage, filePath));
                 }
             }
             catch (Exception ex)
@@ -410,7 +415,7 @@ namespace TirexGame.Utils.Data.Editor
                         var setDefaultMethod = dataType.GetMethod("SetDefaultData");
                         setDefaultMethod?.Invoke(newInstance, null);
                         
-                        var json = JsonConvert.SerializeObject(newInstance, Formatting.Indented);
+                        var json = JsonUtility.ToJson(newInstance, true);
                         File.WriteAllText(result.filePath, json);
                         
                         return true;
