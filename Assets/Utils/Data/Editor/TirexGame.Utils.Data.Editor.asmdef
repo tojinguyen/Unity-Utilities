@@ -1,0 +1,22 @@
+{
+    "name": "TirexGame.Utils.Data.Editor",
+    "rootNamespace": "TirexGame.Utils.Data.Editor",
+    "references": [
+        "TirexGame.Utils.Data",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
