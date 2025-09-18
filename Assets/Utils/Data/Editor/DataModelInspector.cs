@@ -2,7 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using System;
 using System.Reflection;
+using System.Collections.Generic;
 using TirexGame.Utils.Data;
+using System.IO;
 
 namespace TirexGame.Utils.Data.Editor
 {
@@ -40,6 +42,7 @@ namespace TirexGame.Utils.Data.Editor
     {
         private bool _showValidation = true;
         private bool _showMetadata = false;
+        private List<string> _lastValidationErrors = new List<string>();
         
         public override void OnInspectorGUI()
         {
@@ -98,14 +101,19 @@ namespace TirexGame.Utils.Data.Editor
                 EditorGUILayout.Space();
                 EditorGUILayout.LabelField("Validation Status", EditorStyles.miniBoldLabel);
                 
-                var validationResult = validatable.Validate();
-                if (validationResult.IsValid)
+                bool isValid = validatable.Validate(out var errors);
+                _lastValidationErrors = errors ?? new List<string>();
+                
+                if (isValid)
                 {
                     EditorGUILayout.HelpBox("✓ Data is valid", MessageType.Info);
                 }
                 else
                 {
-                    EditorGUILayout.HelpBox($"✗ Validation failed: {validationResult.ErrorMessage}", MessageType.Error);
+                    string errorMessage = _lastValidationErrors.Count > 0 
+                        ? string.Join("\n", _lastValidationErrors) 
+                        : "Unknown validation error";
+                    EditorGUILayout.HelpBox($"✗ Validation failed:\n{errorMessage}", MessageType.Error);
                 }
             }
             
@@ -169,20 +177,23 @@ namespace TirexGame.Utils.Data.Editor
             EditorGUILayout.EndHorizontal();
         }
         
-        private void ValidateData()
+        private async void ValidateData()
         {
             try
             {
                 var validator = new DataValidator();
-                var isValid = validator.ValidateData(target);
+                var validationResult = await validator.ValidateAsync(target);
                 
-                if (isValid)
+                if (validationResult.IsValid)
                 {
                     EditorUtility.DisplayDialog("Validation", "Data is valid!", "OK");
                 }
                 else
                 {
-                    EditorUtility.DisplayDialog("Validation", "Data validation failed. Check console for details.", "OK");
+                    string errorMessage = validationResult.Errors.Count > 0 
+                        ? string.Join("\n", validationResult.Errors) 
+                        : "Unknown validation error";
+                    EditorUtility.DisplayDialog("Validation", $"Data validation failed:\n{errorMessage}", "OK");
                 }
             }
             catch (Exception ex)
@@ -223,8 +234,8 @@ namespace TirexGame.Utils.Data.Editor
                 string path = EditorUtility.SaveFilePanel("Export JSON", "", target.GetType().Name, "json");
                 if (!string.IsNullOrEmpty(path))
                 {
-                    var json = Newtonsoft.Json.JsonConvert.SerializeObject(target, Newtonsoft.Json.Formatting.Indented);
-                    System.IO.File.WriteAllText(path, json);
+                    var json = JsonUtility.ToJson(target, true);
+                    File.WriteAllText(path, json);
                     EditorUtility.DisplayDialog("Success", "Data exported successfully!", "OK");
                 }
             }
@@ -242,16 +253,12 @@ namespace TirexGame.Utils.Data.Editor
                 string path = EditorUtility.OpenFilePanel("Import JSON", "", "json");
                 if (!string.IsNullOrEmpty(path))
                 {
-                    var json = System.IO.File.ReadAllText(path);
-                    var importedData = Newtonsoft.Json.JsonConvert.DeserializeObject(json, target.GetType());
+                    var json = File.ReadAllText(path);
                     
-                    if (importedData != null)
-                    {
-                        Undo.RecordObject(target, "Import from JSON");
-                        EditorUtility.CopySerialized(importedData as UnityEngine.Object, target as UnityEngine.Object);
-                        EditorUtility.SetDirty(target);
-                        EditorUtility.DisplayDialog("Success", "Data imported successfully!", "OK");
-                    }
+                    Undo.RecordObject(target, "Import from JSON");
+                    JsonUtility.FromJsonOverwrite(json, target);
+                    EditorUtility.SetDirty(target);
+                    EditorUtility.DisplayDialog("Success", "Data imported successfully!", "OK");
                 }
             }
             catch (Exception ex)
