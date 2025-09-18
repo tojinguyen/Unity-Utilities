@@ -4,7 +4,8 @@
     "references": [
         "Unity.Addressables",
         "Unity.ResourceManager",
-        "TirexGame.Utilities"
+        "TirexGame.Utilities",
+        "UniTask"
     ],
     "includePlatforms": [
         "Editor"
