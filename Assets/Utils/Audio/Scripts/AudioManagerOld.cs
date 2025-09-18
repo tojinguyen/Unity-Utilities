@@ -4,10 +4,6 @@ using System.Linq;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 
-/// <summary>
-/// Static Audio Manager for handling BGM, SFX, and all audio operations
-/// No Singleton pattern - uses static methods for easy access
-/// </summary>
 public static class AudioManager
 {
     // Static configuration
@@ -75,82 +71,6 @@ public static class AudioManager
     public static string CurrentMusicId => currentMusicId;
     public static bool IsMusicPlaying => currentMusicSource != null && currentMusicSource.IsPlaying;
     public static bool IsInitialized { get; private set; }
-
-    #region Static API for common use cases
-    
-    /// <summary>
-    /// Play BGM (Background Music)
-    /// </summary>
-    public static UniTask<bool> PlayBGM(string musicId, float volume = 1f, bool crossFade = true)
-    {
-        return PlayMusicAsync(musicId, volume, crossFade);
-    }
-    
-    /// <summary>
-    /// Play SFX (Sound Effect)
-    /// </summary>
-    public static UniTask<bool> PlaySFX(string sfxId, float volume = 1f)
-    {
-        return PlayAudioAsync(sfxId, null, volume);
-    }
-    
-    /// <summary>
-    /// Play SFX at 3D position
-    /// </summary>
-    public static UniTask<bool> PlaySFXAtPosition(string sfxId, Vector3 position, float volume = 1f)
-    {
-        return PlayAudioAsync(sfxId, position, volume);
-    }
-    
-    /// <summary>
-    /// Stop current BGM
-    /// </summary>
-    public static UniTask StopBGM(bool immediate = false)
-    {
-        return StopMusicAsync(immediate);
-    }
-    
-    /// <summary>
-    /// Stop all SFX
-    /// </summary>
-    public static UniTask StopAllSFX(bool immediate = false)
-    {
-        return StopAllAudioAsync(AudioType.SFX, immediate);
-    }
-    
-    /// <summary>
-    /// Set BGM volume (0-1)
-    /// </summary>
-    public static void SetVolumeBGM(float volume)
-    {
-        SetCategoryVolume(AudioType.Music, volume);
-    }
-    
-    /// <summary>
-    /// Set SFX volume (0-1)
-    /// </summary>
-    public static void SetVolumeSFX(float volume)
-    {
-        SetCategoryVolume(AudioType.SFX, volume);
-    }
-    
-    /// <summary>
-    /// Get BGM volume
-    /// </summary>
-    public static float GetVolumeBGM()
-    {
-        return GetCategoryVolume(AudioType.Music);
-    }
-    
-    /// <summary>
-    /// Get SFX volume
-    /// </summary>
-    public static float GetVolumeSFX()
-    {
-        return GetCategoryVolume(AudioType.SFX);
-    }
-    
-    #endregion
 
     /// <summary>
     /// Initialize the AudioManager with configuration
@@ -409,9 +329,9 @@ public static class AudioManager
         return true;
     }
     
-    public static async UniTask<bool> PlayMusicAsync(string musicId, float volumeMultiplier = 1f, bool crossFade = true)
+    public async UniTask<bool> PlayMusicAsync(string musicId, float volumeMultiplier = 1f, bool crossFade = true)
     {
-        if (!IsInitialized || audioDatabase == null) return false;
+        if (audioDatabase == null) return false;
         
         var clipData = audioDatabase.GetAudioClip(musicId);
         if (clipData == null || clipData.audioType != AudioType.Music)
@@ -476,7 +396,7 @@ public static class AudioManager
         return true;
     }
     
-    public static async UniTask StopAudioAsync(string audioId, bool immediate = false)
+    public async UniTask StopAudioAsync(string audioId, bool immediate = false)
     {
         var audioSource = activeAudioSources.FirstOrDefault(a => a.CurrentClipId == audioId);
         if (audioSource != null)
@@ -485,7 +405,7 @@ public static class AudioManager
         }
     }
     
-    public static async UniTask StopAllAudioAsync(AudioType? audioType = null, bool immediate = false)
+    public async UniTask StopAllAudioAsync(AudioType? audioType = null, bool immediate = false)
     {
         var audioSourcesToStop = audioType.HasValue 
             ? activeAudioByType[audioType.Value].ToList()
@@ -495,7 +415,7 @@ public static class AudioManager
         await UniTask.WhenAll(stopTasks);
     }
     
-    public static async UniTask StopMusicAsync(bool immediate = false)
+    public async UniTask StopMusicAsync(bool immediate = false)
     {
         if (currentMusicSource != null)
         {
@@ -503,19 +423,19 @@ public static class AudioManager
         }
     }
     
-    public static void PauseAudio(string audioId)
+    public void PauseAudio(string audioId)
     {
         var audioSource = activeAudioSources.FirstOrDefault(a => a.CurrentClipId == audioId);
         audioSource?.Pause();
     }
     
-    public static void ResumeAudio(string audioId)
+    public void ResumeAudio(string audioId)
     {
         var audioSource = activeAudioSources.FirstOrDefault(a => a.CurrentClipId == audioId);
         audioSource?.Resume();
     }
     
-    public static void PauseAllAudio(AudioType? audioType = null)
+    public void PauseAllAudio(AudioType? audioType = null)
     {
         var audioSources = audioType.HasValue 
             ? activeAudioByType[audioType.Value]
@@ -527,7 +447,7 @@ public static class AudioManager
         }
     }
     
-    public static void ResumeAllAudio(AudioType? audioType = null)
+    public void ResumeAllAudio(AudioType? audioType = null)
     {
         var audioSources = audioType.HasValue 
             ? activeAudioByType[audioType.Value]
@@ -539,7 +459,7 @@ public static class AudioManager
         }
     }
     
-    public static void SetCategoryVolume(AudioType audioType, float volume)
+    public void SetCategoryVolume(AudioType audioType, float volume)
     {
         if (audioDatabase == null) return;
         
@@ -553,12 +473,9 @@ public static class AudioManager
         }
         
         OnCategoryVolumeChanged?.Invoke(audioType, volume);
-        
-        // Save to PlayerPrefs
-        PlayerPrefs.SetFloat($"AudioManager_{audioType}Volume", volume);
     }
     
-    public static void SetCategoryMuted(AudioType audioType, bool muted)
+    public void SetCategoryMuted(AudioType audioType, bool muted)
     {
         if (audioDatabase == null) return;
         
@@ -577,27 +494,24 @@ public static class AudioManager
                 audioSource.SetVolume(categoryVolume * masterVolume);
             }
         }
-        
-        // Save to PlayerPrefs
-        PlayerPrefs.SetInt($"AudioManager_{audioType}Muted", muted ? 1 : 0);
     }
     
-    public static float GetCategoryVolume(AudioType audioType)
+    public float GetCategoryVolume(AudioType audioType)
     {
         return audioDatabase?.GetCategoryVolume(audioType) ?? 1f;
     }
     
-    public static bool IsCategoryMuted(AudioType audioType)
+    public bool IsCategoryMuted(AudioType audioType)
     {
         return audioDatabase?.IsCategoryMuted(audioType) ?? false;
     }
     
-    public static bool IsAudioPlaying(string audioId)
+    public bool IsAudioPlaying(string audioId)
     {
         return activeAudioSources.Any(a => a.CurrentClipId == audioId && a.IsPlaying);
     }
     
-    public static int GetActiveAudioCount(AudioType? audioType = null)
+    public int GetActiveAudioCount(AudioType? audioType = null)
     {
         return audioType.HasValue 
             ? activeAudioByType[audioType.Value].Count
@@ -608,7 +522,7 @@ public static class AudioManager
     
     #region Helper Methods
     
-    private static AudioClipData CloneClipData(AudioClipData original)
+    private AudioClipData CloneClipData(AudioClipData original)
     {
         return new AudioClipData
         {
@@ -629,7 +543,7 @@ public static class AudioManager
         };
     }
     
-    private static void ApplyMasterVolumeToAll()
+    private void ApplyMasterVolumeToAll()
     {
         foreach (var audioSource in activeAudioSources)
         {
@@ -648,10 +562,35 @@ public static class AudioManager
         }
     }
     
-    /// <summary>
-    /// Cleanup all resources when application quits
-    /// </summary>
-    public static void Cleanup()
+    #endregion
+    
+    #region Unity Events
+    
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus)
+        {
+            PauseAllAudio();
+        }
+        else
+        {
+            ResumeAllAudio();
+        }
+    }
+    
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus)
+        {
+            PauseAllAudio();
+        }
+        else
+        {
+            ResumeAllAudio();
+        }
+    }
+    
+    protected override void OnDestroy()
     {
         // Stop all audio
         StopAllAudioAsync(immediate: true).Forget();
@@ -662,21 +601,7 @@ public static class AudioManager
         OnCategoryVolumeChanged = null;
         OnMasterVolumeChanged = null;
         
-        // Clear collections
-        audioSourcePool.Clear();
-        activeAudioSources.Clear();
-        activeAudioByType.Clear();
-        
-        // Destroy manager GameObject
-        if (managerGameObject != null)
-        {
-            UnityEngine.Object.Destroy(managerGameObject);
-            managerGameObject = null;
-            managerTransform = null;
-        }
-        
-        IsInitialized = false;
-        ConsoleLogger.Log("[AudioManager] Cleaned up resources");
+        base.OnDestroy();
     }
     
     #endregion
