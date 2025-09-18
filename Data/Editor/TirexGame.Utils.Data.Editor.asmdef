@@ -2,9 +2,9 @@
     "name": "TirexGame.Utils.Data.Editor",
     "rootNamespace": "TirexGame.Utils.Data.Editor",
     "references": [
-        "TirexGame.Utils.Data",
         "Unity.Addressables",
-        "Unity.ResourceManager"
+        "Unity.ResourceManager",
+        "TirexGame.Utilities"
     ],
     "includePlatforms": [
         "Editor"
