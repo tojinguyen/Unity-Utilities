@@ -1,70 +1,195 @@
 # Unity Data Management Package
 
-Một giải pháp quản lý dữ liệu toàn diện, hiệu suất cao và dễ sử dụng cho các dự án Unity. Package này cung cấp một kiến trúc linh hoạt để lưu, tải, mã hóa, nén, và xác thực dữ liệu game một cách an toàn và hiệu quả.
+Một giải pháp quản lý dữ liệu toàn diện, hiệu suất cao và dễ sử dụng cho các dự án Unity. Package này cung cấp một kiến trúc linh hoạt, thread-safe và có khả năng mở rộng để lưu trữ, tải, mã hóa, nén và xác thực dữ liệu game một cách an toàn và hiệu quả.
+
+## 🎯 Lý do nên sử dụng
+
+- **🔒 Bảo mật cao**: Mã hóa AES 256-bit với device-specific keys
+- **⚡ Hiệu suất tối ưu**: Cache thông minh và xử lý bất đồng bộ
+- **🏗️ Kiến trúc linh hoạt**: Hỗ trợ multiple repositories và data models
+- **🛡️ An toàn**: Thread-safe operations và data validation
+- **📱 Đa nền tảng**: Hoạt động trên tất cả platforms Unity hỗ trợ
 
 ## ✨ Tính Năng Nổi Bật
 
-*   **Quản lý tập trung**: `DataManager` (Singleton) là điểm truy cập duy nhất cho mọi hoạt động dữ liệu.
-*   **Lưu trữ linh hoạt**: Hỗ trợ nhiều loại `Repository` (lưu vào file, bộ nhớ,...) thông qua interface.
-    *   `FileDataRepository`: Lưu dữ liệu an toàn vào file trên thiết bị.
-    *   `MemoryDataRepository`: Lưu dữ liệu tạm thời trong RAM, lý tưởng cho testing.
-*   **An toàn và Bảo mật**:
-    *   **Mã hóa AES**: Tự động mã hóa dữ liệu trước khi lưu để chống gian lận. Key được tạo dựa trên `SystemInfo.deviceUniqueIdentifier` để tăng cường bảo mật.
-    *   **Nén dữ liệu**: Sử dụng các thuật toán GZip, Deflate, Brotli để giảm kích thước file save, tiết kiệm dung lượng lưu trữ.
-*   **Hiệu suất cao**:
-    *   **Không Reflection**: Hệ thống Validation sử dụng interface (`IValidatable`) thay vì reflection, đảm bảo tốc độ tối đa tại runtime.
-    *   **Lập trình bất đồng bộ**: Sử dụng `UniTask` cho các hoạt động I/O (đọc/ghi file), tránh làm đóng băng game.
-    *   **Caching thông minh**: `DataCacheManager` tích hợp sẵn giúp giảm thiểu truy cập ổ đĩa bằng cách lưu trữ dữ liệu thường dùng trong bộ nhớ.
-*   **Validation Mạnh mẽ**: Các `IDataModel` có thể tự định nghĩa logic validation của riêng mình, đảm bảo tính toàn vẹn của dữ liệu trước khi lưu.
-*   **Hệ thống Sự kiện (Events)**: `DataEventManager` cho phép các hệ thống khác trong game lắng nghe các sự kiện như `OnDataSaved`, `OnDataLoaded`, `OnDataDeleted`.
-*   **Tự động lưu (Auto-Save)**: Cấu hình `DataManager` để tự động lưu tất cả dữ liệu định kỳ.
+### 🎮 Quản lý Dữ liệu Tập trung
+- **`DataManager`**: Static singleton pattern với thread-safe operations
+- **Khởi tạo linh hoạt**: Hỗ trợ cấu hình tùy chỉnh và lazy initialization
+- **Multi-repository**: Quản lý nhiều loại dữ liệu với các strategies lưu trữ khác nhau
+
+### 💾 Hệ thống Repository Linh hoạt
+- **`FileDataRepository`**: Lưu trữ bền vững với encryption và compression
+- **`MemoryDataRepository`**: Lưu trữ tạm thời cho testing và session data
+- **Interface-based**: Dễ dàng mở rộng với custom repositories (Cloud, Database...)
+
+### 🔐 Bảo mật & Tối ưu hóa
+- **Mã hóa AES 256-bit**: 
+  - Device-specific encryption keys
+  - Random IV cho mỗi lần mã hóa
+  - Chống reverse engineering và save file manipulation
+- **Nén dữ liệu thông minh**:
+  - Hỗ trợ GZip, Deflate, Brotli compression
+  - Automatic compression detection
+  - Entropy analysis để tối ưu hiệu suất
+
+### ⚡ Hiệu suất Cao
+- **Zero Reflection**: Interface-based validation system
+- **Async/Await**: UniTask integration cho smooth gameplay
+- **Smart Caching**:
+  - LRU (Least Recently Used) eviction
+  - Memory usage monitoring
+  - Configurable expiration times
+- **Thread Pool**: File I/O operations chạy trên background threads
+
+### ✅ Data Validation & Integrity
+- **Type-safe validation**: `IValidatable` interface cho custom validation rules
+- **Data corruption recovery**: Automatic fallback to default data
+- **Detailed error reporting**: Comprehensive error messages và logging
+
+### 🎯 Event System
+- **Observer Pattern**: Subscribe/Unsubscribe to data events
+- **Type-safe events**: Strongly typed callbacks cho từng data model
+- **Lifecycle events**: OnSaved, OnLoaded, OnDeleted, OnError
+
+### 🤖 Tự động hóa
+- **Auto-Save**: Configurable periodic saving
+- **Cache cleanup**: Automatic expired cache removal
+- **Error recovery**: Graceful handling of corrupted data
+
+## 📋 Yêu cầu Hệ thống
+
+### Unity Version
+- **Minimum**: Unity 2021.3 LTS
+- **Recommended**: Unity 2022.3 LTS trở lên
+- **Platforms**: Tất cả platforms Unity hỗ trợ (Windows, Mac, Linux, Android, iOS, WebGL...)
+
+### Dependencies
+```json
+{
+  "com.cysharp.unitask": "2.3.3",
+  "com.unity.nuget.newtonsoft-json": "3.2.1"
+}
+```
+
+### Packages cần thiết
+1. **UniTask**: Async/await operations
+   - Cài đặt: Window → Package Manager → Add package from git URL
+   - URL: `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask`
+
+2. **Newtonsoft.Json**: JSON serialization
+   - Cài đặt: Window → Package Manager → Unity Registry → "com.unity.nuget.newtonsoft-json"
+
+## 🚀 Cài đặt
+
+### Option 1: Unity Package Manager (Recommended)
+1. Mở Unity Project
+2. Window → Package Manager
+3. Click "+" → "Add package from git URL"
+4. Nhập: `https://github.com/tojinguyen/Unity-Utilities.git?path=/Assets/Utils/Data`
+
+### Option 2: Download và Import
+1. Download source code từ [GitHub repository](https://github.com/tojinguyen/Unity-Utilities)
+2. Copy thư mục `Assets/Utils/Data` vào project của bạn
+3. Unity sẽ tự động compile và import package
+
+### Option 3: UnityPackage
+1. Download file `.unitypackage` từ [Releases page](https://github.com/tojinguyen/Unity-Utilities/releases)
+2. Double-click để import vào Unity project
+3. Chọn các files cần thiết và click "Import"
+
+### Verification
+Để kiểm tra package đã được cài đặt thành công:
+```csharp
+// Thêm dòng này vào một script bất kỳ
+using TirexGame.Utils.Data;
+
+// Nếu không có error, package đã ready!
+Debug.Log("Data Package is ready!");
+```
 
 ## 🚀 Bắt Đầu Nhanh
 
-### 1. Định nghĩa Data Model
+### Bước 1: Tạo Data Model
 
-Tạo một class chứa dữ liệu của bạn và implement interface `IDataModel<T>`. Interface này yêu cầu bạn định nghĩa dữ liệu mặc định và logic validation.
+Tạo một class chứa dữ liệu của bạn và implement interface `IDataModel<T>`. Interface này yêu cầu bạn định nghĩa dữ liệu mặc định và logic validation (tùy chọn).
 
 ```csharp
-// Ví dụ: PlayerData.cs
+// File: PlayerData.cs
 using TirexGame.Utils.Data;
 using System;
 using System.Collections.Generic;
 
 [Serializable]
-public class PlayerData : IDataModel<PlayerData>
+public class PlayerData : IDataModel<PlayerData>, IValidatable
 {
-    public string PlayerName;
-    public int Level;
-    public float Health;
+    [Header("Basic Info")]
+    public string PlayerName = "New Player";
+    public int Level = 1;
+    public float Health = 100f;
+    public float Experience = 0f;
+    
+    [Header("Progress")]
     public DateTime LastLogin;
+    public int HighScore = 0;
+    public List<string> UnlockedAchievements = new();
+    
+    [Header("Settings")]
+    public float MasterVolume = 1f;
+    public bool NotificationsEnabled = true;
 
-    // Cung cấp dữ liệu mặc định khi chưa có file save
+    /// <summary>
+    /// Được gọi khi không có file save hoặc cần reset data
+    /// </summary>
     public void SetDefaultData()
     {
         PlayerName = "New Player";
         Level = 1;
         Health = 100f;
+        Experience = 0f;
         LastLogin = DateTime.UtcNow;
+        HighScore = 0;
+        UnlockedAchievements.Clear();
+        MasterVolume = 1f;
+        NotificationsEnabled = true;
     }
 
-    // Tự định nghĩa logic validation hiệu suất cao
+    /// <summary>
+    /// Validation logic để đảm bảo tính toàn vẹn của dữ liệu
+    /// </summary>
     public bool Validate(out List<string> errors)
     {
         errors = new List<string>();
 
+        // Validate player name
         if (string.IsNullOrWhiteSpace(PlayerName))
         {
-            errors.Add("PlayerName is required.");
+            errors.Add("PlayerName cannot be empty");
         }
-        else if (PlayerName.Length < 3 || PlayerName.Length > 16)
+        else if (PlayerName.Length < 3 || PlayerName.Length > 20)
         {
-            errors.Add("PlayerName length must be between 3 and 16.");
+            errors.Add("PlayerName must be between 3-20 characters");
         }
 
+        // Validate game stats
         if (Level < 1 || Level > 100)
         {
-            errors.Add("Level must be between 1 and 100.");
+            errors.Add("Level must be between 1-100");
+        }
+
+        if (Health < 0 || Health > 100)
+        {
+            errors.Add("Health must be between 0-100");
+        }
+
+        if (Experience < 0)
+        {
+            errors.Add("Experience cannot be negative");
+        }
+
+        // Validate settings
+        if (MasterVolume < 0 || MasterVolume > 1)
+        {
+            errors.Add("MasterVolume must be between 0-1");
         }
 
         return errors.Count == 0;
@@ -72,113 +197,290 @@ public class PlayerData : IDataModel<PlayerData>
 }
 ```
 
-### 2. Khởi tạo DataManager
+### Bước 2: Khởi tạo DataManager
 
-Tạo một GameObject trong Scene khởi đầu của bạn (ví dụ: `GameInitializer`) và đăng ký các `Repository` cần thiết.
+Tạo một GameObject với script khởi tạo trong Scene đầu tiên của game (ví dụ: MainMenu, Startup Scene).
 
 ```csharp
-// Ví dụ: GameInitializer.cs
+// File: GameInitializer.cs
 using UnityEngine;
 using TirexGame.Utils.Data;
 
 public class GameInitializer : MonoBehaviour
 {
+    [Header("Data Manager Settings")]
+    [SerializeField] private bool enableEncryption = true;
+    [SerializeField] private bool enableCompression = true;
+    [SerializeField] private bool enableAutoSave = true;
+    [SerializeField] private float autoSaveInterval = 300f; // 5 minutes
+
     private void Awake()
     {
-        var dataManager = DataManager.Instance;
+        // Cấu hình DataManager
+        var config = new DataManagerConfig
+        {
+            EnableLogging = true,
+            EnableCaching = true,
+            DefaultCacheExpirationMinutes = 30,
+            EnableAutoSave = enableAutoSave,
+            AutoSaveIntervalSeconds = autoSaveInterval
+        };
 
-        // Đăng ký một repository để xử lý PlayerData
-        // Bật mã hóa và nén dữ liệu để tăng cường bảo mật và tối ưu dung lượng
-        var playerDataRepository = new FileDataRepository<PlayerData>(
-            useEncryption: true, 
-            useCompression: true
+        // Khởi tạo DataManager với config
+        DataManager.Initialize(config);
+
+        // Đăng ký repositories cho các loại dữ liệu
+        RegisterRepositories();
+        
+        Debug.Log("🎮 Game Data System Initialized!");
+    }
+
+    private void RegisterRepositories()
+    {
+        // Repository cho PlayerData với encryption và compression
+        var playerRepo = new FileDataRepository<PlayerData>(
+            useEncryption: enableEncryption,
+            useCompression: enableCompression
         );
+        DataManager.RegisterRepository<PlayerData>(playerRepo);
+
+        // Có thể đăng ký thêm repositories cho các data models khác
+        // var settingsRepo = new FileDataRepository<GameSettings>(false, true);
+        // DataManager.RegisterRepository<GameSettings>(settingsRepo);
+    }
+
+    private void OnDestroy()
+    {
+        // Cleanup khi object bị destroy
+        DataManager.Shutdown();
+    }
+}
+```
+
+### Bước 3: Sử dụng DataManager trong Game
+
+Bây giờ bạn có thể sử dụng DataManager từ bất kỳ đâu trong code để thao tác với dữ liệu.
+
+#### Load Data khi bắt đầu game
+
+```csharp
+// File: GameController.cs hoặc PlayerController.cs
+using UnityEngine;
+using TirexGame.Utils.Data;
+using Cysharp.Threading.Tasks;
+
+public class GameController : MonoBehaviour
+{
+    [Header("UI References")]
+    [SerializeField] private TMPro.TextMeshProUGUI playerNameText;
+    [SerializeField] private TMPro.TextMeshProUGUI levelText;
+    [SerializeField] private UnityEngine.UI.Slider healthSlider;
+
+    private PlayerData _playerData;
+
+    private async void Start()
+    {
+        await LoadPlayerData();
+        UpdateUI();
         
-        dataManager.RegisterRepository(playerDataRepository);
-        
-        Debug.Log("Game Initialized with PlayerData Repository");
-    }
-}
-```
-
-### 3. Sử dụng DataManager
-
-Từ bất kỳ đâu trong code, bạn có thể truy cập `DataManager` để thực hiện các thao tác dữ liệu.
-
-#### Tải Dữ liệu
-
-```csharp
-private async void LoadPlayer()
-{
-    // Tự động đọc từ cache, nếu không có sẽ đọc từ file.
-    // Nếu file không tồn tại, sẽ tạo và trả về dữ liệu mặc định.
-    PlayerData playerData = await DataManager.Instance.GetDataAsync<PlayerData>();
-    Debug.Log($"Player Name: {playerData.PlayerName}, Level: {playerData.Level}");
-}
-```
-
-#### Lưu Dữ liệu
-
-```csharp
-private async void SavePlayer(PlayerData playerData)
-{
-    // Dữ liệu sẽ được validate trước khi lưu.
-    // Nếu không hợp lệ, thao tác sẽ thất bại và log lỗi.
-    bool success = await DataManager.Instance.SaveDataAsync(playerData);
-    if (success)
-    {
-        Debug.Log("Player data saved!");
-    }
-}
-```
-
-#### Xóa Dữ liệu
-
-```csharp
-private async void DeletePlayer()
-{
-    bool success = await DataManager.Instance.DeleteDataAsync<PlayerData>();
-    if (success)
-    {
-        Debug.Log("Player data deleted!");
-    }
-}
-```
-
-### 4. Lắng nghe Sự kiện Dữ liệu
-
-Bạn có thể đăng ký để nhận thông báo khi có thay đổi về dữ liệu.
-
-```csharp
-private void Start()
-{
-    DataManager.Instance.SubscribeToDataEvents<PlayerData>(
-        onSaved: OnPlayerDataSaved,
-        onLoaded: OnPlayerDataLoaded
-    );
-}
-
-private void OnDestroy()
-{
-    // Luôn hủy đăng ký để tránh memory leak
-    if (DataManager.Instance != null)
-    {
-        DataManager.Instance.UnsubscribeFromDataEvents<PlayerData>(
+        // Subscribe to data events
+        DataManager.SubscribeToDataEvents<PlayerData>(
             onSaved: OnPlayerDataSaved,
             onLoaded: OnPlayerDataLoaded
         );
     }
+
+    private async UniTask LoadPlayerData()
+    {
+        try
+        {
+            // Tự động load từ cache hoặc file, tạo default nếu chưa có
+            _playerData = await DataManager.GetDataAsync<PlayerData>();
+            Debug.Log($"✅ Loaded player: {_playerData.PlayerName}, Level: {_playerData.Level}");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"❌ Failed to load player data: {ex.Message}");
+            // Fallback to default data
+            _playerData = new PlayerData();
+            _playerData.SetDefaultData();
+        }
+    }
+
+    private void UpdateUI()
+    {
+        if (_playerData != null)
+        {
+            playerNameText.text = _playerData.PlayerName;
+            levelText.text = $"Level {_playerData.Level}";
+            healthSlider.value = _playerData.Health / 100f;
+        }
+    }
+
+    // Event callbacks
+    private void OnPlayerDataSaved(PlayerData data)
+    {
+        Debug.Log($"💾 Player data saved! Level: {data.Level}");
+    }
+
+    private void OnPlayerDataLoaded(PlayerData data)
+    {
+        Debug.Log($"📂 Player data loaded! Welcome back, {data.PlayerName}!");
+    }
+
+    private void OnDestroy()
+    {
+        // Cleanup để tránh memory leaks
+        if (DataManager.IsInitialized)
+        {
+            DataManager.UnsubscribeFromDataEvents<PlayerData>(
+                onSaved: OnPlayerDataSaved,
+                onLoaded: OnPlayerDataLoaded
+            );
+        }
+    }
+}
+```
+
+#### Save Data khi có thay đổi
+
+```csharp
+// Ví dụ: Player level up
+public async void LevelUp()
+{
+    _playerData.Level++;
+    _playerData.Experience = 0;
+    _playerData.Health = 100f; // Full heal on level up
+
+    // Save changes
+    bool success = await DataManager.SaveDataAsync(_playerData);
+    if (success)
+    {
+        Debug.Log($"🎉 Level up! Now level {_playerData.Level}");
+        UpdateUI();
+    }
+    else
+    {
+        Debug.LogError("❌ Failed to save level up data!");
+    }
 }
 
-private void OnPlayerDataSaved(PlayerData data)
+// Ví dụ: Player takes damage
+public async void TakeDamage(float damage)
 {
-    Debug.Log($"Event: PlayerData was saved! New level: {data.Level}");
+    _playerData.Health = Mathf.Max(0, _playerData.Health - damage);
+    
+    // Auto-save critical data like health
+    await DataManager.SaveDataAsync(_playerData);
+    UpdateUI();
+    
+    if (_playerData.Health <= 0)
+    {
+        HandlePlayerDeath();
+    }
 }
 
-private void OnPlayerDataLoaded(PlayerData data)
+// Ví dụ: Update player settings
+public async void UpdatePlayerName(string newName)
 {
-    Debug.Log($"Event: PlayerData was loaded! Player: {data.PlayerName}");
+    if (string.IsNullOrWhiteSpace(newName))
+    {
+        Debug.LogWarning("⚠️ Invalid player name!");
+        return;
+    }
+
+    _playerData.PlayerName = newName;
+    _playerData.LastLogin = System.DateTime.UtcNow;
+
+    bool success = await DataManager.SaveDataAsync(_playerData);
+    if (success)
+    {
+        Debug.Log($"✅ Player name updated to: {newName}");
+        UpdateUI();
+    }
 }
+```
+
+### Bước 4: Advanced Usage - Events và Caching
+
+```csharp
+// File: DataEventHandler.cs
+using UnityEngine;
+using TirexGame.Utils.Data;
+
+public class DataEventHandler : MonoBehaviour
+{
+    private void Start()
+    {
+        // Subscribe to multiple data types
+        DataManager.SubscribeToDataEvents<PlayerData>(
+            onSaved: OnPlayerSaved,
+            onLoaded: OnPlayerLoaded,
+            onDeleted: OnPlayerDeleted
+        );
+
+        // Subscribe to global events
+        DataManager.OnDataError += OnDataError;
+    }
+
+    private void OnPlayerSaved(PlayerData data)
+    {
+        // Update UI, show save confirmation, trigger achievements, etc.
+        ShowNotification($"Game saved! Level {data.Level}");
+    }
+
+    private void OnPlayerLoaded(PlayerData data)
+    {
+        // Initialize game state, update UI, log analytics
+        Debug.Log($"Welcome back, {data.PlayerName}! Last seen: {data.LastLogin}");
+    }
+
+    private void OnPlayerDeleted(string key)
+    {
+        // Handle data deletion, reset UI, show confirmation
+        ShowNotification("Player data deleted!");
+    }
+
+    private void OnDataError(System.Type dataType, System.Exception error)
+    {
+        Debug.LogError($"Data error for {dataType.Name}: {error.Message}");
+        // Handle error: show error message, attempt recovery, etc.
+    }
+
+    private void ShowNotification(string message)
+    {
+        // Implement your notification system here
+        Debug.Log($"🔔 {message}");
+    }
+
+    // Cache management examples
+    public void ClearPlayerCache()
+    {
+        DataManager.ClearCache(nameof(PlayerData));
+        Debug.Log("Player cache cleared");
+    }
+
+    public void ClearAllCache()
+    {
+        DataManager.ClearCache();
+        Debug.Log("All cache cleared");
+    }
+
+    private void OnDestroy()
+    {
+        // Always cleanup subscriptions
+        if (DataManager.IsInitialized)
+        {
+            DataManager.UnsubscribeFromDataEvents<PlayerData>(
+                onSaved: OnPlayerSaved,
+                onLoaded: OnPlayerLoaded,
+                onDeleted: OnPlayerDeleted
+            );
+            DataManager.OnDataError -= OnDataError;
+        }
+    }
+}
+```
 ```
 
 ## 🏗️ Cấu Trúc Package
@@ -199,6 +501,259 @@ private void OnPlayerDataLoaded(PlayerData data)
 *   **Thay đổi thuật toán mã hóa**: Chỉnh sửa `DataEncryptor.cs` để sử dụng thuật toán khác nếu cần.
 *   **Cấu hình `DataManager`**: Các tùy chọn như auto-save, caching, logging có thể được điều chỉnh trực tiếp trên `DataManager` component trong Unity Editor.
 
+
+---
+
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues và Solutions
+
+#### ❌ "DataManager not initialized" Error
+
+**Vấn đề**: Lỗi xuất hiện khi gọi DataManager trước khi khởi tạo.
+
+**Giải pháp**:
+```csharp
+// Đảm bảo gọi Initialize trước khi sử dụng
+DataManager.Initialize();
+
+// Hoặc kiểm tra trạng thái
+if (!DataManager.IsInitialized)
+{
+    DataManager.Initialize();
+}
+```
+
+#### ❌ "Repository not found for type" Error
+
+**Vấn đề**: Không tìm thấy repository cho data type.
+
+**Giải pháp**:
+```csharp
+// Đăng ký repository trước khi sử dụng
+var repo = new FileDataRepository<PlayerData>(true, true);
+DataManager.RegisterRepository<PlayerData>(repo);
+
+// Sau đó mới load/save data
+var data = await DataManager.GetDataAsync<PlayerData>();
+```
+
+#### ❌ Data Validation Fails
+
+**Vấn đề**: Data không pass validation và không được lưu.
+
+**Giải pháp**:
+```csharp
+// Kiểm tra validation trước khi save
+if (data.Validate(out List<string> errors))
+{
+    await DataManager.SaveDataAsync(data);
+}
+else
+{
+    Debug.LogError($"Validation failed: {string.Join(", ", errors)}");
+    // Fix data hoặc sử dụng default values
+}
+```
+
+#### ❌ File Access/Permission Issues
+
+**Vấn đề**: Không thể đọc/ghi file do quyền truy cập.
+
+**Giải pháp**:
+```csharp
+// Sử dụng try-catch để handle exceptions
+try
+{
+    var data = await DataManager.GetDataAsync<PlayerData>();
+}
+catch (UnauthorizedAccessException ex)
+{
+    Debug.LogError($"File access denied: {ex.Message}");
+    // Fallback to memory repository hoặc request permissions
+}
+catch (DirectoryNotFoundException ex)
+{
+    Debug.LogError($"Directory not found: {ex.Message}");
+    // Directory sẽ được tạo tự động trong lần save tiếp theo
+}
+```
+
+#### ⚠️ Memory Leaks với Events
+
+**Vấn đề**: Không unsubscribe events dẫn đến memory leaks.
+
+**Giải pháp**:
+```csharp
+public class GameController : MonoBehaviour
+{
+    private void Start()
+    {
+        DataManager.SubscribeToDataEvents<PlayerData>(onSaved: OnPlayerSaved);
+    }
+
+    private void OnDestroy()
+    {
+        // QUAN TRỌNG: Luôn unsubscribe
+        if (DataManager.IsInitialized)
+        {
+            DataManager.UnsubscribeFromDataEvents<PlayerData>(onSaved: OnPlayerSaved);
+        }
+    }
+}
+```
+
+#### 🐛 Corrupted Save Files
+
+**Vấn đề**: File save bị hỏng không load được.
+
+**Giải pháp**:
+```csharp
+// DataManager tự động handle corrupted files
+try
+{
+    var data = await DataManager.GetDataAsync<PlayerData>();
+    // Nếu file corrupt, data sẽ là default values
+}
+catch (Exception ex)
+{
+    Debug.LogWarning($"Save file corrupted, using defaults: {ex.Message}");
+    // Data vẫn được trả về với default values
+}
+
+// Hoặc manually delete corrupted files
+public async void ResetPlayerData()
+{
+    await DataManager.DeleteDataAsync<PlayerData>();
+    var freshData = await DataManager.GetDataAsync<PlayerData>();
+    // freshData sẽ có default values
+}
+```
+
+#### ⚡ Performance Issues
+
+**Vấn đề**: Slow performance khi load/save data.
+
+**Giải pháp**:
+
+1. **Enable Caching**:
+```csharp
+var config = new DataManagerConfig
+{
+    EnableCaching = true,
+    DefaultCacheExpirationMinutes = 30
+};
+DataManager.Initialize(config);
+```
+
+2. **Optimize Compression**:
+```csharp
+// Chỉ enable compression cho data lớn
+var repo = new FileDataRepository<PlayerData>(
+    useEncryption: true,
+    useCompression: data => data.Length > 1024 // Chỉ nén nếu > 1KB
+);
+```
+
+3. **Batch Operations**:
+```csharp
+// Thay vì save nhiều lần
+await DataManager.SaveDataAsync(playerData);
+await DataManager.SaveDataAsync(settingsData);
+
+// Save một lần với auto-save
+DataManager.EnableAutoSave(intervalSeconds: 60); // Auto-save mỗi phút
+```
+
+#### 🔐 Encryption Key Issues
+
+**Vấn đề**: Data không thể decrypt sau khi chuyển device.
+
+**Lý do**: Encryption key dựa trên `SystemInfo.deviceUniqueIdentifier`.
+
+**Giải pháp**:
+```csharp
+// Option 1: Backup/Restore system
+public async void BackupPlayerData()
+{
+    var data = await DataManager.GetDataAsync<PlayerData>();
+    var json = JsonConvert.SerializeObject(data);
+    // Upload to cloud hoặc export to file
+}
+
+// Option 2: Custom encryption key
+public class CustomDataRepository<T> : FileDataRepository<T>
+{
+    public CustomDataRepository(string customKey) 
+        : base(true, true, customKey)
+    {
+    }
+}
+```
+
+#### 📱 Platform-Specific Issues
+
+**WebGL**: File system limitations
+```csharp
+#if UNITY_WEBGL
+// Sử dụng PlayerPrefs hoặc IndexedDB repository
+var repo = new PlayerPrefsRepository<PlayerData>();
+#else
+var repo = new FileDataRepository<PlayerData>(true, true);
+#endif
+DataManager.RegisterRepository<PlayerData>(repo);
+```
+
+**Mobile**: Storage permissions
+```csharp
+// Kiểm tra permission trước khi save
+if (Application.platform == RuntimePlatform.Android)
+{
+    if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
+    {
+        Permission.RequestUserPermission(Permission.ExternalStorageWrite);
+    }
+}
+```
+
+### Debug Tips
+
+#### Enable Detailed Logging
+```csharp
+var config = new DataManagerConfig
+{
+    EnableLogging = true,
+    LogLevel = LogLevel.Verbose // Sẽ log mọi operations
+};
+```
+
+#### Inspect Cache State
+```csharp
+// Check cache statistics
+var cacheInfo = DataManager.GetCacheInfo();
+Debug.Log($"Cache entries: {cacheInfo.EntryCount}, Memory usage: {cacheInfo.MemoryUsage}");
+```
+
+#### Validate Installation
+```csharp
+[MenuItem("Tools/Data Package/Validate Installation")]
+public static void ValidateInstallation()
+{
+    try
+    {
+        DataManager.Initialize();
+        var repo = new FileDataRepository<PlayerData>(false, false);
+        DataManager.RegisterRepository<PlayerData>(repo);
+        Debug.Log("✅ Data Package installation is valid!");
+    }
+    catch (Exception ex)
+    {
+        Debug.LogError($"❌ Installation issue: {ex.Message}");
+    }
+}
+```
 
 ---
 
@@ -318,85 +873,395 @@ Phần này phân tích sâu về kiến trúc và luồng dữ liệu bên tron
 
 ## 📚 API Reference
 
-Đây là tài liệu tham khảo nhanh các phương thức public chính bạn sẽ sử dụng từ `DataManager.Instance`.
+Đây là tài liệu tham khảo chi tiết các API công khai của `DataManager`.
+
+### Core Methods
+
+#### `Initialize(DataManagerConfig config = null)`
+-   **Mô tả**: Khởi tạo DataManager với cấu hình tùy chỉnh. Phải được gọi trước khi sử dụng bất kỳ API nào.
+-   **Tham số**:
+    -   `config` (tùy chọn): Cấu hình cho DataManager. Nếu `null`, sẽ sử dụng config mặc định.
+-   **Thread-safe**: ✅ Có
+-   **Ví dụ**:
+    ```csharp
+    var config = new DataManagerConfig
+    {
+        EnableLogging = true,
+        EnableCaching = true,
+        EnableAutoSave = true,
+        AutoSaveIntervalSeconds = 300f
+    };
+    DataManager.Initialize(config);
+    ```
 
 #### `RegisterRepository<T>(IDataRepository<T> repository)`
--   **Mô tả**: Đăng ký một repository để xử lý một loại dữ liệu cụ thể `T`. Phải được gọi trước khi bạn cố gắng lưu/tải loại dữ liệu đó.
+-   **Mô tả**: Đăng ký repository để xử lý một loại dữ liệu cụ thể. Mỗi Type chỉ có thể có một repository.
 -   **Tham số**:
-    -   `repository`: Một instance của repository (ví dụ `new FileDataRepository<PlayerData>()`).
+    -   `repository`: Instance của repository (FileDataRepository, MemoryDataRepository, hoặc custom).
+-   **Exceptions**: `ArgumentNullException`, `InvalidOperationException`
 -   **Ví dụ**:
     ```csharp
-    // Trong file khởi tạo game
-    var repo = new FileDataRepository<PlayerData>(useEncryption: true, useCompression: true);
-    DataManager.Instance.RegisterRepository(repo);
+    var repo = new FileDataRepository<PlayerData>(
+        useEncryption: true, 
+        useCompression: true
+    );
+    DataManager.RegisterRepository<PlayerData>(repo);
     ```
 
-#### `UniTask<T> GetDataAsync<T>(string key = null)`
--   **Mô tả**: Lấy dữ liệu một cách bất đồng bộ. Sẽ thử lấy từ cache trước, sau đó từ repository. Nếu không có, sẽ tạo và trả về dữ liệu mặc định.
+#### `async UniTask<T> GetDataAsync<T>(string key = null) where T : IDataModel<T>, new()`
+-   **Mô tả**: Load dữ liệu bất đồng bộ. Tự động fallback về default data nếu không tìm thấy hoặc data corrupt.
 -   **Tham số**:
-    -   `key` (tùy chọn): Định danh duy nhất cho dữ liệu. Nếu `null`, tên của class `T` sẽ được sử dụng.
--   **Trả về**: Một `UniTask` chứa object dữ liệu `T`.
+    -   `key` (tùy chọn): Unique identifier. Mặc định là `typeof(T).Name`.
+-   **Trả về**: `UniTask<T>` chứa data object
+-   **Cache behavior**: Tự động cache kết quả để tăng tốc lần truy cập sau
+-   **Error handling**: Tự động handle corrupted files và trả về default data
 -   **Ví dụ**:
     ```csharp
-    PlayerData playerData = await DataManager.Instance.GetDataAsync<PlayerData>();
+    // Load with default key
+    PlayerData player = await DataManager.GetDataAsync<PlayerData>();
+    
+    // Load with custom key
+    PlayerData backup = await DataManager.GetDataAsync<PlayerData>("backup_save");
     ```
 
-#### `UniTask<bool> SaveDataAsync<T>(T data, string key = null)`
--   **Mô tả**: Lưu dữ liệu một cách bất đồng bộ. Dữ liệu sẽ được xác thực trước khi lưu.
+#### `async UniTask<bool> SaveDataAsync<T>(T data, string key = null)`
+-   **Mô tả**: Lưu dữ liệu bất đồng bộ với validation và error handling.
 -   **Tham số**:
-    -   `data`: Object dữ liệu cần lưu.
-    -   `key` (tùy chọn): Định danh duy nhất cho dữ liệu. Nếu `null`, tên của class `T` sẽ được sử dụng.
--   **Trả về**: Một `UniTask<bool>` cho biết thao tác có thành công hay không.
+    -   `data`: Object cần lưu
+    -   `key` (tùy chọn): Unique identifier
+-   **Trả về**: `true` nếu thành công, `false` nếu thất bại
+-   **Validation**: Tự động validate data trước khi lưu (nếu implement `IValidatable`)
+-   **Side effects**: Update cache, trigger events
 -   **Ví dụ**:
     ```csharp
     playerData.Level++;
-    bool success = await DataManager.Instance.SaveDataAsync(playerData);
-    ```
-
-#### `UniTask<bool> DeleteDataAsync<T>(string key = null)`
--   **Mô tả**: Xóa dữ liệu từ repository và cache.
--   **Tham số**:
-    -   `key` (tùy chọn): Định danh của dữ liệu cần xóa.
--   **Trả về**: Một `UniTask<bool>` cho biết thao tác xóa có thành công hay không.
--   **Ví dụ**:
-    ```csharp
-    await DataManager.Instance.DeleteDataAsync<PlayerData>();
-    ```
-
-#### `SubscribeToDataEvents<T>(Action<T> onSaved, Action<T> onLoaded, Action<string> onDeleted)`
--   **Mô tả**: Đăng ký lắng nghe các sự kiện cho một loại dữ liệu cụ thể.
--   **Tham số**:
-    -   `onSaved` (tùy chọn): Callback được gọi khi dữ liệu `T` được lưu.
-    -   `onLoaded` (tùy chọn): Callback được gọi khi dữ liệu `T` được tải.
-    -   `onDeleted` (tùy chọn): Callback được gọi khi dữ liệu `T` bị xóa.
--   **Ví dụ**:
-    ```csharp
-    DataManager.Instance.SubscribeToDataEvents<PlayerData>(onSaved: OnPlayerSaved);
-
-    private void OnPlayerSaved(PlayerData data) {
-        Debug.Log($"Player data was saved! New level: {data.Level}");
+    bool success = await DataManager.SaveDataAsync(playerData);
+    if (!success)
+    {
+        Debug.LogError("Failed to save player data!");
     }
+    ```
+
+#### `async UniTask<bool> DeleteDataAsync<T>(string key = null)`
+-   **Mô tả**: Xóa dữ liệu từ storage và cache.
+-   **Tham số**:
+    -   `key` (tùy chọn): Identifier của data cần xóa
+-   **Trả về**: `true` nếu thành công
+-   **Side effects**: Remove from cache, trigger OnDeleted event
+-   **Ví dụ**:
+    ```csharp
+    // Delete default save
+    await DataManager.DeleteDataAsync<PlayerData>();
+    
+    // Delete specific save slot
+    await DataManager.DeleteDataAsync<PlayerData>("save_slot_2");
+    ```
+
+### Repository Management
+
+#### `bool IsRepositoryRegistered<T>()`
+-   **Mô tả**: Kiểm tra xem repository cho type T đã được đăng ký chưa.
+-   **Trả về**: `true` nếu đã có repository
+
+#### `void UnregisterRepository<T>()`
+-   **Mô tả**: Hủy đăng ký repository cho type T.
+-   **Side effects**: Clear cache cho type này
+
+### Event System
+
+#### `SubscribeToDataEvents<T>(Action<T> onSaved = null, Action<T> onLoaded = null, Action<string> onDeleted = null)`
+-   **Mô tả**: Đăng ký event callbacks cho một data type.
+-   **Tham số**:
+    -   `onSaved`: Được gọi sau khi save thành công
+    -   `onLoaded`: Được gọi sau khi load thành công  
+    -   `onDeleted`: Được gọi sau khi delete thành công (parameter là key)
+-   **Thread-safe**: ✅ Có
+-   **Ví dụ**:
+    ```csharp
+    DataManager.SubscribeToDataEvents<PlayerData>(
+        onSaved: (data) => Debug.Log($"Saved level {data.Level}"),
+        onLoaded: (data) => Debug.Log($"Loaded {data.PlayerName}"),
+        onDeleted: (key) => Debug.Log($"Deleted save {key}")
+    );
     ```
 
 #### `UnsubscribeFromDataEvents<T>(...)`
--   **Mô tả**: Hủy đăng ký các callback sự kiện để tránh memory leak. Phải được gọi với cùng một tham chiếu phương thức đã dùng để đăng ký.
--   **Ví dụ**:
-    ```csharp
-    void OnDestroy() {
-        if (DataManager.Instance != null) {
-            DataManager.Instance.UnsubscribeFromDataEvents<PlayerData>(onSaved: OnPlayerSaved);
-        }
-    }
-    ```
+-   **Mô tả**: Hủy đăng ký event callbacks. **Quan trọng**: Phải sử dụng cùng method reference.
+-   **Memory leak prevention**: Luôn gọi trong `OnDestroy()`
+
+### Global Events
+
+#### `static event Action<Type, object> OnDataSaved`
+-   **Mô tả**: Global event được trigger khi bất kỳ data nào được save
+
+#### `static event Action<Type, object> OnDataLoaded`
+-   **Mô tả**: Global event được trigger khi bất kỳ data nào được load
+
+#### `static event Action<Type, Exception> OnDataError`
+-   **Mô tả**: Global event được trigger khi có lỗi xảy ra
+
+### Cache Management
 
 #### `ClearCache(string key = null)`
--   **Mô tả**: Xóa dữ liệu khỏi bộ nhớ đệm.
+-   **Mô tả**: Xóa cache entries.
 -   **Tham số**:
-    -   `key` (tùy chọn): Nếu được cung cấp, chỉ xóa entry có key này. Nếu `null`, toàn bộ cache sẽ bị xóa.
--   **Ví dụ**:
-    ```csharp
-    // Xóa cache cho PlayerData
-    DataManager.Instance.ClearCache(nameof(PlayerData));
-    // Xóa toàn bộ cache
-    DataManager.Instance.ClearCache();
-    ```
+    -   `key` (tùy chọn): Nếu null, xóa toàn bộ cache
+-   **Performance**: Không ảnh hưởng đến saved data
+
+#### `GetCacheInfo()`
+-   **Mô tả**: Lấy thông tin về cache hiện tại.
+-   **Trả về**: Object chứa statistics như entry count, memory usage
+
+### Utility Methods
+
+#### `bool IsInitialized { get; }`
+-   **Mô tả**: Property kiểm tra DataManager đã được khởi tạo chưa
+
+#### `void Shutdown()`
+-   **Mô tả**: Cleanup DataManager, stop auto-save, clear cache
+-   **Best practice**: Gọi trong `OnApplicationQuit()` hoặc `OnDestroy()`
+
+#### `async UniTask SaveAllAsync()`
+-   **Mô tả**: Lưu tất cả data đang có trong cache
+-   **Use case**: Manual save-all, emergency backup
+
+### Configuration Class
+
+#### `DataManagerConfig`
+
+```csharp
+public class DataManagerConfig
+{
+    public bool EnableLogging { get; set; } = true;
+    public bool EnableCaching { get; set; } = true;
+    public int DefaultCacheExpirationMinutes { get; set; } = 30;
+    public bool EnableAutoSave { get; set; } = true;
+    public float AutoSaveIntervalSeconds { get; set; } = 300f; // 5 minutes
+}
+```
+
+### Repository Types
+
+#### `FileDataRepository<T>`
+```csharp
+// Constructor
+public FileDataRepository(
+    bool useEncryption = false,
+    bool useCompression = false,
+    CompressionType compressionType = CompressionType.GZip,
+    string customEncryptionKey = null
+)
+```
+
+#### `MemoryDataRepository<T>`
+```csharp
+// Constructor - Lưu data trong RAM, mất khi restart
+public MemoryDataRepository()
+```
+
+### Interface Requirements
+
+#### `IDataModel<T>`
+```csharp
+public interface IDataModel<T> where T : class
+{
+    void SetDefaultData();
+}
+```
+
+#### `IValidatable` (Optional)
+```csharp
+public interface IValidatable
+{
+    bool Validate(out List<string> errors);
+}
+```
+
+### Best Practices
+
+1. **Initialization**: Luôn gọi `Initialize()` trước khi sử dụng
+2. **Registration**: Đăng ký repositories trong `Awake()` hoặc initialization script
+3. **Event Cleanup**: Luôn unsubscribe events trong `OnDestroy()`
+4. **Error Handling**: Sử dụng try-catch cho async operations
+5. **Performance**: Enable caching cho data thường xuyên truy cập
+6. **Security**: Enable encryption cho sensitive data
+
+### Thread Safety
+
+- ✅ **Thread-safe**: `Initialize()`, `RegisterRepository()`, Event subscriptions
+- ⚠️ **Main thread only**: File I/O operations (handled internally by UniTask)
+- ✅ **Async-safe**: Tất cả `*Async()` methods có thể gọi từ nhiều threads
+
+---
+
+## 🎯 Advanced Use Cases
+
+### Multiple Save Slots
+```csharp
+// Save to different slots
+await DataManager.SaveDataAsync(playerData, "slot_1");
+await DataManager.SaveDataAsync(playerData, "slot_2");
+await DataManager.SaveDataAsync(playerData, "autosave");
+
+// Load from specific slot
+var slot1Data = await DataManager.GetDataAsync<PlayerData>("slot_1");
+var slot2Data = await DataManager.GetDataAsync<PlayerData>("slot_2");
+```
+
+### Cloud Save Integration
+```csharp
+public class CloudDataRepository<T> : IDataRepository<T> where T : IDataModel<T>, new()
+{
+    public async UniTask<T> LoadAsync(string key)
+    {
+        // Implement cloud loading logic
+        var cloudData = await CloudSaveService.LoadAsync(key);
+        return JsonConvert.DeserializeObject<T>(cloudData);
+    }
+
+    public async UniTask<bool> SaveAsync(string key, T data)
+    {
+        // Implement cloud saving logic
+        var json = JsonConvert.SerializeObject(data);
+        return await CloudSaveService.SaveAsync(key, json);
+    }
+    
+    // ... implement other methods
+}
+
+// Register cloud repository
+DataManager.RegisterRepository<PlayerData>(new CloudDataRepository<PlayerData>());
+```
+
+### Data Migration
+```csharp
+[Serializable]
+public class PlayerDataV2 : IDataModel<PlayerDataV2>
+{
+    public int dataVersion = 2;
+    // ... new fields
+    
+    public void SetDefaultData()
+    {
+        if (dataVersion < 2)
+        {
+            // Migrate from v1 to v2
+            MigrateFromV1();
+        }
+    }
+    
+    private void MigrateFromV1()
+    {
+        // Migration logic here
+        dataVersion = 2;
+    }
+}
+```
+
+## 🤝 Contributing
+
+Chúng tôi rất hoan nghênh mọi đóng góp! Dưới đây là các cách bạn có thể hỗ trợ:
+
+### 🐛 Báo cáo Bugs
+- Sử dụng [GitHub Issues](https://github.com/tojinguyen/Unity-Utilities/issues)
+- Mô tả chi tiết bước reproduce
+- Kèm theo Unity version và platform info
+- Include relevant error logs
+
+### 💡 Feature Requests
+- Tạo issue với label "enhancement"
+- Mô tả use case cụ thể
+- Giải thích tại sao feature này hữu ích
+
+### 🔧 Code Contributions
+1. Fork repository
+2. Tạo feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push branch: `git push origin feature/amazing-feature`
+5. Tạo Pull Request
+
+### 📝 Documentation
+- Cải thiện README
+- Thêm code examples
+- Dịch documentation
+
+## 📄 License
+
+Package này được phát hành dưới [MIT License](LICENSE).
+
+```
+MIT License
+
+Copyright (c) 2024 Tojin Nguyen
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## 📞 Support
+
+- **Documentation**: [Wiki](https://github.com/tojinguyen/Unity-Utilities/wiki)
+- **Issues**: [GitHub Issues](https://github.com/tojinguyen/Unity-Utilities/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/tojinguyen/Unity-Utilities/discussions)
+- **Email**: tojin.nguyen@gmail.com
+
+## 🙏 Acknowledgments
+
+- [UniTask](https://github.com/Cysharp/UniTask) - Async/await support for Unity
+- [Newtonsoft.Json](https://docs.unity3d.com/Packages/com.unity.nuget.newtonsoft-json@3.2/manual/index.html) - JSON serialization
+- Unity Technologies - Excellent game engine
+- Community contributors và testers
+
+---
+
+## 📊 Changelog
+
+### v2.1.0 (Current)
+- ✨ Added static DataManager implementation
+- ✨ Improved thread safety
+- ✨ Enhanced error handling và logging
+- ✨ Better memory management for cache
+- 🐛 Fixed encryption key issues on some platforms
+- 📚 Comprehensive documentation update
+
+### v2.0.0
+- 🔥 Major architecture refactor
+- ✨ Added caching system
+- ✨ Event system implementation
+- ✨ Multiple repository support
+- ⚡ Performance improvements
+
+### v1.5.0
+- ✨ Added compression support
+- ✨ Encryption with device-specific keys
+- 🐛 Fixed data corruption issues
+
+### v1.0.0
+- 🎉 Initial release
+- 📁 Basic file-based data management
+- 🔒 AES encryption support
+
+---
+
+<div align="center">
+
+**⭐ Nếu package này hữu ích, hãy cho chúng tôi một star trên GitHub! ⭐**
+
+[🌟 Star on GitHub](https://github.com/tojinguyen/Unity-Utilities) | [📖 Documentation](https://github.com/tojinguyen/Unity-Utilities/wiki) | [🐛 Report Issues](https://github.com/tojinguyen/Unity-Utilities/issues)
+
+</div>
