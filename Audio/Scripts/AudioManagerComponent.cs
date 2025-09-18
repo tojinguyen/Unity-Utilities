@@ -1,8 +1,5 @@
 using UnityEngine;
 
-/// <summary>
-/// MonoBehaviour component to handle Unity events for static AudioManager
-/// </summary>
 public class AudioManagerComponent : MonoBehaviour
 {
     private void OnApplicationPause(bool pauseStatus)
