@@ -179,9 +179,6 @@ public static class AudioManager
         // Make it persistent
         UnityEngine.Object.DontDestroyOnLoad(managerGameObject);
         
-        // Add component to handle Unity events
-        var component = managerGameObject.AddComponent<AudioManagerComponent>();
-        
         if (audioDatabase != null)
         {
             audioDatabase.Initialize();

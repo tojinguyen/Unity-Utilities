@@ -36,7 +36,7 @@ namespace TirexGame.Utils.Data.Editor
     }
     
     [CanEditMultipleObjects]
-    public class DataModelInspector : Editor
+    public class DataModelInspector : UnityEditor.Editor
     {
         private bool _showValidation = true;
         private bool _showMetadata = false;
