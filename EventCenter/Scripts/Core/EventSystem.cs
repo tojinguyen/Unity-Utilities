@@ -203,7 +203,7 @@ namespace TirexGame.Utils.EventCenter
         public static void Clear()
         {
             if (!_isInitialized) return;
-            _eventCenter.Clear();
+            _eventCenter?.Clear();
         }
         
         /// <summary>
