@@ -42,7 +42,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             }
         }
 
-        public async UniTask LoadSceneByName(string sceneName)
+        private async UniTask LoadSceneByName(string sceneName)
         {
             if (string.IsNullOrEmpty(sceneName))
             {
@@ -57,7 +57,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             await LoadingManager.Instance.StartLoadingAsync(steps, showLoadingUI);
         }
 
-        public async UniTask LoadSceneByIndex(int sceneIndex)
+        private async UniTask LoadSceneByIndex(int sceneIndex)
         {
             if (sceneIndex < 0)
             {
@@ -99,48 +99,8 @@ namespace TirexGame.Utils.LoadingScene.Examples
             
             await LoadingManager.Instance.StartLoadingAsync(steps, showLoadingUI);
         }
- 
-        public async UniTaskVoid RestartToMainMenu()
-        {
-            await LoadSceneByName("MainMenu");
-        }
-        
-        public async UniTaskVoid RestartToFirstScene()
-        {
-            await LoadSceneByIndex(0);
-        }
 
-        public async UniTaskVoid LoadNextScene()
-        {
-            var currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
-            var nextSceneIndex = currentSceneIndex + 1;
-            
-            if (nextSceneIndex < UnityEngine.SceneManagement.SceneManager.sceneCountInBuildSettings)
-            {
-                await LoadSceneByIndex(nextSceneIndex);
-            }
-            else
-            {
-                ConsoleLogger.LogWarning("No next scene available!");
-            }
-        }
-        
-        public async UniTaskVoid LoadPreviousScene()
-        {
-            var currentSceneIndex = UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex;
-            var previousSceneIndex = currentSceneIndex - 1;
-            
-            if (previousSceneIndex >= 0)
-            {
-                await LoadSceneByIndex(previousSceneIndex);
-            }
-            else
-            {
-                ConsoleLogger.LogWarning("No previous scene available!");
-            }
-        }
-        
-        public async UniTaskVoid ReloadCurrentScene()
+        private async UniTaskVoid ReloadCurrentScene()
         {
             var currentSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             await LoadSceneByName(currentSceneName);
@@ -149,13 +109,13 @@ namespace TirexGame.Utils.LoadingScene.Examples
         #region Inspector Context Menu
         
         [ContextMenu("Load Target Scene")]
-        private void LoadTargetSceneContext()
+        public void LoadTargetSceneContext()
         {
             LoadTargetScene().Forget();
         }
         
         [ContextMenu("Reload Current Scene")]
-        private void ReloadCurrentSceneContext()
+        public void ReloadCurrentSceneContext()
         {
             ReloadCurrentScene().Forget();
         }
