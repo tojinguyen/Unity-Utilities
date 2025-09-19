@@ -1,0 +1,19 @@
+{
+    "name": "TirexGame.Utils.Localization.Editor",
+    "rootNamespace": "TirexGame.Utils.Localization.Editor",
+    "references": [
+        "TirexGame.Utils.Localization",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

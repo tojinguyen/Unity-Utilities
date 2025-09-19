@@ -191,6 +191,35 @@ ERROR_*         // Error messages
 - Cache frequently used translations
 - Optimize font atlas sizes
 
+**5. Compilation Errors**
+- Ensure TextMeshPro package is imported
+- Check Assembly Definition files are properly configured
+- Verify Unity version compatibility (2020.3 LTS+)
+
+**6. NullReferenceException**
+- Kiểm tra LocalizationSettings asset exists
+- Verify LocalizationManager is in scene
+- Check all language tables are assigned
+
+### Debug Tools
+
+**Demo Script**: Attach `LocalizationDemo` component để test system
+```csharp
+// Right-click LocalizationDemo component:
+// - Test All Keys
+// - Switch Languages  
+// - Run Validation
+// - Create Demo Keys
+```
+
+**Validation**: Use built-in validation tools
+```csharp
+// In Localization Manager Window > Validation tab
+// Or via script:
+var result = LocalizationValidator.ValidateLocalizationSystem(settings);
+LocalizationValidator.LogValidationResults(result);
+```
+
 ## 📁 File Structure
 ```
 Assets/Utils/Localization/

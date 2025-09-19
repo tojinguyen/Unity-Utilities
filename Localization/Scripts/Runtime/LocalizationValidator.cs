@@ -246,9 +246,9 @@ namespace TirexGame.Utils.Localization
                 string scenePath = SceneUtility.GetScenePathByBuildIndex(i);
                 if (!string.IsNullOrEmpty(scenePath))
                 {
-                    var scene = UnityEditor.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
+                    var scene = UnityEditor.SceneManagement.EditorSceneManager.OpenScene(scenePath, UnityEditor.SceneManagement.OpenSceneMode.Additive);
                     ScanSceneForKeys(scene, usedKeys);
-                    UnityEditor.EditorSceneManager.CloseScene(scene, true);
+                    UnityEditor.SceneManagement.EditorSceneManager.CloseScene(scene, true);
                 }
             }
 

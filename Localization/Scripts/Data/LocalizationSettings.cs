@@ -96,6 +96,13 @@ namespace TirexGame.Utils.Localization
 
         public string GetLocalizedText(string key)
         {
+            if (string.IsNullOrEmpty(key))
+            {
+                if (showMissingKeyWarnings)
+                    Debug.LogWarning("[LocalizationSettings] Attempted to get localized text with null or empty key");
+                return string.Format(missingKeyFormat, "NULL_KEY");
+            }
+
             var currentTable = GetCurrentLanguageTable();
             if (currentTable != null)
             {
@@ -119,7 +126,7 @@ namespace TirexGame.Utils.Localization
             // Return missing key format
             if (showMissingKeyWarnings)
             {
-                Debug.LogWarning($"Missing localization key: {key}");
+                Debug.LogWarning($"[LocalizationSettings] Missing localization key: {key}");
             }
 
             return string.Format(missingKeyFormat, key);

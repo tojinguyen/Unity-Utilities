@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace TirexGame.Utils.Localization.Editor
@@ -29,7 +28,7 @@ namespace TirexGame.Utils.Localization.Editor
     }
 
     [CustomEditor(typeof(LocalizedTextBinder))]
-    public class LocalizedTextBinderEditor : Editor
+    public class LocalizedTextBinderEditor : UnityEditor.Editor
     {
         private SerializedProperty _keyProperty;
         private SerializedProperty _updateOnLanguageChangeProperty;

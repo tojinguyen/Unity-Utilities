@@ -291,7 +291,7 @@ namespace TirexGame.Utils.Localization.Editor
             AssetDatabase.SaveAssets();
 
             // Create LocalizationManager in scene if it doesn't exist
-            var existingManager = FindObjectOfType<LocalizationManager>();
+            var existingManager = FindFirstObjectByType<LocalizationManager>();
             if (existingManager == null)
             {
                 var managerGO = new GameObject("LocalizationManager");

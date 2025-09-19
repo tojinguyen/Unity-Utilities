@@ -113,7 +113,7 @@ namespace TirexGame.Utils.Localization.Editor
         {
             if (!_previewMode || _settings == null || _previewLanguage == null) return;
 
-            var allBinders = Object.FindObjectsOfType<LocalizedTextBinder>(true);
+            var allBinders = Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             
             foreach (var binder in allBinders)
             {
@@ -142,7 +142,7 @@ namespace TirexGame.Utils.Localization.Editor
 
         private static void RestoreOriginalTexts()
         {
-            var allBinders = Object.FindObjectsOfType<LocalizedTextBinder>(true);
+            var allBinders = Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             
             foreach (var binder in allBinders)
             {
