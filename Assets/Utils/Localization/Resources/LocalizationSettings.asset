@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 420b98a7915c9ce488af49ecabc6a5d1, type: 3}
+  m_Name: LocalizationSettings
+  m_EditorClassIdentifier: TirexGame.Utils.Localization::TirexGame.Utils.Localization.LocalizationSettings
+  autoDetectSystemLanguage: 1
+  savePrefernceToPlayerPrefs: 1
+  playerPrefsKey: SelectedLanguage
+  supportedLanguages:
+  - {fileID: 11400000, guid: 4a2ed8f59e2e25c4f830cc7732b01682, type: 2}
+  - {fileID: 11400000, guid: 78cb43a6c96110a409e064e6cc8820dd, type: 2}
+  - {fileID: 11400000, guid: 9135b53b2dc9f8d4e895f0fc156b75a3, type: 2}
+  - {fileID: 11400000, guid: d0fd5032101bdce478fe56f81247fa9e, type: 2}
+  defaultLanguage: {fileID: 11400000, guid: 4a2ed8f59e2e25c4f830cc7732b01682, type: 2}
+  localizationTables:
+  - {fileID: 11400000, guid: a63145eafdac08949acb8433e3de6079, type: 2}
+  - {fileID: 11400000, guid: 79e10cde453619349bed1ada3e4fead8, type: 2}
+  - {fileID: 11400000, guid: 9b59baa1411731c4ca99ca9eb23dfc55, type: 2}
+  - {fileID: 11400000, guid: 6af4d83f45e480d4bb68066f2b134e39, type: 2}
+  enableDebugMode: 0
+  showMissingKeyWarnings: 1
+  missingKeyFormat: '[MISSING: {0}]'
