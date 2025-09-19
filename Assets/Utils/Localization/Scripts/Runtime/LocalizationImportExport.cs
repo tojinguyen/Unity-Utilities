@@ -323,7 +323,6 @@ namespace TirexGame.Utils.Localization
             var result = new List<string>();
             var currentField = new StringBuilder();
             bool inQuotes = false;
-            bool quoteStarted = false;
 
             for (int i = 0; i < line.Length; i++)
             {
@@ -334,7 +333,6 @@ namespace TirexGame.Utils.Localization
                     if (!inQuotes)
                     {
                         inQuotes = true;
-                        quoteStarted = true;
                     }
                     else
                     {
@@ -354,7 +352,6 @@ namespace TirexGame.Utils.Localization
                 {
                     result.Add(currentField.ToString());
                     currentField.Clear();
-                    quoteStarted = false;
                 }
                 else
                 {

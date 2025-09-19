@@ -15,7 +15,7 @@ namespace TirexGame.Utils.Localization
             {
                 if (_instance == null)
                 {
-                    _instance = FindObjectOfType<LocalizationManager>();
+                    _instance = FindFirstObjectByType<LocalizationManager>();
                     if (_instance == null)
                     {
                         GameObject go = new GameObject("LocalizationManager");
