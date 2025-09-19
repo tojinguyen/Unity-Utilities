@@ -183,7 +183,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
         [ContextMenu("Test Error Handling")]
         private void TestError()
         {
-            TestLoadingWithError();
+            TestLoadingWithError().Forget();
         }
         
         [ContextMenu("Test Cancellation")]
