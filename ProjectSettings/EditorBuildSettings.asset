@@ -8,6 +8,15 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Utils/UI/UINavigator/Example/Scenes/UINavigator.unity
     guid: 5f0f3d4a627031f41b1f15a3a926ecfe
+  - enabled: 1
+    path: Assets/Utils/LoadingScene/Examples/Scene/MainMenu.unity
+    guid: b6ed6fdfa29645f44b76f0ad709d658a
+  - enabled: 1
+    path: Assets/Utils/LoadingScene/Examples/Scene/LoadingScene.unity
+    guid: c5d01051d2078fe4dba36cbfda4e6f24
+  - enabled: 1
+    path: Assets/Utils/LoadingScene/Examples/Scene/GameScene.unity
+    guid: e0da31d9affbc0d42b280dd049a4ce06
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: c6c9f884963c9974485a56775ee6d3b0, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
