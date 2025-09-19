@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Reflection;
 
 namespace TirexGame.Utils.Localization.Editor
 {
@@ -378,6 +380,10 @@ namespace TirexGame.Utils.Localization.Editor
 
         static void OnUpdate()
         {
+            // Check if required reflection types are available
+            if (m_toolbarType == null || m_windowBackend == null || m_viewVisualTree == null)
+                return;
+
             // Relying on the fact that toolbar is ScriptableObject and gets deleted when layout changes
             if (m_currentToolbar == null)
             {
@@ -386,36 +392,83 @@ namespace TirexGame.Utils.Localization.Editor
                 m_currentToolbar = toolbars.Length > 0 ? (ScriptableObject) toolbars[0] : null;
                 if (m_currentToolbar != null)
                 {
-                    #if UNITY_2021_1_OR_NEWER
-                    var root = m_viewVisualTree.GetValue(m_windowBackend.GetValue(m_currentToolbar, null), null);
-                    var toolbarZone = root.GetType().GetProperty("Query").GetValue(root, null);
-                    var toolbarZoneCall = toolbarZone.GetType().GetMethod("Call", new Type[] { typeof(string) });
-                    var container = toolbarZoneCall.Invoke(toolbarZone, new object[] { "ToolbarZoneLeftAlign" });
-                    var field = container.GetType().GetField("m_OnGUIHandler",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (field != null)
+                    try
                     {
-                        field.SetValue(container, (System.Action) OnToolbarGUILeft);
-                    }
+                        #if UNITY_2021_1_OR_NEWER
+                        var windowBackendValue = m_windowBackend.GetValue(m_currentToolbar, null);
+                        if (windowBackendValue == null)
+                            return;
 
-                    container = toolbarZoneCall.Invoke(toolbarZone, new object[] { "ToolbarZoneRightAlign" });
-                    field = container.GetType().GetField("m_OnGUIHandler",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (field != null)
+                        var root = m_viewVisualTree.GetValue(windowBackendValue, null);
+                        if (root == null)
+                            return;
+
+                        var queryProperty = root.GetType().GetProperty("Query");
+                        if (queryProperty == null)
+                            return;
+
+                        var toolbarZone = queryProperty.GetValue(root, null);
+                        if (toolbarZone == null)
+                            return;
+
+                        var toolbarZoneCall = toolbarZone.GetType().GetMethod("Call", new Type[] { typeof(string) });
+                        if (toolbarZoneCall == null)
+                            return;
+
+                        var container = toolbarZoneCall.Invoke(toolbarZone, new object[] { "ToolbarZoneLeftAlign" });
+                        if (container != null)
+                        {
+                            var field = container.GetType().GetField("m_OnGUIHandler",
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (field != null)
+                            {
+                                field.SetValue(container, (System.Action) OnToolbarGUILeft);
+                            }
+                        }
+
+                        container = toolbarZoneCall.Invoke(toolbarZone, new object[] { "ToolbarZoneRightAlign" });
+                        if (container != null)
+                        {
+                            var field = container.GetType().GetField("m_OnGUIHandler",
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                            if (field != null)
+                            {
+                                field.SetValue(container, (System.Action) OnToolbarGUIRight);
+                            }
+                        }
+                        #else
+                        // Check if m_imguiContainerOnGUI is available for older Unity versions
+                        if (m_imguiContainerOnGUI == null)
+                            return;
+
+                        var windowBackendValue = m_windowBackend.GetValue(m_currentToolbar, null);
+                        if (windowBackendValue == null)
+                            return;
+
+                        // Get it's visual tree
+                        var visualTree = m_viewVisualTree.GetValue(windowBackendValue, null);
+                        if (visualTree == null)
+                            return;
+
+                        var itemProperty = visualTree.GetType().GetProperty("Item");
+                        if (itemProperty == null)
+                            return;
+
+                        // Get first child which 'happens' to be toolbar IMGUIContainer
+                        var toolbarContainer = itemProperty.GetValue(visualTree, new object[] { 0 });
+                        if (toolbarContainer == null)
+                            return;
+
+                        // (Re)attach handler
+                        var handler = m_imguiContainerOnGUI.GetValue(toolbarContainer);
+                        m_imguiContainerOnGUI.SetValue(toolbarContainer, (Action) OnGUI);
+                        #endif
+                    }
+                    catch (System.Exception)
                     {
-                        field.SetValue(container, (System.Action) OnToolbarGUIRight);
+                        // Silently ignore reflection errors that can occur during Unity refresh
+                        // This prevents the NullReferenceException from being thrown
                     }
-                    #else
-                    // Get it's visual tree
-                    var visualTree = m_viewVisualTree.GetValue(m_windowBackend.GetValue(m_currentToolbar, null), null);
-
-                    // Get first child which 'happens' to be toolbar IMGUIContainer
-                    var toolbarContainer = visualTree.GetType().GetProperty("Item").GetValue(visualTree, new object[] { 0 });
-
-                    // (Re)attach handler
-                    var handler = m_imguiContainerOnGUI.GetValue(toolbarContainer);
-                    m_imguiContainerOnGUI.SetValue(toolbarContainer, (Action) OnGUI);
-                    #endif
                 }
             }
         }
