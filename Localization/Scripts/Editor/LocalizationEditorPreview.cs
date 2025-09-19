@@ -3,7 +3,6 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-using System.Reflection;
 
 namespace TirexGame.Utils.Localization.Editor
 {
@@ -115,7 +114,7 @@ namespace TirexGame.Utils.Localization.Editor
         {
             if (!_previewMode || _settings == null || _previewLanguage == null) return;
 
-            var allBinders = Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allBinders = UnityEngine.Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             
             foreach (var binder in allBinders)
             {
@@ -144,7 +143,7 @@ namespace TirexGame.Utils.Localization.Editor
 
         private static void RestoreOriginalTexts()
         {
-            var allBinders = Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var allBinders = UnityEngine.Object.FindObjectsByType<LocalizedTextBinder>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             
             foreach (var binder in allBinders)
             {
