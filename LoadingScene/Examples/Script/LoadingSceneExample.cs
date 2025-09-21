@@ -5,239 +5,390 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene.Examples
 {
+    /// <summary>
+    /// Example: Loading từ HOME scene sang INGAME scene với custom loading steps
+    /// Mô phỏng quy trình loading thực tế trong game production
+    /// </summary>
     public class LoadingSceneExample : MonoBehaviour
     {
-        [Header("Test Settings")]
-        [SerializeField] private string targetSceneName = "GameScene";
+        [Header("Scene Settings")]
+        [SerializeField] private string ingameSceneName = "INGAME";
+        [SerializeField] private string homeSceneName = "HOME";
+        
+        [Header("Loading Settings")]
         [SerializeField] private bool showUI = true;
         [SerializeField] private GameObject loadingUIPrefab;
+        [SerializeField] private bool enableDebugLogs = true;
+        
+        [Header("Game Data Settings")]
+        [SerializeField] private string[] gameDataPaths = { "PlayerData", "LevelData", "Settings" };
+        [SerializeField] private string[] addressableKeys = { "PlayerPrefab", "UICanvas", "GameManager" };
         
         private void Start()
         {
+            SetupLoadingManager();
+        }
+        
+        private void SetupLoadingManager()
+        {
+            // Setup UI Controller
             if (loadingUIPrefab != null)
             {
                 var uiController = DefaultLoadingUIController.CreateFromPrefab(loadingUIPrefab);
                 LoadingManager.Instance.SetUIController(uiController);
             }
             
-            LoadingManager.Instance.AddProgressCallback(new ConsoleLoggerProgressCallback());
+            // Add progress callback if debug is enabled
+            if (enableDebugLogs)
+            {
+                LoadingManager.Instance.AddProgressCallback(new GameLoadingProgressCallback());
+            }
         }
         
         #region Public Methods (for UI buttons)
         
         /// <summary>
-        /// Start simple scene loading
+        /// Main method: Chuyển từ HOME scene sang INGAME scene với đầy đủ loading steps
         /// </summary>
-        public async void StartSimpleSceneLoad()
+        /// <param name="targetSceneName">Tên scene đích (mặc định là INGAME)</param>
+        public async UniTaskVoid LoadIngameScene(string targetSceneName = null)
         {
-            if (string.IsNullOrEmpty(targetSceneName))
+            string sceneToLoad = string.IsNullOrEmpty(targetSceneName) ? ingameSceneName : targetSceneName;
+            
+            if (string.IsNullOrEmpty(sceneToLoad))
             {
-                ConsoleLogger.LogWarning("Target scene name is not set!");
+                ConsoleLogger.LogError("Target scene name is not set!");
                 return;
             }
             
-            var steps = new List<ILoadingStep>();
-            steps.Add(LoadingStepFactory.CreateSceneLoad(targetSceneName));
+            ConsoleLogger.Log($"Starting transition from HOME to {sceneToLoad}...");
             
-            await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
-        }
-        
-        /// <summary>
-        /// Start custom loading sequence with user-defined steps
-        /// </summary>
-        public async void StartCustomLoading()
-        {
-            var steps = new List<ILoadingStep>();
-            
-            // Example: Add custom delay step implementation
-            steps.Add(new CustomDelayStep(1f, "Custom Delay", "Example custom delay step"));
-            
-            // Example: Add custom work step
-            steps.Add(new CustomWorkStep("Custom Work", "Doing some custom work..."));
-            
-            if (!string.IsNullOrEmpty(targetSceneName))
-            {
-                steps.Add(LoadingStepFactory.CreateSceneLoad(targetSceneName));
-            }
-            
-            await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
-        }
-
-        /// <summary>
-        /// Test loading with error handling
-        /// </summary>
-        public async UniTaskVoid TestLoadingWithError()
-        {
-            var steps = new List<ILoadingStep>();
-            
-            steps.Add(new CustomDelayStep(1f, "Normal Step", "This should work fine..."));
-            
-            // Add a step that will fail
-            steps.Add(new CustomErrorStep("Error Step", "This step will fail..."));
+            var steps = CreateIngameLoadingSteps(sceneToLoad);
             
             try
             {
                 await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
+                ConsoleLogger.Log($"Successfully loaded {sceneToLoad} scene!");
             }
             catch (System.Exception ex)
             {
-                ConsoleLogger.LogError($"Loading failed as expected: {ex.Message}");
+                ConsoleLogger.LogError($"Failed to load {sceneToLoad}: {ex.Message}");
             }
         }
         
         /// <summary>
-        /// Test cancellation
+        /// Quay về HOME scene
         /// </summary>
-        public async void TestCancellation()
+        public async UniTaskVoid ReturnToHome()
         {
-            var steps = new List<ILoadingStep>();
+            ConsoleLogger.Log("Returning to HOME scene...");
             
-            steps.Add(new CustomDelayStep(5f, "Long Step", "This is a long step that can be cancelled..."));
-            steps.Add(new CustomDelayStep(3f, "Another Step", "Another step..."));
-            
-            // Start loading (this will run in background)
-            var loadingTask = LoadingManager.Instance.StartLoadingAsync(steps, showUI);
-            
-            // Cancel after 2 seconds
-            await Task.Delay(2000);
-            LoadingManager.Instance.CancelLoading();
+            var steps = CreateReturnHomeSteps();
             
             try
             {
-                await loadingTask;
+                await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
+                ConsoleLogger.Log("Successfully returned to HOME!");
             }
-            catch (System.OperationCanceledException)
+            catch (System.Exception ex)
             {
-                ConsoleLogger.Log("Loading was cancelled successfully");
+                ConsoleLogger.LogError($"Failed to return to HOME: {ex.Message}");
             }
         }
         
         #endregion
         
-        #region Test Methods (for inspector buttons)
+        #region Private Methods - Create Loading Steps
         
-        [ContextMenu("Test Simple Scene Load")]
-        private void TestSimpleLoad()
+        /// <summary>
+        /// Tạo chuỗi loading steps cho việc chuyển sang INGAME scene
+        /// </summary>
+        private List<ILoadingStep> CreateIngameLoadingSteps(string targetScene)
         {
-            StartSimpleSceneLoad();
+            var steps = new List<ILoadingStep>();
+            
+            // Step 1: Preparation - Save current progress, cleanup
+            steps.Add(new SaveGameDataStep("Saving Progress", "Saving your current progress..."));
+            
+            // Step 2: Load game data
+            steps.Add(new LoadGameDataStep(gameDataPaths, "Loading Game Data", "Loading player data and settings..."));
+            
+            // Step 3: Load addressable assets
+            steps.Add(new LoadAddressableAssetsStep(addressableKeys, "Loading Assets", "Loading game assets..."));
+            
+            // Step 4: Initialize game systems
+            steps.Add(new InitializeGameSystemsStep("Initialize Systems", "Setting up game systems..."));
+            
+            // Step 5: Scene loading
+            steps.Add(LoadingStepFactory.CreateSceneLoad(targetScene, 2f));
+            
+            // Step 6: Post-scene setup
+            steps.Add(new PostSceneSetupStep("Post Setup", "Finalizing game setup..."));
+            
+            return steps;
         }
         
-        [ContextMenu("Test Custom Loading")]
-        private void TestCustom()
+        /// <summary>
+        /// Tạo chuỗi loading steps cho việc quay về HOME
+        /// </summary>
+        private List<ILoadingStep> CreateReturnHomeSteps()
         {
-            StartCustomLoading();
+            var steps = new List<ILoadingStep>();
+            
+            // Step 1: Cleanup game data
+            steps.Add(new CleanupGameDataStep("Cleanup", "Cleaning up game data..."));
+            
+            // Step 2: Return to home scene  
+            steps.Add(LoadingStepFactory.CreateSceneLoad(homeSceneName, 1.5f));
+            
+            return steps;
         }
         
-        [ContextMenu("Test Error Handling")]
-        private void TestError()
+        #endregion
+        
+        #region Context Menu Methods (for testing in editor)
+        
+        [ContextMenu("Load INGAME Scene")]
+        private void TestLoadIngame()
         {
-            TestLoadingWithError().Forget();
+            LoadIngameScene().Forget();
         }
         
-        [ContextMenu("Test Cancellation")]
-        private void TestCancel()
+        [ContextMenu("Load Custom Scene")]
+        private void TestLoadCustomScene()
         {
-            TestCancellation();
+            LoadIngameScene("TestScene").Forget();
+        }
+        
+        [ContextMenu("Return to HOME")]
+        private void TestReturnHome()
+        {
+            ReturnToHome().Forget();
         }
         
         #endregion
     }
     
-    // Example implementation of custom loading steps
-    // Users should create their own implementations based on their needs
+    #region Custom Loading Steps - Production Example Implementation
     
     /// <summary>
-    /// Example custom delay step - users can implement their own version
+    /// Step 1: Save game data trước khi chuyển scene
     /// </summary>
-    public class CustomDelayStep : BaseLoadingStep
+    public class SaveGameDataStep : BaseLoadingStep
     {
-        private readonly float _duration;
-        
-        public CustomDelayStep(float duration, string stepName, string description, float weight = 1f)
-            : base(stepName, description, weight)
-        {
-            _duration = duration;
-        }
-        
-        protected override async Task ExecuteStepAsync()
-        {
-            float elapsed = 0f;
-            while (elapsed < _duration && !isCancelled)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                UpdateProgressInternal(elapsed / _duration);
-                await Task.Yield();
-                ThrowIfCancelled();
-            }
-        }
-    }
-    
-    /// <summary>
-    /// Example custom work step - users can implement their own version
-    /// </summary>
-    public class CustomWorkStep : BaseLoadingStep
-    {
-        public CustomWorkStep(string stepName, string description, float weight = 1f)
+        public SaveGameDataStep(string stepName, string description, float weight = 0.5f)
             : base(stepName, description, weight)
         {
         }
         
         protected override async Task ExecuteStepAsync()
         {
-            // Simulate some work
-            for (int i = 0; i < 10; i++)
-            {
-                ThrowIfCancelled();
-                UpdateProgressInternal((float)i / 10f);
-                await Task.Delay(100);
-            }
+            UpdateProgressInternal(0.2f);
+            
+            // Simulate saving player progress
+            await Task.Delay(300);
+            ThrowIfCancelled();
+            
+            UpdateProgressInternal(0.6f);
+            
+            // Simulate saving game settings
+            await Task.Delay(200);
+            ThrowIfCancelled();
+            
             UpdateProgressInternal(1f);
+            ConsoleLogger.Log("Game data saved successfully");
         }
     }
     
     /// <summary>
-    /// Example error step for testing - users can implement their own version
+    /// Step 2: Load game data cần thiết cho INGAME scene
     /// </summary>
-    public class CustomErrorStep : BaseLoadingStep
+    public class LoadGameDataStep : BaseLoadingStep
     {
-        public CustomErrorStep(string stepName, string description, float weight = 1f)
+        private readonly string[] _dataPaths;
+        
+        public LoadGameDataStep(string[] dataPaths, string stepName, string description, float weight = 1f)
+            : base(stepName, description, weight)
+        {
+            _dataPaths = dataPaths ?? new string[0];
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            for (int i = 0; i < _dataPaths.Length; i++)
+            {
+                ThrowIfCancelled();
+                
+                // Simulate loading each data file
+                ConsoleLogger.Log($"Loading data: {_dataPaths[i]}");
+                await Task.Delay(400);
+                
+                UpdateProgressInternal((float)(i + 1) / _dataPaths.Length);
+            }
+            
+            ConsoleLogger.Log($"Loaded {_dataPaths.Length} data files");
+        }
+    }
+    
+    /// <summary>
+    /// Step 3: Load Addressable assets
+    /// </summary>
+    public class LoadAddressableAssetsStep : BaseLoadingStep
+    {
+        private readonly string[] _assetKeys;
+        
+        public LoadAddressableAssetsStep(string[] assetKeys, string stepName, string description, float weight = 1.5f)
+            : base(stepName, description, weight)
+        {
+            _assetKeys = assetKeys ?? new string[0];
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            for (int i = 0; i < _assetKeys.Length; i++)
+            {
+                ThrowIfCancelled();
+                
+                // Simulate Addressable asset loading
+                ConsoleLogger.Log($"Loading asset: {_assetKeys[i]}");
+                
+                // Simulate download progress (for remote assets)
+                for (float progress = 0; progress < 1f; progress += 0.1f)
+                {
+                    ThrowIfCancelled();
+                    await Task.Delay(50);
+                    
+                    float totalProgress = (i + progress) / _assetKeys.Length;
+                    UpdateProgressInternal(totalProgress);
+                }
+            }
+            
+            ConsoleLogger.Log($"Loaded {_assetKeys.Length} addressable assets");
+        }
+    }
+    
+    /// <summary>
+    /// Step 4: Initialize game systems
+    /// </summary>
+    public class InitializeGameSystemsStep : BaseLoadingStep
+    {
+        private readonly string[] _systemNames = { "Audio Manager", "Input System", "UI Manager", "Game Manager", "Network Manager" };
+        
+        public InitializeGameSystemsStep(string stepName, string description, float weight = 1f)
             : base(stepName, description, weight)
         {
         }
         
         protected override async Task ExecuteStepAsync()
         {
-            UpdateProgressInternal(0.5f);
-            await Task.Delay(500);
-            throw new System.Exception("Test error - this is intentional!");
+            for (int i = 0; i < _systemNames.Length; i++)
+            {
+                ThrowIfCancelled();
+                
+                ConsoleLogger.Log($"Initializing: {_systemNames[i]}");
+                
+                // Simulate system initialization time
+                await Task.Delay(300);
+                
+                UpdateProgressInternal((float)(i + 1) / _systemNames.Length);
+            }
+            
+            ConsoleLogger.Log("All game systems initialized");
         }
     }
     
-    public class ConsoleLoggerProgressCallback : ILoadingProgressCallback
+    /// <summary>
+    /// Step 6: Post-scene setup sau khi scene đã load
+    /// </summary>
+    public class PostSceneSetupStep : BaseLoadingStep
+    {
+        public PostSceneSetupStep(string stepName, string description, float weight = 0.5f)
+            : base(stepName, description, weight)
+        {
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            UpdateProgressInternal(0.3f);
+            
+            // Simulate spawning player
+            ConsoleLogger.Log("Spawning player...");
+            await Task.Delay(200);
+            ThrowIfCancelled();
+            
+            UpdateProgressInternal(0.7f);
+            
+            // Simulate setting up game state
+            ConsoleLogger.Log("Setting up game state...");
+            await Task.Delay(300);
+            ThrowIfCancelled();
+            
+            UpdateProgressInternal(1f);
+            ConsoleLogger.Log("Game setup completed - Ready to play!");
+        }
+    }
+    
+    /// <summary>
+    /// Cleanup step khi quay về HOME
+    /// </summary>
+    public class CleanupGameDataStep : BaseLoadingStep
+    {
+        public CleanupGameDataStep(string stepName, string description, float weight = 0.5f)
+            : base(stepName, description, weight)
+        {
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            UpdateProgressInternal(0.3f);
+            
+            // Simulate cleanup game objects
+            ConsoleLogger.Log("Cleaning up game objects...");
+            await Task.Delay(200);
+            ThrowIfCancelled();
+            
+            UpdateProgressInternal(0.7f);
+            
+            // Simulate releasing resources
+            ConsoleLogger.Log("Releasing resources...");
+            await Task.Delay(200);
+            ThrowIfCancelled();
+            
+            UpdateProgressInternal(1f);
+            ConsoleLogger.Log("Cleanup completed");
+        }
+    }
+    
+    /// <summary>
+    /// Custom progress callback cho game production
+    /// </summary>
+    public class GameLoadingProgressCallback : ILoadingProgressCallback
     {
         public void OnProgressUpdated(LoadingProgressData progressData)
         {
-            ConsoleLogger.Log($"[LoadingProgress] {progressData.TotalProgress:P1} - {progressData.CurrentStepName}: {progressData.CurrentStepDescription}");
+            ConsoleLogger.Log($"[LOADING] {progressData.TotalProgress:P1} - {progressData.CurrentStepName}: {progressData.CurrentStepDescription}");
         }
         
         public void OnStepStarted(ILoadingStep step, LoadingProgressData progressData)
         {
-            ConsoleLogger.Log($"[LoadingStep] Started: {step.StepName}");
+            ConsoleLogger.Log($"[STEP START] {step.StepName}");
         }
         
         public void OnStepCompleted(ILoadingStep step, LoadingProgressData progressData)
         {
-            ConsoleLogger.Log($"[LoadingStep] Completed: {step.StepName}");
+            ConsoleLogger.Log($"[STEP DONE] {step.StepName} - Total elapsed: {progressData.ElapsedTime.TotalSeconds:F1}s");
         }
         
         public void OnLoadingCompleted(LoadingProgressData progressData)
         {
-            ConsoleLogger.Log($"[Loading] Completed in {progressData.ElapsedTime.TotalSeconds:F1}s");
+            ConsoleLogger.Log($"[LOADING COMPLETE] Total time: {progressData.ElapsedTime.TotalSeconds:F1}s");
         }
         
         public void OnLoadingError(ILoadingStep step, System.Exception exception, LoadingProgressData progressData)
         {
-            ConsoleLogger.LogError($"[Loading] Error in step '{step?.StepName}': {exception.Message}");
+            ConsoleLogger.LogError($"[LOADING ERROR] Step '{step?.StepName}': {exception.Message}");
         }
     }
+    
+    #endregion
 }
