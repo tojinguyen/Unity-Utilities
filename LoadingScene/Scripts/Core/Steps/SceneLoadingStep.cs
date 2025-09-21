@@ -321,7 +321,8 @@ namespace TirexGame.Utils.LoadingScene
             
             steps.Add(SceneLoadingStep.LoadScene(targetScene));
             
-            steps.Add(new DelayLoadingStep(0.5f, "Finalizing", "Finalizing scene transition...", false, 0.2f));
+            // Note: Users can add their own finalization steps if needed
+            // Example: steps.Add(new CustomDelayStep(0.5f, "Finalizing", "Finalizing scene transition..."));
             
             return steps.ToArray();
         }
