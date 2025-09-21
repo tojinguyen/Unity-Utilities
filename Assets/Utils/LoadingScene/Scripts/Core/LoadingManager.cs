@@ -7,10 +7,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Class chính quản lý toàn bộ hệ thống loading scene.
-    /// Sử dụng Singleton Pattern để đảm bảo chỉ có một instance duy nhất.
-    /// </summary>
     public class LoadingManager : MonoBehaviour
     {
         #region Singleton Implementation
@@ -28,10 +24,10 @@ namespace TirexGame.Utils.LoadingScene
                     {
                         if (_instance == null)
                         {
-                            _instance = FindObjectOfType<LoadingManager>();
+                            _instance = FindAnyObjectByType<LoadingManager>();
                             if (_instance == null)
                             {
-                                GameObject go = new GameObject("LoadingManager");
+                                var go = new GameObject("LoadingManager");
                                 _instance = go.AddComponent<LoadingManager>();
                                 DontDestroyOnLoad(go);
                             }

@@ -62,7 +62,6 @@ namespace TirexGame.Utils.LoadingScene
         
         private void Start()
         {
-            // Ensure UI is properly hidden on start
             if (_loadingPanel != null)
                 _loadingPanel.SetActive(false);
                 
@@ -326,13 +325,7 @@ namespace TirexGame.Utils.LoadingScene
         #endregion
         
         #region Static Factory Method
-        
-        /// <summary>
-        /// Tạo UI Controller từ prefab
-        /// </summary>
-        /// <param name="prefab">Prefab chứa UI loading</param>
-        /// <param name="parent">Parent transform (optional)</param>
-        /// <returns>Instance của DefaultLoadingUIController</returns>
+
         public static DefaultLoadingUIController CreateFromPrefab(GameObject prefab, Transform parent = null)
         {
             if (prefab == null)
@@ -348,25 +341,6 @@ namespace TirexGame.Utils.LoadingScene
             {
                 controller = instance.AddComponent<DefaultLoadingUIController>();
             }
-            
-            return controller;
-        }
-        
-        /// <summary>
-        /// Tạo UI Controller đơn giản bằng code
-        /// </summary>
-        /// <param name="parent">Parent transform (optional)</param>
-        /// <returns>Instance của DefaultLoadingUIController</returns>
-        public static DefaultLoadingUIController CreateSimpleUI(Transform parent = null)
-        {
-            GameObject uiObject = new GameObject("LoadingUI");
-            if (parent != null)
-                uiObject.transform.SetParent(parent);
-                
-            DefaultLoadingUIController controller = uiObject.AddComponent<DefaultLoadingUIController>();
-            
-            // TODO: Create simple UI elements programmatically
-            // This would involve creating Canvas, Panel, Slider, Text components etc.
             
             return controller;
         }
