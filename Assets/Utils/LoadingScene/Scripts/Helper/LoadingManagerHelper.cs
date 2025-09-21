@@ -46,7 +46,10 @@ namespace TirexGame.Utils.LoadingScene
         [ContextMenu("Test Load Scene")]
         public async UniTaskVoid TestLoadScene()
         {
-            var steps = LoadingStepFactory.CreateSimpleSceneLoad("TestScene", 2f);
+            var steps = new System.Collections.Generic.List<ILoadingStep>
+            {
+                LoadingStepFactory.CreateSceneLoad("TestScene")
+            };
             
             try
             {
@@ -58,10 +61,13 @@ namespace TirexGame.Utils.LoadingScene
             }
         }
         
-        [ContextMenu("Test Standard Transition")]
-        public async UniTaskVoid TestStandardTransition()
+        [ContextMenu("Test Scene Transition")]
+        public async UniTaskVoid TestSceneTransition()
         {
-            var steps = LoadingStepFactory.CreateStandardSceneTransition("TestScene", true, true);
+            var steps = new System.Collections.Generic.List<ILoadingStep>
+            {
+                LoadingStepFactory.CreateSceneLoad("TestScene")
+            };
             
             try
             {

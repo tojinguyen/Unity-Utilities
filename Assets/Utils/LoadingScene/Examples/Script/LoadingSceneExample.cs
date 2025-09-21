@@ -9,16 +9,8 @@ namespace TirexGame.Utils.LoadingScene.Examples
     {
         [Header("Test Settings")]
         [SerializeField] private string targetSceneName = "GameScene";
-        [SerializeField] private bool useStandardTransition = true;
         [SerializeField] private bool showUI = true;
         [SerializeField] private GameObject loadingUIPrefab;
-        
-        [Header("Custom Loading Steps")]
-        [SerializeField] private bool includeDelayStep = true;
-        [SerializeField] private float delayDuration = 2f;
-        [SerializeField] private bool includeSystemInit = true;
-        [SerializeField] private bool includeResourceLoading = false;
-        [SerializeField] private string resourcePath = "TestAsset";
         
         private void Start()
         {
@@ -33,20 +25,6 @@ namespace TirexGame.Utils.LoadingScene.Examples
         
         #region Public Methods (for UI buttons)
         
-        public async UniTaskVoid StartStandardSceneTransition()
-        {
-            if (string.IsNullOrEmpty(targetSceneName))
-            {
-                ConsoleLogger.LogWarning("Target scene name is not set!");
-                return;
-            }
-            
-            var steps = LoadingStepFactory.CreateStandardSceneTransition(
-                targetSceneName, includeSystemInit, includeResourceLoading);
-            
-            await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
-        }
-        
         /// <summary>
         /// Start simple scene loading
         /// </summary>
@@ -58,41 +36,24 @@ namespace TirexGame.Utils.LoadingScene.Examples
                 return;
             }
             
-            var steps = LoadingStepFactory.CreateSimpleSceneLoad(targetSceneName, 2f);
+            var steps = new List<ILoadingStep>();
+            steps.Add(LoadingStepFactory.CreateSceneLoad(targetSceneName));
+            
             await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
         }
         
         /// <summary>
-        /// Start custom loading sequence
+        /// Start custom loading sequence with user-defined steps
         /// </summary>
         public async void StartCustomLoading()
         {
             var steps = new List<ILoadingStep>();
             
-            if (includeDelayStep)
-            {
-                steps.Add(LoadingStepFactory.CreateDelay(delayDuration, "Custom Delay", "Testing delay step..."));
-            }
+            // Example: Add custom delay step implementation
+            steps.Add(new CustomDelayStep(1f, "Custom Delay", "Example custom delay step"));
             
-            if (includeSystemInit)
-            {
-                steps.Add(LoadingStepFactory.CreateSystemInit(
-                    new[] { "Audio System", "Graphics System", "Input System" }, 0.5f));
-            }
-            
-            if (includeResourceLoading && !string.IsNullOrEmpty(resourcePath))
-            {
-                steps.Add(LoadingStepFactory.CreateResourceLoad(resourcePath));
-            }
-            
-            // Add custom step with lambda
-            steps.Add(LoadingStepFactory.CreateCustom(async (step) => {
-                step.UpdateProgress(0.3f);
-                await Task.Delay(500);
-                step.UpdateProgress(0.7f);
-                await Task.Delay(300);
-                step.UpdateProgress(1f);
-            }, "Custom Step", "Doing custom work..."));
+            // Example: Add custom work step
+            steps.Add(new CustomWorkStep("Custom Work", "Doing some custom work..."));
             
             if (!string.IsNullOrEmpty(targetSceneName))
             {
@@ -102,24 +63,17 @@ namespace TirexGame.Utils.LoadingScene.Examples
             await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
         }
 
-        public async UniTaskVoid RestartGame()
-        {
-            var steps = LoadingStepFactory.CreateGameRestart("MainMenu");
-            await LoadingManager.Instance.StartLoadingAsync(steps, showUI);
-        }
-        
+        /// <summary>
+        /// Test loading with error handling
+        /// </summary>
         public async UniTaskVoid TestLoadingWithError()
         {
             var steps = new List<ILoadingStep>();
             
-            steps.Add(LoadingStepFactory.CreateDelay(1f, "Normal Step", "This should work fine..."));
+            steps.Add(new CustomDelayStep(1f, "Normal Step", "This should work fine..."));
             
             // Add a step that will fail
-            steps.Add(LoadingStepFactory.CreateCustom(async (step) => {
-                step.UpdateProgress(0.5f);
-                await Task.Delay(500);
-                throw new System.Exception("Test error - this is intentional!");
-            }, "Error Step", "This step will fail..."));
+            steps.Add(new CustomErrorStep("Error Step", "This step will fail..."));
             
             try
             {
@@ -138,8 +92,8 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
             var steps = new List<ILoadingStep>();
             
-            steps.Add(LoadingStepFactory.CreateDelay(5f, "Long Step", "This is a long step that can be cancelled..."));
-            steps.Add(LoadingStepFactory.CreateDelay(3f, "Another Step", "Another step..."));
+            steps.Add(new CustomDelayStep(5f, "Long Step", "This is a long step that can be cancelled..."));
+            steps.Add(new CustomDelayStep(3f, "Another Step", "Another step..."));
             
             // Start loading (this will run in background)
             var loadingTask = LoadingManager.Instance.StartLoadingAsync(steps, showUI);
@@ -161,12 +115,6 @@ namespace TirexGame.Utils.LoadingScene.Examples
         #endregion
         
         #region Test Methods (for inspector buttons)
-        
-        [ContextMenu("Test Standard Scene Transition")]
-        private void TestStandardTransition()
-        {
-            StartStandardSceneTransition().Forget();
-        }
         
         [ContextMenu("Test Simple Scene Load")]
         private void TestSimpleLoad()
@@ -193,6 +141,76 @@ namespace TirexGame.Utils.LoadingScene.Examples
         }
         
         #endregion
+    }
+    
+    // Example implementation of custom loading steps
+    // Users should create their own implementations based on their needs
+    
+    /// <summary>
+    /// Example custom delay step - users can implement their own version
+    /// </summary>
+    public class CustomDelayStep : BaseLoadingStep
+    {
+        private readonly float _duration;
+        
+        public CustomDelayStep(float duration, string stepName, string description, float weight = 1f)
+            : base(stepName, description, weight)
+        {
+            _duration = duration;
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            float elapsed = 0f;
+            while (elapsed < _duration && !isCancelled)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                UpdateProgressInternal(elapsed / _duration);
+                await Task.Yield();
+                ThrowIfCancelled();
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Example custom work step - users can implement their own version
+    /// </summary>
+    public class CustomWorkStep : BaseLoadingStep
+    {
+        public CustomWorkStep(string stepName, string description, float weight = 1f)
+            : base(stepName, description, weight)
+        {
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            // Simulate some work
+            for (int i = 0; i < 10; i++)
+            {
+                ThrowIfCancelled();
+                UpdateProgressInternal((float)i / 10f);
+                await Task.Delay(100);
+            }
+            UpdateProgressInternal(1f);
+        }
+    }
+    
+    /// <summary>
+    /// Example error step for testing - users can implement their own version
+    /// </summary>
+    public class CustomErrorStep : BaseLoadingStep
+    {
+        public CustomErrorStep(string stepName, string description, float weight = 1f)
+            : base(stepName, description, weight)
+        {
+        }
+        
+        protected override async Task ExecuteStepAsync()
+        {
+            UpdateProgressInternal(0.5f);
+            await Task.Delay(500);
+            throw new System.Exception("Test error - this is intentional!");
+        }
     }
     
     public class ConsoleLoggerProgressCallback : ILoadingProgressCallback
