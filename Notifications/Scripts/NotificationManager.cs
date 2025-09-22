@@ -50,7 +50,7 @@ namespace Tirex.Game.Utils
                 LargeIcon = "app_icon_large"
             };
 
-            AndroidNotificationCenter.SendNotificationWithIdentifier(androidNotification, notification.ChannelId, notification.Id);
+            AndroidNotificationCenter.SendNotificationWithExplicitID(androidNotification, notification.ChannelId, notification.Id);
 #elif UNITY_IOS
             var timeTrigger = new iOSNotificationCalendarTrigger()
             {
