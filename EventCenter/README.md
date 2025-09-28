@@ -35,20 +35,91 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 1. Copy thư mục `EventCenter` vào project Unity của bạn
 2. Đảm bảo namespace `TirexGame.Utils.EventCenter` có thể truy cập được
 
-### Bước 2: Khởi tạo (Tự động)
+### Bước 2: Khởi tạo (Tự động + Có thể tùy chỉnh)
 Hệ thống sẽ **TỰ ĐỘNG** tạo EventCenter khi ứng dụng khởi động! 🚀
 
+#### 🎯 Auto-Creation Mặc định:
 - ✅ **Hoàn toàn tự động**: Không cần thêm GameObject vào scene
 - ✅ **DontDestroyOnLoad**: EventCenter sẽ tồn tại xuyên suốt tất cả scenes  
 - ✅ **Zero configuration**: Hoạt động ngay out-of-the-box
 - ✅ **Thông minh**: Chỉ tạo khi không có EventCenter nào khác
 
-**Bạn không cần làm gì thêm!** EventCenter sẽ được tạo tự động với tên `[EventCenter] - Auto Created`.
+#### ⚙️ Tùy chỉnh Configuration (Tùy chọn):
+Nếu bạn muốn tùy chỉnh settings, hãy sử dụng **TirexGame Config Tool**:
+
+1. **Mở Config Tool**: `TirexGame → Event Center → Create Custom Config`
+2. **Tùy chỉnh settings**: Thay đổi performance, debug settings, tên EventCenter, etc.
+3. **Save Config**: Click "💾 Save Custom Config"
+4. **Hoàn thành**: Hệ thống sẽ tự động sử dụng custom config của bạn!
+
+#### 📊 Config Hierarchy:
+1. **Custom Config** (trong `Assets/Resources/EventCenterConfig.asset`) - **Ưu tiên cao nhất**
+2. **Package Default** (trong package) - Fallback tốt
+3. **Runtime Default** - Fallback cuối cùng
+
+**Bạn không cần làm gì thêm để bắt đầu!** EventCenter sẽ được tạo tự động.
 
 ### Bước 3: Sử dụng
 ```csharp
 using TirexGame.Utils.EventCenter;
 ```
+
+## ⚙️ Configuration System
+
+EventCenter hỗ trợ hệ thống configuration linh hoạt với 3 levels ưu tiên:
+
+### 📊 Config Priority (Thứ tự ưu tiên)
+1. **Custom Config** - `Assets/Resources/EventCenterConfig.asset`
+2. **Package Default** - Built-in trong package  
+3. **Runtime Default** - Tạo runtime nếu không tìm thấy config nào
+
+### 🔧 TirexGame Config Tool
+
+**Mở Config Tool:**
+- Menu: `TirexGame → Event Center → Create Custom Config`
+- Hoặc: `TirexGame → Event Center → Open Current Config`
+
+**Các settings có thể tùy chỉnh:**
+
+#### Auto Creation Settings:
+- `autoCreateEventCenter`: Bật/tắt tự động tạo EventCenter
+- `dontDestroyOnLoad`: EventCenter có persist across scenes không  
+- `autoCreatedName`: Tên của EventCenter được tạo tự động
+
+#### Performance Settings:
+- `maxEventsPerFrame`: Số lượng events tối đa mỗi frame (100-50000)
+- `maxBatchSize`: Kích thước batch tối đa (10-5000)
+
+#### Debug Settings:
+- `enableLogging`: Bật debug logging
+- `enableProfiling`: Bật performance profiling
+- `showStats`: Hiển thị runtime statistics
+
+### 🔄 Config Tool Actions:
+
+```
+💾 Save Custom Config    - Lưu config vào project
+🔄 Reset to Default      - Reset về settings mặc định  
+📋 Copy from Default     - Copy từ package default
+📂 Reveal in Project     - Mở config trong Project window
+```
+
+### 💡 Config Usage Examples:
+
+```csharp
+// Đọc config hiện tại
+var config = EventCenterConfig.Instance;
+Debug.Log($"Max Events: {config.maxEventsPerFrame}");
+Debug.Log($"Auto Create: {config.autoCreateEventCenter}");
+
+// Trong Editor - refresh cache sau khi thay đổi
+EventCenterConfig.RefreshConfiguration();
+```
+
+**🎯 Khuyến nghị:**
+- Dùng **default settings** cho hầu hết các project
+- Chỉ tạo **custom config** khi cần fine-tuning performance
+- Disable auto-creation nếu bạn muốn full control EventCenter lifecycle
 
 ## 🎮 Sử dụng cơ bản | Basic Usage
 
@@ -503,9 +574,27 @@ Debug.Log($"EventSystem initialized: {EventSystem.IsInitialized}");
 
 ### Q: Làm sao customize EventCenter tự động tạo?
 **A:** Có 3 cách:
-1. **Không làm gì**: Dùng default auto-created (khuyến nghị)
-2. **EventCenterSetup**: Add component này vào scene để tùy chỉnh settings
-3. **Manual**: Tạo EventCenter GameObject thủ công (hệ thống sẽ không auto-create nữa)
+1. **Config Tool (Khuyến nghị)**: `TirexGame → Event Center → Create Custom Config`
+   - GUI thân thiện, dễ sử dụng
+   - Tự động save vào đúng vị trí
+   - Có preview và validation
+2. **Manual Config**: Tạo `EventCenterConfig.asset` trong `Assets/Resources/`
+3. **EventCenterSetup**: Add component này vào scene để override toàn bộ
+
+### Q: Config system hoạt động như thế nào?
+**A:** 📊 **3-level hierarchy**:
+1. **Custom Config** (`Assets/Resources/EventCenterConfig.asset`) - Ưu tiên cao nhất
+2. **Package Default** (built-in) - Fallback tốt  
+3. **Runtime Default** - Fallback cuối cùng
+
+Hệ thống tự động chọn config theo thứ tự ưu tiên. Sử dụng Config Tool để tạo custom config một cách dễ dàng!
+
+### Q: Disable auto-creation EventCenter được không?
+**A:** ✅ **Được!** Có 2 cách:
+1. **Config Tool**: Uncheck "Auto Create EventCenter" trong custom config
+2. **EventCenterSetup**: Add component này vào scene (sẽ override auto-creation)
+
+Sau đó bạn có thể tự tạo EventCenter thủ công hoặc dùng EventCenterSetup với settings riêng.
 
 
 ## 🤝 Support

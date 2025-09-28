@@ -40,6 +40,15 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         private static void EnsureEventCenterExists()
         {
+            var config = EventCenterConfig.Instance;
+            
+            // Check if auto-creation is disabled in config
+            if (!config.autoCreateEventCenter)
+            {
+                Debug.Log("[EventSystemInitializer] Auto-creation disabled in configuration");
+                return;
+            }
+            
             // Check if EventCenter already exists
             var existingEventCenter = UnityEngine.Object.FindFirstObjectByType<EventCenter>();
             if (existingEventCenter != null)
@@ -56,20 +65,34 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
             
-            // Create EventCenter automatically
+            // Create EventCenter automatically using config settings
             CreateDefaultEventCenter();
         }
         
         /// <summary>
-        /// Create a default EventCenter GameObject with optimal settings
+        /// Create a default EventCenter GameObject with settings from configuration
         /// </summary>
         private static void CreateDefaultEventCenter()
         {
-            // Create with default settings
-            var eventCenter = EventCenterService.CreateAndSetCurrent("[EventCenter] - Auto Created", true);
+            var config = EventCenterConfig.Instance;
             
-            Debug.Log("[EventSystemInitializer] ✅ EventCenter created automatically and set to DontDestroyOnLoad");
-            Debug.Log("[EventSystemInitializer] ℹ️ EventCenter will persist across all scenes");
+            // Create with settings from config
+            var eventCenter = EventCenterService.CreateAndSetCurrent(config.autoCreatedName, config.dontDestroyOnLoad);
+            
+            Debug.Log($"[EventSystemInitializer] ✅ EventCenter created: '{config.autoCreatedName}'");
+            Debug.Log($"[EventSystemInitializer] ✅ DontDestroyOnLoad: {config.dontDestroyOnLoad}");
+            Debug.Log($"[EventSystemInitializer] ℹ️ Max Events/Frame: {config.maxEventsPerFrame}");
+            Debug.Log($"[EventSystemInitializer] ℹ️ Max Batch Size: {config.maxBatchSize}");
+            
+            if (config.enableLogging)
+            {
+                Debug.Log("[EventSystemInitializer] ✅ Debug logging enabled");
+            }
+            
+            if (config.enableProfiling)
+            {
+                Debug.Log("[EventSystemInitializer] ✅ Performance profiling enabled");
+            }
         }
         
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
