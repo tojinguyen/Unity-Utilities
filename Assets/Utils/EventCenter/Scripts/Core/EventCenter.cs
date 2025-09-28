@@ -64,6 +64,9 @@ namespace TirexGame.Utils.EventCenter
         private void Awake()
         {
             Initialize();
+            
+            // Register this EventCenter with the service locator
+            EventCenterService.SetCurrent(this);
         }
         
         private void Start()
@@ -102,6 +105,12 @@ namespace TirexGame.Utils.EventCenter
         
         private void OnDestroy()
         {
+            // Clear EventCenterService if this was the current instance
+            if (ReferenceEquals(EventCenterService.Current, this))
+            {
+                EventCenterService.SetCurrent(null);
+            }
+            
             Clear();
         }
         

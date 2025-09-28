@@ -17,11 +17,13 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 
 ## 🚀 Tính năng chính | Key Features
 
+- ✅ **Auto-Setup**: Tự động tạo EventCenter khi khởi động - Zero configuration!
 - ✅ **Hiệu suất cao**: Hỗ trợ 50,000+ events/frame
 - ✅ **Zero Allocation**: Sử dụng struct thay vì class để tránh GC
 - ✅ **Type Safe**: Compile-time safety với generics
 - ✅ **API đơn giản**: Static methods dễ sử dụng
 - ✅ **Auto Cleanup**: Tự động unsubscribe với CancellationTokenOnDestroy
+- ✅ **Persistent**: DontDestroyOnLoad - hoạt động xuyên suốt tất cả scenes
 - ✅ **Flexible Subscriptions**: Normal, conditional, và one-time listeners
 - ✅ **Batch Operations**: Publish nhiều events cùng lúc
 - ✅ **Thread Safe**: An toàn khi sử dụng đa luồng
@@ -34,7 +36,14 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 2. Đảm bảo namespace `TirexGame.Utils.EventCenter` có thể truy cập được
 
 ### Bước 2: Khởi tạo (Tự động)
-Hệ thống sẽ tự động khởi tạo khi sử dụng lần đầu. Không cần setup gì thêm!
+Hệ thống sẽ **TỰ ĐỘNG** tạo EventCenter khi ứng dụng khởi động! 🚀
+
+- ✅ **Hoàn toàn tự động**: Không cần thêm GameObject vào scene
+- ✅ **DontDestroyOnLoad**: EventCenter sẽ tồn tại xuyên suốt tất cả scenes  
+- ✅ **Zero configuration**: Hoạt động ngay out-of-the-box
+- ✅ **Thông minh**: Chỉ tạo khi không có EventCenter nào khác
+
+**Bạn không cần làm gì thêm!** EventCenter sẽ được tạo tự động với tên `[EventCenter] - Auto Created`.
 
 ### Bước 3: Sử dụng
 ```csharp
@@ -471,6 +480,32 @@ EventSystem.SubscribeWhen<InputPressed>((input) =>
 
 ### Q: Xử lý exception trong subscriber như thế nào?
 **A:** EventSystem sẽ catch và log exceptions, không làm crash ứng dụng. Subscriber khác vẫn sẽ được gọi bình thường.
+
+### Q: Gặp lỗi "NullReferenceException" khi subscribe?
+**A:** Lỗi này hiếm khi xảy ra với version mới vì EventCenter được tự động tạo. Nếu vẫn gặp:
+1. **Kiểm tra logs**: Xem có thông báo "EventCenter created automatically" không
+2. **Kiểm tra scene**: Có GameObject `[EventCenter] - Auto Created` trong Hierarchy không
+3. **Manual override**: Nếu cần tùy chỉnh, add `EventCenterSetup` component vào scene
+4. **Debug**: Sử dụng `EventSystem.IsInitialized` và `EventCenterService.IsAvailable`
+
+```csharp
+// Kiểm tra trạng thái (chỉ để debug)
+Debug.Log($"EventCenter available: {EventCenterService.IsAvailable}");
+Debug.Log($"EventSystem initialized: {EventSystem.IsInitialized}");
+```
+
+### Q: EventCenter có tự động tạo không?
+**A:** ✅ **Có!** EventCenter sẽ tự động được tạo khi ứng dụng khởi động với các đặc điểm:
+- Tên: `[EventCenter] - Auto Created`  
+- DontDestroyOnLoad: Có (tồn tại xuyên suốt tất cả scenes)
+- Tự động khởi tạo khi không tìm thấy EventCenter nào khác
+- Không cần setup thủ công
+
+### Q: Làm sao customize EventCenter tự động tạo?
+**A:** Có 3 cách:
+1. **Không làm gì**: Dùng default auto-created (khuyến nghị)
+2. **EventCenterSetup**: Add component này vào scene để tùy chỉnh settings
+3. **Manual**: Tạo EventCenter GameObject thủ công (hệ thống sẽ không auto-create nữa)
 
 
 ## 🤝 Support

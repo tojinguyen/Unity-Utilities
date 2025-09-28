@@ -30,7 +30,19 @@ namespace TirexGame.Utils.EventCenter
                     }
                     else
                     {
-                        Debug.LogWarning("[EventCenterService] No EventCenter found in scene. Consider adding one or setting manually.");
+                        // Try to find EventCenterSetup which might create one
+                        var eventCenterSetup = UnityEngine.Object.FindFirstObjectByType<EventCenterSetup>();
+                        if (eventCenterSetup != null)
+                        {
+                            // EventCenterSetup should handle creation
+                            Debug.Log("[EventCenterService] EventCenterSetup found, waiting for EventCenter creation...");
+                        }
+                        else
+                        {
+                            // Auto-create EventCenter as fallback
+                            Debug.Log("[EventCenterService] No EventCenter found, creating one automatically...");
+                            CreateAndSetCurrent("[EventCenter] - Auto Created", true);
+                        }
                     }
                 }
                 return _current;

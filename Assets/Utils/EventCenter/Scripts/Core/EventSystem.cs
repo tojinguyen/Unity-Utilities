@@ -29,8 +29,14 @@ namespace TirexGame.Utils.EventCenter
             try
             {
                 _eventCenter = EventCenterService.Current;
-                _isInitialized = true;
                 
+                if (_eventCenter == null)
+                {
+                    Debug.LogError("[EventSystem] No EventCenter available. Make sure you have an EventCenter GameObject in your scene.");
+                    return;
+                }
+                
+                _isInitialized = true;
                 Debug.Log("[EventSystem] Static event system initialized successfully");
             }
             catch (Exception ex)
@@ -45,9 +51,18 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         private static void EnsureInitialized()
         {
-            if (!_isInitialized)
+            if (!_isInitialized || _eventCenter == null)
             {
                 Initialize();
+                
+                // If initialization still failed, throw an exception
+                if (_eventCenter == null)
+                {
+                    throw new InvalidOperationException(
+                        "[EventSystem] EventCenter is not available. " +
+                        "Make sure you have an EventCenter GameObject in your scene or " +
+                        "manually set it using EventCenterService.SetCurrent().");
+                }
             }
         }
         
