@@ -259,35 +259,65 @@ namespace TirexGame.Utils.EventCenter
         /// <returns>Number of listeners that processed the event</returns>
         public int Dispatch<T>(T payload) where T : struct
         {
+            Debug.Log($"[EventDispatcher] Dispatch<T> called for struct: {typeof(T).Name}");
+            
             var startTime = Time.realtimeSinceStartup;
             var eventType = typeof(T);
             var listenersNotified = 0;
+            
+            Debug.Log($"[EventDispatcher] Looking for listeners of type: {eventType.Name}");
+            Debug.Log($"[EventDispatcher] Total struct listener types: {_structListeners.Keys.Count}");
+            
+            foreach (var key in _structListeners.Keys)
+            {
+                Debug.Log($"[EventDispatcher] Available listener type: {key.Name}");
+            }
             
             _tempListeners.Clear();
             
             // Collect all relevant listeners for this struct type
             if (_structListeners.TryGetValue(eventType, out var listenerList))
             {
+                Debug.Log($"[EventDispatcher] Found {listenerList.Count} listeners for {eventType.Name}");
+                
                 foreach (var entry in listenerList)
                 {
                     if (entry.IsActive)
                     {
                         _tempListeners.Add(entry);
+                        Debug.Log($"[EventDispatcher] Added active listener: {entry.Listener?.GetType()?.Name}");
+                    }
+                    else
+                    {
+                        Debug.Log($"[EventDispatcher] Skipped inactive listener: {entry.Listener?.GetType()?.Name}");
                     }
                 }
+            }
+            else
+            {
+                Debug.Log($"[EventDispatcher] ❌ No listeners found for struct type: {eventType.Name}");
             }
             
             // Sort by priority
             _tempListeners.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+            
+            Debug.Log($"[EventDispatcher] About to dispatch to {_tempListeners.Count} listeners");
             
             // Dispatch to listeners
             foreach (var entry in _tempListeners)
             {
                 try
                 {
+                    Debug.Log($"[EventDispatcher] Dispatching to listener: {entry.Listener?.GetType()?.Name}");
+                    
                     if (entry.Listener is IEventListener<T> typedListener)
                     {
+                        Debug.Log($"[EventDispatcher] Calling HandleEvent on typed listener");
                         if (typedListener.HandleEvent(payload))
+                        {
+                            listenersNotified++;
+                            Debug.Log($"[EventDispatcher] ✅ Listener handled event successfully");
+                        }
                         {
                             listenersNotified++;
                         }
@@ -314,8 +344,11 @@ namespace TirexGame.Utils.EventCenter
         /// <returns>Number of listeners that processed the event</returns>
         public int Dispatch(BaseEvent eventData)
         {
+            Debug.Log($"[EventDispatcher] Dispatch called for: {eventData?.GetType()?.Name}");
+            
             if (eventData == null || eventData.IsDisposed)
             {
+                Debug.Log("[EventDispatcher] Event is null or disposed - returning 0");
                 Log("Attempted to dispatch null or disposed event");
                 return 0;
             }
@@ -323,6 +356,10 @@ namespace TirexGame.Utils.EventCenter
             var startTime = Time.realtimeSinceStartup;
             var eventType = eventData.GetType();
             var listenersNotified = 0;
+            
+            Debug.Log($"[EventDispatcher] Event type: {eventType.Name}");
+            Debug.Log($"[EventDispatcher] Total struct listeners: {_structListeners.Count}");
+            Debug.Log($"[EventDispatcher] Total legacy listeners: {_legacyListeners.Count}");
             
             // Get all types in the inheritance hierarchy
             var typeHierarchy = GetTypeHierarchy(eventType);

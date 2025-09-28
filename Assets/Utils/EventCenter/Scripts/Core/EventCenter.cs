@@ -153,7 +153,8 @@ namespace TirexGame.Utils.EventCenter
             if (listener == null) return null;
             
             var eventType = typeof(T);
-            _dispatcher.Subscribe(eventType, listener);
+            // Call the generic Subscribe method for struct types
+            _dispatcher.Subscribe<T>(listener);
             
             var subscription = new EventSubscription(eventType, listener, () => Unsubscribe(listener));
             _subscriptions.Add(subscription);
@@ -209,7 +210,8 @@ namespace TirexGame.Utils.EventCenter
             if (listener == null) return;
             
             var eventType = typeof(T);
-            _dispatcher.Unsubscribe(eventType, listener);
+            // Call the generic Unsubscribe method for struct types
+            _dispatcher.Unsubscribe<T>(listener);
             
             Log($"Unsubscribed from {eventType.Name}");
         }
@@ -295,16 +297,13 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEvent<T>(T payload, int priority = 0) where T : struct
         {
-            var eventWrapper = new EventWrapper<T>(payload, priority);
+            Debug.Log($"[EventCenter] PublishEvent called for {typeof(T).Name}");
+            Debug.Log($"[EventCenter] Priority: {priority}, Initialized: {_isInitialized}");
             
-            if (priority > 0)
-            {
-                _immediateQueue.Enqueue(eventWrapper);
-            }
-            else
-            {
-                _eventQueue.Enqueue(eventWrapper);
-            }
+            // Dispatch immediately - no queuing, no wrapper
+            Debug.Log($"[EventCenter] Dispatching struct directly to listeners...");
+            var listenersNotified = _dispatcher.Dispatch(payload);
+            Debug.Log($"[EventCenter] Struct dispatched to {listenersNotified} listeners");
             
             Log($"Published struct event {typeof(T).Name}");
         }
@@ -317,11 +316,8 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEventImmediate<T>(T payload, int priority = 0) where T : struct
         {
-            var eventWrapper = new EventWrapper<T>(payload, priority);
-            var listenersNotified = _dispatcher.Dispatch(eventWrapper);
-            _stats.EventsProcessedThisFrame++;
-            
-            Log($"Immediately processed struct event {typeof(T).Name} to {listenersNotified} listeners");
+            // Same as PublishEvent - already immediate
+            PublishEvent(payload, priority);
         }
         
         /// <summary>
@@ -371,7 +367,10 @@ namespace TirexGame.Utils.EventCenter
         
         private void ProcessEventsInternal()
         {
-            if (_isProcessing || !_isInitialized) return;
+            if (_isProcessing || !_isInitialized) 
+            {
+                return;
+            }
             
             _isProcessing = true;
             _frameStartTime = Time.realtimeSinceStartup;
@@ -400,7 +399,11 @@ namespace TirexGame.Utils.EventCenter
         private void ProcessRegularEvents()
         {
             var remainingEvents = maxEventsPerFrame - _frameEventCount;
-            if (remainingEvents <= 0) return;
+            
+            if (remainingEvents <= 0) 
+            {
+                return;
+            }
             
             var processed = _eventQueue.ProcessBatch(ProcessSingleEvent, remainingEvents);
             _frameEventCount += processed;
@@ -408,15 +411,24 @@ namespace TirexGame.Utils.EventCenter
         
         private void ProcessSingleEvent(BaseEvent eventData)
         {
-            if (eventData == null || eventData.IsDisposed || !eventData.IsValid())
-                return;
+            Debug.Log($"[EventCenter] ProcessSingleEvent called for: {eventData?.GetType()?.Name}");
             
+            if (eventData == null || eventData.IsDisposed || !eventData.IsValid())
+            {
+                Debug.Log("[EventCenter] Event is null, disposed, or invalid - skipping");
+                return;
+            }
+            
+            // Simple BaseEvent dispatch - no reflection needed
+            Debug.Log("[EventCenter] Dispatching BaseEvent to listeners...");
             var listenersNotified = _dispatcher.Dispatch(eventData);
+            Debug.Log($"[EventCenter] BaseEvent dispatched to {listenersNotified} listeners");
             
             // Return to pool if poolable
             if (eventData.IsPoolable)
             {
                 eventData.Dispose();
+                Debug.Log("[EventCenter] Event returned to pool");
             }
         }
         
