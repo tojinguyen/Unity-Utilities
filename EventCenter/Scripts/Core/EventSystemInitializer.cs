@@ -9,18 +9,67 @@ namespace TirexGame.Utils.EventCenter
     [System.Serializable]
     public class EventSystemInitializer
     {
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void InitializeEventSystem()
         {
             try
             {
-                EventSystem.Initialize();
-                Debug.Log("[EventSystemInitializer] Static EventSystem auto-initialized");
+                // Ensure EventCenter exists, create one if needed
+                EnsureEventCenterExists();
+                
+                // Initialize EventSystem if EventCenter is available
+                if (EventCenterService.IsAvailable)
+                {
+                    EventSystem.Initialize();
+                    Debug.Log("[EventSystemInitializer] Static EventSystem auto-initialized");
+                }
+                else
+                {
+                    Debug.LogWarning("[EventSystemInitializer] Failed to create or find EventCenter");
+                }
             }
             catch (System.Exception ex)
             {
                 Debug.LogError($"[EventSystemInitializer] Failed to auto-initialize EventSystem: {ex.Message}");
             }
+        }
+        
+        /// <summary>
+        /// Ensure an EventCenter exists in the application
+        /// Creates one automatically if none is found
+        /// </summary>
+        private static void EnsureEventCenterExists()
+        {
+            // Check if EventCenter already exists
+            var existingEventCenter = UnityEngine.Object.FindFirstObjectByType<EventCenter>();
+            if (existingEventCenter != null)
+            {
+                Debug.Log("[EventSystemInitializer] EventCenter already exists, using existing one");
+                return;
+            }
+            
+            // Check if EventCenterSetup exists (it will create EventCenter)
+            var existingSetup = UnityEngine.Object.FindFirstObjectByType<EventCenterSetup>();
+            if (existingSetup != null)
+            {
+                Debug.Log("[EventSystemInitializer] EventCenterSetup found, it will handle EventCenter creation");
+                return;
+            }
+            
+            // Create EventCenter automatically
+            CreateDefaultEventCenter();
+        }
+        
+        /// <summary>
+        /// Create a default EventCenter GameObject with optimal settings
+        /// </summary>
+        private static void CreateDefaultEventCenter()
+        {
+            // Create with default settings
+            var eventCenter = EventCenterService.CreateAndSetCurrent("[EventCenter] - Auto Created", true);
+            
+            Debug.Log("[EventSystemInitializer] ✅ EventCenter created automatically and set to DontDestroyOnLoad");
+            Debug.Log("[EventSystemInitializer] ℹ️ EventCenter will persist across all scenes");
         }
         
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
