@@ -59,8 +59,61 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void Start()
         {
+            // Debug EventSystem initialization
+            Debug.Log("[SimpleExample] Starting initialization...");
+            Debug.Log($"[SimpleExample] EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+            Debug.Log($"[SimpleExample] EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
+            
+            // Try to initialize explicitly if needed
+            if (!EventSystem.IsInitialized)
+            {
+                Debug.Log("[SimpleExample] EventSystem not initialized, attempting to initialize...");
+                EventSystem.Initialize();
+            }
+            
+            // Try DIRECT subscription first to test
+            TestDirectSubscription();
+            
             SetupEventListeners();
             Log("✅ Event listeners đã được thiết lập!");
+            
+            // Test immediate event to verify system is working
+            Debug.Log("[SimpleExample] Testing immediate event...");
+            TestPlayerJump();
+        }
+        
+        private void TestDirectSubscription()
+        {
+            Debug.Log("[SimpleExample] 🧪 Testing DIRECT subscription (no extension methods)...");
+            
+            try
+            {
+                // Direct subscription without extension methods
+                var subscription = EventSystem.Subscribe<PlayerJumped>(OnDirectPlayerJumped);
+                Debug.Log("[SimpleExample] ✅ Direct subscription created successfully!");
+                
+                // Store subscription for cleanup later
+                if (directSubscription != null)
+                {
+                    directSubscription.Dispose();
+                }
+                directSubscription = subscription;
+                
+                Debug.Log("[SimpleExample] Direct subscription stored for testing");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[SimpleExample] ❌ Direct subscription failed: {ex.Message}");
+                Debug.LogError($"[SimpleExample] Stack trace: {ex.StackTrace}");
+            }
+        }
+        
+        private IEventSubscription directSubscription;
+        
+        private void OnDirectPlayerJumped(PlayerJumped jumpEvent)
+        {
+            Debug.Log($"[SimpleExample] 🎯🎯🎯 OnDirectPlayerJumped CALLED! Height: {jumpEvent.JumpHeight:F1}m at {jumpEvent.Position}");
+            Debug.Log($"[SimpleExample] 🎯🎯🎯 THIS PROVES DIRECT SUBSCRIPTION WORKS!");
         }
         
         private void Update()
@@ -88,29 +141,56 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void SetupEventListeners()
         {
-            // 🎯 SỬ DỤNG EXTENSION METHODS - TỰ ĐỘNG CLEANUP KHI OBJECT BỊ HỦY!
-            // 🎯 USING EXTENSION METHODS - AUTO CLEANUP WHEN OBJECT IS DESTROYED!
+            Debug.Log("[SimpleExample] Setting up event listeners...");
             
-            // 1. Đăng ký lắng nghe event PlayerJumped (tự động unsubscribe)
-            // Subscribe to PlayerJumped event (auto unsubscribe)
-            this.SubscribeWithCleanup<PlayerJumped>(OnPlayerJumped);
+            // Check EventSystem status before subscribing
+            Debug.Log($"[SimpleExample] EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+            Debug.Log($"[SimpleExample] EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
+            Debug.Log($"[SimpleExample] EventCenterService.Current: {EventCenterService.Current}");
             
-            // 2. Đăng ký lắng nghe event ItemCollected (tự động unsubscribe)
-            // Subscribe to ItemCollected event (auto unsubscribe)
-            this.SubscribeWithCleanup<ItemCollected>(OnItemCollected);
-            
-            // 3. Đăng ký lắng nghe event GamePaused (tự động unsubscribe)
-            // Subscribe to GamePaused event (auto unsubscribe)
-            this.SubscribeWithCleanup<GamePaused>(OnGamePaused);
-            
-            // 4. Ví dụ về conditional subscription - chỉ lắng nghe item hiếm (tự động unsubscribe)
-            // Example of conditional subscription - only listen to rare items (auto unsubscribe)
-            this.SubscribeWhenWithCleanup<ItemCollected>(OnRareItemCollected, 
-                item => item.IsRare);
-            
-            // 5. Ví dụ về one-time subscription - chỉ lắng nghe lần đầu (tự động unsubscribe)
-            // Example of one-time subscription - only listen once (auto unsubscribe)
-            this.SubscribeOnceWithCleanup<PlayerJumped>(OnFirstJump);
+            try
+            {
+                // 🎯 SỬ DỤNG EXTENSION METHODS - TỰ ĐỘNG CLEANUP KHI OBJECT BỊ HỦY!
+                // 🎯 USING EXTENSION METHODS - AUTO CLEANUP WHEN OBJECT IS DESTROYED!
+                
+                // 1. Đăng ký lắng nghe event PlayerJumped (tự động unsubscribe)
+                // Subscribe to PlayerJumped event (auto unsubscribe)
+                Debug.Log("[SimpleExample] Subscribing to PlayerJumped event...");
+                this.SubscribeWithCleanup<PlayerJumped>(OnPlayerJumped);
+                Debug.Log("[SimpleExample] ✅ PlayerJumped subscription completed");
+                
+                // 2. Đăng ký lắng nghe event ItemCollected (tự động unsubscribe)
+                // Subscribe to ItemCollected event (auto unsubscribe)
+                Debug.Log("[SimpleExample] Subscribing to ItemCollected event...");
+                this.SubscribeWithCleanup<ItemCollected>(OnItemCollected);
+                Debug.Log("[SimpleExample] ✅ ItemCollected subscription completed");
+                
+                // 3. Đăng ký lắng nghe event GamePaused (tự động unsubscribe)
+                // Subscribe to GamePaused event (auto unsubscribe)
+                Debug.Log("[SimpleExample] Subscribing to GamePaused event...");
+                this.SubscribeWithCleanup<GamePaused>(OnGamePaused);
+                Debug.Log("[SimpleExample] ✅ GamePaused subscription completed");
+                
+                // 4. Ví dụ về conditional subscription - chỉ lắng nghe item hiếm (tự động unsubscribe)
+                // Example of conditional subscription - only listen to rare items (auto unsubscribe)
+                Debug.Log("[SimpleExample] Subscribing to rare ItemCollected events...");
+                this.SubscribeWhenWithCleanup<ItemCollected>(OnRareItemCollected, 
+                    item => item.IsRare);
+                Debug.Log("[SimpleExample] ✅ Rare ItemCollected subscription completed");
+                
+                // 5. Ví dụ về one-time subscription - chỉ lắng nghe lần đầu (tự động unsubscribe)
+                // Example of one-time subscription - only listen once (auto unsubscribe)
+                Debug.Log("[SimpleExample] Subscribing to first PlayerJumped event...");
+                this.SubscribeOnceWithCleanup<PlayerJumped>(OnFirstJump);
+                Debug.Log("[SimpleExample] ✅ First PlayerJumped subscription completed");
+                
+                Debug.Log("[SimpleExample] ✅ All event subscriptions completed successfully!");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[SimpleExample] ❌ Error setting up event listeners: {ex.Message}");
+                Debug.LogError($"[SimpleExample] ❌ Stack trace: {ex.StackTrace}");
+            }
             
             // 💡 KHÔNG CẦN GỌI UNSUBSCRIBE TRONG OnDestroy NỮA!
             // 💡 NO NEED TO CALL UNSUBSCRIBE IN OnDestroy ANYMORE!
@@ -122,11 +202,13 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void OnPlayerJumped(PlayerJumped jumpEvent)
         {
+            Debug.Log($"[SimpleExample] OnPlayerJumped called - Height: {jumpEvent.JumpHeight:F1}m");
             Log($"🦘 Player nhảy cao {jumpEvent.JumpHeight:F1}m tại vị trí {jumpEvent.Position}");
         }
         
         private void OnItemCollected(ItemCollected itemEvent)
         {
+            Debug.Log($"[SimpleExample] OnItemCollected called - Item: {itemEvent.ItemName}");
             Log($"📦 Thu thập {itemEvent.ItemName} (+{itemEvent.Points} điểm)");
             
             if (itemEvent.IsRare)
@@ -163,22 +245,51 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void TestPlayerJump()
         {
+            Debug.Log("[SimpleExample] TestPlayerJump called");
+            
+            // Check EventSystem status before publishing
+            Debug.Log($"[SimpleExample] Before publish - EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+            Debug.Log($"[SimpleExample] Before publish - EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
+            
             var jumpHeight = Random.Range(1f, 5f);
             var position = transform.position + Random.insideUnitSphere * 2f;
             
             var jumpEvent = new PlayerJumped(jumpHeight, position);
-            EventSystem.Publish(jumpEvent);
+            Debug.Log($"[SimpleExample] Publishing PlayerJumped event with height: {jumpHeight:F1}m");
+            
+            try
+            {
+                EventSystem.Publish(jumpEvent);
+                Debug.Log("[SimpleExample] PlayerJumped event published successfully");
+                
+                // Wait a frame and check if event was processed
+                StartCoroutine(CheckEventProcessing());
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[SimpleExample] ❌ Error publishing event: {ex.Message}");
+                Debug.LogError($"[SimpleExample] ❌ Stack trace: {ex.StackTrace}");
+            }
+        }
+        
+        private System.Collections.IEnumerator CheckEventProcessing()
+        {
+            yield return null; // Wait one frame
+            Debug.Log("[SimpleExample] Checking if event was processed after one frame...");
         }
         
         private void TestItemCollection()
         {
+            Debug.Log("[SimpleExample] TestItemCollection called");
             var items = new[] { "Coin", "Gem", "Potion", "Key", "Crystal" };
             var randomItem = items[Random.Range(0, items.Length)];
             var points = Random.Range(10, 100);
             var isRare = Random.Range(0, 100) < 20; // 20% chance for rare item
             
             var itemEvent = new ItemCollected(randomItem, points, isRare);
+            Debug.Log($"[SimpleExample] Publishing ItemCollected event - Item: {randomItem}, Rare: {isRare}");
             EventSystem.Publish(itemEvent);
+            Debug.Log("[SimpleExample] ItemCollected event published");
         }
         
         private void TestGamePause()
@@ -237,32 +348,60 @@ namespace TirexGame.Utils.EventCenter.Examples
         {
             if (!Application.isPlaying) return;
             
-            GUILayout.BeginArea(new Rect(10, 10, 300, 200));
-            GUILayout.Label("🎮 Simple Event System Example", GUI.skin.box);
+            // Increase GUI area size and make buttons bigger
+            GUILayout.BeginArea(new Rect(10, 10, 400, 300));
             
-            GUILayout.Label("Nhấn phím để test:");
-            GUILayout.Label("SPACE - Player Jump");
-            GUILayout.Label("C - Collect Item");
-            GUILayout.Label("P - Pause/Unpause");
+            // Style for larger buttons
+            var buttonStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 16,
+                fixedHeight = 40
+            };
+            
+            var headerStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 18,
+                fontStyle = FontStyle.Bold
+            };
+            
+            var labelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14
+            };
+            
+            GUILayout.Label("🎮 Simple Event System Example", headerStyle);
             
             GUILayout.Space(10);
             
-            if (GUILayout.Button("🦘 Test Jump"))
+            GUILayout.Label("Nhấn phím để test:", labelStyle);
+            GUILayout.Label("SPACE - Player Jump", labelStyle);
+            GUILayout.Label("C - Collect Item", labelStyle);
+            GUILayout.Label("P - Pause/Unpause", labelStyle);
+            
+            GUILayout.Space(15);
+            
+            if (GUILayout.Button("🦘 Test Jump", buttonStyle))
             {
                 TestPlayerJump();
             }
             
-            if (GUILayout.Button("📦 Test Item"))
+            GUILayout.Space(5);
+            
+            if (GUILayout.Button("📦 Test Item", buttonStyle))
             {
                 TestItemCollection();
             }
             
-            if (GUILayout.Button("⏸️ Toggle Pause"))
+            GUILayout.Space(5);
+            
+            if (GUILayout.Button("⏸️ Toggle Pause", buttonStyle))
             {
                 TestGamePause();
             }
             
-            if (GUILayout.Button("💎 Test Rare Item"))
+            GUILayout.Space(5);
+            
+            if (GUILayout.Button("💎 Test Rare Item", buttonStyle))
             {
                 var rareEvent = new ItemCollected("Legendary Sword", 1000, true);
                 EventSystem.Publish(rareEvent);
@@ -283,17 +422,80 @@ namespace TirexGame.Utils.EventCenter.Examples
             }
         }
         
-        [ContextMenu("Debug Cleanup Info")]
-        private void DebugCleanupInfo()
+        [ContextMenu("Debug Direct Subscribe Test")]
+        private void DebugDirectSubscribeTest()
         {
-            Log("🔧 Using CancellationTokenOnDestroy for auto cleanup");
-            Log("✨ No extra components needed - cleanup happens automatically!");
-            Log("💡 Events will be unsubscribed when this GameObject is destroyed");
+            Debug.Log("[SimpleExample] 🧪 Testing direct EventSystem subscription...");
+            
+            try
+            {
+                // Test direct subscription without extension methods
+                var subscription = EventSystem.Subscribe<PlayerJumped>(DirectPlayerJumpedHandler);
+                Debug.Log("[SimpleExample] ✅ Direct subscription created successfully");
+                
+                // Test publish
+                var testEvent = new PlayerJumped(999f, Vector3.zero);
+                Debug.Log("[SimpleExample] Publishing test event directly...");
+                EventSystem.Publish(testEvent);
+                Debug.Log("[SimpleExample] Test event published");
+                
+                // Clean up
+                subscription?.Dispose();
+                Debug.Log("[SimpleExample] Direct subscription disposed");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[SimpleExample] ❌ Direct subscribe test failed: {ex.Message}");
+                Debug.LogError($"[SimpleExample] ❌ Stack trace: {ex.StackTrace}");
+            }
+        }
+        
+        private void DirectPlayerJumpedHandler(PlayerJumped jumpEvent)
+        {
+            Debug.Log($"[SimpleExample] 🎯 DirectPlayerJumpedHandler called! Height: {jumpEvent.JumpHeight:F1}m");
+        }
+        
+        [ContextMenu("Force Initialize EventSystem")]
+        private void ForceInitializeEventSystem()
+        {
+            Debug.Log("[SimpleExample] 🔄 Force initializing EventSystem...");
+            
+            try
+            {
+                EventSystem.Initialize();
+                Debug.Log($"[SimpleExample] EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+                Debug.Log($"[SimpleExample] EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
+                Debug.Log($"[SimpleExample] EventCenterService.Current: {EventCenterService.Current}");
+                
+                if (EventCenterService.Current != null)
+                {
+                    Debug.Log("[SimpleExample] ✅ EventSystem force initialized successfully!");
+                }
+                else
+                {
+                    Debug.LogError("[SimpleExample] ❌ EventSystem initialization failed - Current is null");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[SimpleExample] ❌ Force initialization failed: {ex.Message}");
+                Debug.LogError($"[SimpleExample] ❌ Stack trace: {ex.StackTrace}");
+            }
         }
         
         // 🎉 KHÔNG CẦN OnDestroy NỮA! EXTENSION METHODS SẼ TỰ ĐỘNG CLEANUP!
         // 🎉 NO MORE OnDestroy NEEDED! EXTENSION METHODS WILL AUTO CLEANUP!
         // private void OnDestroy() { /* No longer needed! */ }
+        
+        private void OnDestroy()
+        {
+            // Clean up direct subscription for testing
+            if (directSubscription != null)
+            {
+                directSubscription.Dispose();
+                Debug.Log("[SimpleExample] Direct subscription cleaned up in OnDestroy");
+            }
+        }
         
         #endregion
     }

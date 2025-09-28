@@ -20,6 +20,8 @@ namespace TirexGame.Utils.EventCenter
         public static void SubscribeWithCleanup<T>(this MonoBehaviour component, Action<T> callback) 
             where T : struct
         {
+            Debug.Log($"[EventSystemExtensions] SubscribeWithCleanup called for type {typeof(T).Name}");
+            
             if (component == null)
             {
                 Debug.LogError("[EventSystem] Component is null, cannot subscribe with cleanup");
@@ -32,14 +34,36 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
 
-            // Subscribe to the event and store the subscription
-            var subscription = EventSystem.Subscribe<T>(callback);
-
-            // Register for auto-cleanup using CancellationTokenOnDestroy
-            component.GetCancellationTokenOnDestroy().Register(() => 
+            try
             {
-                subscription?.Dispose();
-            });
+                Debug.Log($"[EventSystemExtensions] Attempting to subscribe to {typeof(T).Name}...");
+                
+                // Subscribe to the event and store the subscription
+                var subscription = EventSystem.Subscribe<T>(callback);
+                
+                if (subscription != null)
+                {
+                    Debug.Log($"[EventSystemExtensions] ✅ Successfully subscribed to {typeof(T).Name}");
+                    
+                    // Register for auto-cleanup using CancellationTokenOnDestroy
+                    component.GetCancellationTokenOnDestroy().Register(() => 
+                    {
+                        Debug.Log($"[EventSystemExtensions] Cleaning up subscription for {typeof(T).Name}");
+                        subscription?.Dispose();
+                    });
+                    
+                    Debug.Log($"[EventSystemExtensions] ✅ Auto-cleanup registered for {typeof(T).Name}");
+                }
+                else
+                {
+                    Debug.LogError($"[EventSystemExtensions] ❌ Subscription returned null for {typeof(T).Name}");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[EventSystemExtensions] ❌ Exception in SubscribeWithCleanup for {typeof(T).Name}: {ex.Message}");
+                Debug.LogError($"[EventSystemExtensions] Stack trace: {ex.StackTrace}");
+            }
         }
 
         /// <summary>
