@@ -13,7 +13,7 @@ public class MissingScriptRemover : EditorWindow
     private int totalPrefabsScanned = 0;
     private int prefabsWithMissing = 0;
 
-    [MenuItem("TirexGame/Editor/Missing Script Remover")]
+    [MenuItem("TirexGame/Editor/Prefab/Missing Script Remover")]
     public static void ShowWindow()
     {
         GetWindow<MissingScriptRemover>("Missing Script Remover");
