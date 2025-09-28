@@ -157,15 +157,26 @@ public class MissingScriptRemover : EditorWindow
     {
         if (prefab == null) return false;
 
-        Component[] components = prefab.GetComponentsInChildren<Component>(true);
-        foreach (Component component in components)
+        // Load prefab contents to check for missing scripts
+        GameObject prefabContents = PrefabUtility.LoadPrefabContents(AssetDatabase.GetAssetPath(prefab));
+        
+        try
         {
-            if (component == null)
+            Transform[] allTransforms = prefabContents.GetComponentsInChildren<Transform>(true);
+            foreach (Transform child in allTransforms)
             {
-                return true;
+                int missingCount = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(child.gameObject);
+                if (missingCount > 0)
+                {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(prefabContents);
+        }
     }
 
     private static void RemoveMissingScripts(GameObject prefab, string prefabPath)
@@ -173,45 +184,37 @@ public class MissingScriptRemover : EditorWindow
         if (prefab == null) return;
 
         bool wasModified = false;
-        GameObject prefabInstance = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
-
+        
+        // Load the prefab contents directly
+        GameObject prefabContents = PrefabUtility.LoadPrefabContents(prefabPath);
+        
         try
         {
-            Transform[] allTransforms = prefabInstance.GetComponentsInChildren<Transform>(true);
+            Transform[] allTransforms = prefabContents.GetComponentsInChildren<Transform>(true);
             
             foreach (Transform child in allTransforms)
             {
-                Component[] components = child.GetComponents<Component>();
-                for (int i = components.Length - 1; i >= 0; i--)
+                // Use GameObjectUtility to remove missing scripts
+                int missingCount = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(child.gameObject);
+                if (missingCount > 0)
                 {
-                    if (components[i] == null)
-                    {
-                        SerializedObject serializedObject = new SerializedObject(child.gameObject);
-                        SerializedProperty prop = serializedObject.FindProperty("m_Component");
-                        
-                        for (int j = prop.arraySize - 1; j >= 0; j--)
-                        {
-                            SerializedProperty componentProperty = prop.GetArrayElementAtIndex(j);
-                            if (componentProperty.objectReferenceValue == null)
-                            {
-                                prop.DeleteArrayElementAtIndex(j);
-                                wasModified = true;
-                            }
-                        }
-                        serializedObject.ApplyModifiedProperties();
-                    }
+                    GameObjectUtility.RemoveMonoBehavioursWithMissingScript(child.gameObject);
+                    wasModified = true;
+                    Debug.Log($"Removed {missingCount} missing script(s) from: {child.gameObject.name}");
                 }
             }
 
             if (wasModified)
             {
-                PrefabUtility.SaveAsPrefabAsset(prefabInstance, prefabPath);
-                Debug.Log($"Removed missing scripts from: {prefab.name}");
+                // Save the modified prefab contents back to the asset
+                PrefabUtility.SaveAsPrefabAsset(prefabContents, prefabPath);
+                Debug.Log($"Successfully cleaned missing scripts from prefab: {prefab.name}");
             }
         }
         finally
         {
-            DestroyImmediate(prefabInstance);
+            // Always unload the prefab contents to free memory
+            PrefabUtility.UnloadPrefabContents(prefabContents);
         }
     }
 
