@@ -348,60 +348,63 @@ namespace TirexGame.Utils.EventCenter.Examples
         {
             if (!Application.isPlaying) return;
             
-            // Increase GUI area size and make buttons bigger
-            GUILayout.BeginArea(new Rect(10, 10, 400, 300));
+            // Much larger GUI area for big buttons
+            GUILayout.BeginArea(new Rect(10, 10, 500, 400));
             
-            // Style for larger buttons
+            // Style for REALLY big buttons
             var buttonStyle = new GUIStyle(GUI.skin.button)
             {
-                fontSize = 16,
-                fixedHeight = 40
+                fontSize = 24,
+                fixedHeight = 60,
+                fontStyle = FontStyle.Bold
             };
             
             var headerStyle = new GUIStyle(GUI.skin.box)
             {
-                fontSize = 18,
-                fontStyle = FontStyle.Bold
+                fontSize = 22,
+                fontStyle = FontStyle.Bold,
+                fixedHeight = 50
             };
             
             var labelStyle = new GUIStyle(GUI.skin.label)
             {
-                fontSize = 14
+                fontSize = 16,
+                fontStyle = FontStyle.Bold
             };
             
             GUILayout.Label("🎮 Simple Event System Example", headerStyle);
             
-            GUILayout.Space(10);
+            GUILayout.Space(15);
             
             GUILayout.Label("Nhấn phím để test:", labelStyle);
             GUILayout.Label("SPACE - Player Jump", labelStyle);
             GUILayout.Label("C - Collect Item", labelStyle);
             GUILayout.Label("P - Pause/Unpause", labelStyle);
             
-            GUILayout.Space(15);
+            GUILayout.Space(20);
             
-            if (GUILayout.Button("🦘 Test Jump", buttonStyle))
+            if (GUILayout.Button("🦘 TEST JUMP", buttonStyle))
             {
                 TestPlayerJump();
             }
             
-            GUILayout.Space(5);
+            GUILayout.Space(10);
             
-            if (GUILayout.Button("📦 Test Item", buttonStyle))
+            if (GUILayout.Button("📦 TEST ITEM", buttonStyle))
             {
                 TestItemCollection();
             }
             
-            GUILayout.Space(5);
+            GUILayout.Space(10);
             
-            if (GUILayout.Button("⏸️ Toggle Pause", buttonStyle))
+            if (GUILayout.Button("⏸️ TOGGLE PAUSE", buttonStyle))
             {
                 TestGamePause();
             }
             
-            GUILayout.Space(5);
+            GUILayout.Space(10);
             
-            if (GUILayout.Button("💎 Test Rare Item", buttonStyle))
+            if (GUILayout.Button("💎 TEST RARE ITEM", buttonStyle))
             {
                 var rareEvent = new ItemCollected("Legendary Sword", 1000, true);
                 EventSystem.Publish(rareEvent);
@@ -453,6 +456,28 @@ namespace TirexGame.Utils.EventCenter.Examples
         private void DirectPlayerJumpedHandler(PlayerJumped jumpEvent)
         {
             Debug.Log($"[SimpleExample] 🎯 DirectPlayerJumpedHandler called! Height: {jumpEvent.JumpHeight:F1}m");
+        }
+        
+        [ContextMenu("Debug EventCenter Direct")]
+        private void DebugEventCenterDirect()
+        {
+            Debug.Log("[SimpleExample] 🔧 Testing EventCenter directly...");
+            
+            var eventCenter = EventCenterService.Current as EventCenter;
+            if (eventCenter != null)
+            {
+                Debug.Log("[SimpleExample] ✅ EventCenter found, testing direct publish...");
+                
+                // Test immediate publish to bypass queuing
+                var testEvent = new PlayerJumped(777f, Vector3.one);
+                Debug.Log("[SimpleExample] Publishing immediate event...");
+                eventCenter.PublishEventImmediate(testEvent);
+                Debug.Log("[SimpleExample] Immediate event published");
+            }
+            else
+            {
+                Debug.LogError("[SimpleExample] ❌ EventCenter not found!");
+            }
         }
         
         [ContextMenu("Force Initialize EventSystem")]

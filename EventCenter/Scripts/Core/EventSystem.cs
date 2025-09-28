@@ -97,7 +97,12 @@ namespace TirexGame.Utils.EventCenter
         public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : struct
         {
             EnsureInitialized();
-            return _eventCenter.Subscribe(callback, priority);
+            Debug.Log($"[EventSystem] Subscribing to {typeof(T).Name} events");
+            Debug.Log($"[EventSystem] EventCenter instance: {_eventCenter}");
+            Debug.Log($"[EventSystem] Callback: {callback?.Method?.Name ?? "null"}");
+            var subscription = _eventCenter.Subscribe(callback, priority);
+            Debug.Log($"[EventSystem] Subscription result: {subscription}");
+            return subscription;
         }
         
         /// <summary>
@@ -134,7 +139,10 @@ namespace TirexGame.Utils.EventCenter
         public static void Publish<T>(T payload, int priority = 0) where T : struct
         {
             EnsureInitialized();
+            Debug.Log($"[EventSystem] Publishing event {typeof(T).Name} with priority {priority}");
+            Debug.Log($"[EventSystem] EventCenter instance: {_eventCenter}");
             _eventCenter.PublishEvent(payload, priority);
+            Debug.Log($"[EventSystem] Event {typeof(T).Name} sent to EventCenter");
         }
         
         /// <summary>
