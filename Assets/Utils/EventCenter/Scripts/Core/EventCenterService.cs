@@ -39,9 +39,17 @@ namespace TirexGame.Utils.EventCenter
                         }
                         else
                         {
-                            // Auto-create EventCenter as fallback
-                            Debug.Log("[EventCenterService] No EventCenter found, creating one automatically...");
-                            CreateAndSetCurrent("[EventCenter] - Auto Created", true);
+                            // Auto-create EventCenter using config settings
+                            var config = EventCenterConfig.Instance;
+                            if (config.autoCreateEventCenter)
+                            {
+                                Debug.Log("[EventCenterService] Auto-creating EventCenter using configuration...");
+                                CreateAndSetCurrent(config.autoCreatedName, config.dontDestroyOnLoad);
+                            }
+                            else
+                            {
+                                Debug.LogWarning("[EventCenterService] EventCenter not found and auto-creation is disabled in config");
+                            }
                         }
                     }
                 }
