@@ -71,15 +71,24 @@ namespace EventCenter.EditorTools
 
         public static void Append(EventRecord rec)
         {
-            if (!_recording || _paused || rec == null) return;
+            Debug.Log($"[EventCapture] Append called - Recording: {_recording}, Paused: {_paused}, Event: {rec?.name}");
+            
+            if (!_recording || _paused || rec == null) 
+            {
+                Debug.Log($"[EventCapture] Append skipped - Recording: {_recording}, Paused: {_paused}, Rec null: {rec == null}");
+                return;
+            }
+            
             lock (_lock)
             {
                 _head = (_head + 1) % _ring.Length;
                 _ring[_head] = rec;
                 _count = Math.Min(_count + 1, _ring.Length);
+                Debug.Log($"[EventCapture] Event appended to buffer. Count: {_count}, Head: {_head}");
             }
             OnDataChanged?.Invoke();
             OnAppended?.Invoke(rec);
+            Debug.Log($"[EventCapture] Callbacks invoked for event: {rec.name}");
         }
 
         public static EventRecord Get(int index)
@@ -113,6 +122,9 @@ namespace EventCenter.EditorTools
         public static void OnPublish(string eventName, object payload, UnityEngine.Object source, string category,
             List<ListenerRecord> listeners)
         {
+            Debug.Log($"[EventCapture] OnPublish called - Event: {eventName}, Category: {category}, Source: {source}");
+            Debug.Log($"[EventCapture] Recording: {_recording}, Paused: {_paused}");
+            
             var rec = new EventRecord
             {
                 timeRealtime = Time.realtimeSinceStartupAsDouble,
@@ -129,7 +141,10 @@ namespace EventCenter.EditorTools
                 },
                 listeners = listeners ?? new List<ListenerRecord>()
             };
+            
+            Debug.Log($"[EventCapture] Created EventRecord: {rec.name} at {rec.timeRealtime:F3}s");
             Append(rec);
+            Debug.Log($"[EventCapture] EventRecord appended to buffer");
         }
 
         private static string ResolveHierarchyPath(UnityEngine.Object obj)
@@ -167,15 +182,24 @@ namespace EventCenter.EditorTools
         [InitializeOnLoadMethod]
         private static void Init()
         {
+            Debug.Log("[EventCapture] Init called");
             EditorApplication.playModeStateChanged += state =>
             {
+                Debug.Log($"[EventCapture] PlayMode state changed: {state}");
                 if (state == PlayModeStateChange.EnteredPlayMode)
                 {
+                    Debug.Log("[EventCapture] Entered PlayMode - clearing and starting recording");
                     Clear();
                     _recording = true;
                     _paused = false;
+                    Debug.Log($"[EventCapture] Recording state: {_recording}, Paused: {_paused}");
                 }
             };
+            
+            // Ensure recording is enabled by default
+            _recording = true;
+            _paused = false;
+            Debug.Log($"[EventCapture] Init completed - Recording: {_recording}, Paused: {_paused}");
         }
     }
 }
