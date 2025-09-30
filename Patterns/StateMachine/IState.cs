@@ -13,24 +13,9 @@ namespace TirexGame.Utils.Patterns.StateMachine
         UniTask OnEnter();
         
         /// <summary>
-        /// Called every frame while in this state
-        /// </summary>
-        void OnUpdate();
-        
-        /// <summary>
-        /// Called every fixed frame while in this state
-        /// </summary>
-        void OnFixedUpdate();
-        
-        /// <summary>
         /// Called when exiting this state
         /// </summary>
         UniTask OnExit();
-        
-        /// <summary>
-        /// State identifier
-        /// </summary>
-        string StateName { get; }
     }
     
     /// <summary>
