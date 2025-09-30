@@ -223,6 +223,11 @@ namespace TirexGame.Utils.EventCenter
         {
             if (eventData == null || eventData.IsDisposed) return;
             
+#if UNITY_EDITOR
+            // Hook for Editor tracking
+            NotifyEditorOnPublish(eventData);
+#endif
+            
             if (eventData.IsImmediate)
             {
                 _immediateQueue.Enqueue(eventData);
@@ -241,6 +246,11 @@ namespace TirexGame.Utils.EventCenter
         public void PublishEventImmediate(BaseEvent eventData)
         {
             if (eventData == null || eventData.IsDisposed) return;
+            
+#if UNITY_EDITOR
+            // Hook for Editor tracking
+            NotifyEditorOnPublish(eventData);
+#endif
             
             var listenersNotified = _dispatcher.Dispatch(eventData);
             _stats.EventsProcessedThisFrame++;
@@ -300,6 +310,11 @@ namespace TirexGame.Utils.EventCenter
             Debug.Log($"[EventCenter] PublishEvent called for {typeof(T).Name}");
             Debug.Log($"[EventCenter] Priority: {priority}, Initialized: {_isInitialized}");
             
+#if UNITY_EDITOR
+            // Hook for Editor tracking - struct events
+            NotifyEditorOnPublishStruct(payload, priority);
+#endif
+            
             // Dispatch immediately - no queuing, no wrapper
             Debug.Log($"[EventCenter] Dispatching struct directly to listeners...");
             var listenersNotified = _dispatcher.Dispatch(payload);
@@ -316,8 +331,14 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEventImmediate<T>(T payload, int priority = 0) where T : struct
         {
-            // Same as PublishEvent - already immediate
-            PublishEvent(payload, priority);
+#if UNITY_EDITOR
+            // Hook for Editor tracking - struct events immediate
+            NotifyEditorOnPublishStruct(payload, priority);
+#endif
+            // Dispatch immediately - no queuing, no wrapper (same implementation as regular PublishEvent for structs)
+            var listenersNotified = _dispatcher.Dispatch(payload);
+            
+            Log($"Published struct event immediate {typeof(T).Name}");
         }
         
         /// <summary>
@@ -550,6 +571,166 @@ namespace TirexGame.Utils.EventCenter
         {
             return EventCenterService.Subscribe(callback, priority);
         }
+        
+        #endregion
+        
+        #region Editor Integration
+        
+#if UNITY_EDITOR
+        /// <summary>
+        /// Notify Editor tracking for BaseEvent publish
+        /// </summary>
+        private void NotifyEditorOnPublish(BaseEvent eventData)
+        {
+            try
+            {
+                Debug.Log($"[EventCenter] NotifyEditorOnPublish called for {eventData.GetType().Name}");
+                
+                // Use reflection to avoid hard dependency on Editor assembly
+                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                System.Type bridgeType = null;
+                
+                // Try to find EventCaptureBridge in any assembly
+                foreach (var assembly in assemblies)
+                {
+                    bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
+                    if (bridgeType != null)
+                    {
+                        Debug.Log($"[EventCenter] Found EventCaptureBridge in assembly: {assembly.GetName().Name}");
+                        break;
+                    }
+                }
+                
+                if (bridgeType != null)
+                {
+                    var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (publishMethod != null)
+                    {
+                        Debug.Log($"[EventCenter] Found Publish method, calling...");
+                        var listeners = GatherListenerInfo(eventData);
+                        var category = ResolveEventCategory(eventData.GetType().Name);
+                        publishMethod.Invoke(null, new object[] { eventData.GetType().Name, eventData, this, category, listeners });
+                        Debug.Log($"[EventCenter] Editor notification sent successfully for {eventData.GetType().Name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[EventCenter] Publish method not found in EventCaptureBridge");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EventCenter] EventCaptureBridge type not found in any assembly");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EventCenter] Failed to notify editor: {ex.Message}");
+                Debug.LogWarning($"[EventCenter] Stack trace: {ex.StackTrace}");
+            }
+        }
+        
+        /// <summary>
+        /// Notify Editor tracking for struct event publish
+        /// </summary>
+        private void NotifyEditorOnPublishStruct<T>(T payload, int priority) where T : struct
+        {
+            try
+            {
+                Debug.Log($"[EventCenter] NotifyEditorOnPublishStruct called for {typeof(T).Name}");
+                
+                // Use reflection to avoid hard dependency on Editor assembly
+                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+                System.Type bridgeType = null;
+                
+                // Try to find EventCaptureBridge in any assembly
+                foreach (var assembly in assemblies)
+                {
+                    bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
+                    if (bridgeType != null)
+                    {
+                        Debug.Log($"[EventCenter] Found EventCaptureBridge in assembly: {assembly.GetName().Name}");
+                        break;
+                    }
+                }
+                
+                if (bridgeType != null)
+                {
+                    var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                    if (publishMethod != null)
+                    {
+                        Debug.Log($"[EventCenter] Found Publish method, calling for struct...");
+                        var listeners = GatherStructListenerInfo<T>();
+                        var category = ResolveEventCategory(typeof(T).Name);
+                        publishMethod.Invoke(null, new object[] { typeof(T).Name, payload, this, category, listeners });
+                        Debug.Log($"[EventCenter] Editor notification sent successfully for struct {typeof(T).Name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[EventCenter] Publish method not found in EventCaptureBridge");
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[EventCenter] EventCaptureBridge type not found in any assembly");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EventCenter] Failed to notify editor for struct: {ex.Message}");
+                Debug.LogWarning($"[EventCenter] Stack trace: {ex.StackTrace}");
+            }
+        }
+        
+        /// <summary>
+        /// Gather listener information for BaseEvent
+        /// </summary>
+        private System.Collections.Generic.List<object> GatherListenerInfo(BaseEvent eventData)
+        {
+            var listeners = new System.Collections.Generic.List<object>();
+            try
+            {
+                // This would need implementation based on your dispatcher structure
+                // For now, return empty list - you can implement this based on your needs
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EventCenter] Failed to gather listener info: {ex.Message}");
+            }
+            return listeners;
+        }
+        
+        /// <summary>
+        /// Gather listener information for struct events
+        /// </summary>
+        private System.Collections.Generic.List<object> GatherStructListenerInfo<T>() where T : struct
+        {
+            var listeners = new System.Collections.Generic.List<object>();
+            try
+            {
+                // This would need implementation based on your dispatcher structure
+                // For now, return empty list - you can implement this based on your needs
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[EventCenter] Failed to gather struct listener info: {ex.Message}");
+            }
+            return listeners;
+        }
+        
+        /// <summary>
+        /// Resolve event category from event name
+        /// </summary>
+        private string ResolveEventCategory(string eventName)
+        {
+            // Simple categorization based on naming patterns
+            if (eventName.Contains("Player")) return "Player";
+            if (eventName.Contains("UI")) return "UI";
+            if (eventName.Contains("Game")) return "Gameplay";
+            if (eventName.Contains("Audio") || eventName.Contains("Sound")) return "Audio";
+            if (eventName.Contains("Network")) return "Network";
+            return "Uncategorized";
+        }
+#endif
         
         #endregion
     }

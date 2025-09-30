@@ -43,6 +43,11 @@ namespace EventCenter.EditorTools
         private List<string> _watchList = new List<string>();
         private string _breakpointPattern = string.Empty;
         private bool _breakOnMatch;
+        
+        // UI state
+        private bool _showWatchList = true;
+        private bool _showBreakpoints = true;
+        private bool _showChannels = true;
 
         [MenuItem("TirexGame/Event Center/Event Visualizer")] 
         public static void Open()
@@ -53,6 +58,7 @@ namespace EventCenter.EditorTools
 
         private void OnEnable()
         {
+            Debug.Log("[EventVisualizerWindow] OnEnable called");
             wantsMouseMove = true;
             _config = EventVisualizerConfig.LoadOrCreate();
             if (_config != null)
@@ -60,11 +66,17 @@ namespace EventCenter.EditorTools
                 EventCapture.ConfigureCapacity(Mathf.Max(1000, _config.bufferSize));
                 _pixelsPerSecond = Mathf.Max(_config.defaultZoom, 20f);
             }
+            
+            Debug.Log("[EventVisualizerWindow] Subscribing to EventCapture callbacks");
             EventCapture.OnDataChanged += Repaint;
             EventCapture.OnAppended += OnEventAppended;
+            Debug.Log("[EventVisualizerWindow] EventCapture callbacks subscribed");
+            
             _viewStartTime = 0;
             _viewEndTime = 10;
             EditorApplication.update += OnEditorUpdate;
+            
+            Debug.Log($"[EventVisualizerWindow] OnEnable completed. Recording: {EventCapture.IsRecording}, Paused: {EventCapture.IsPaused}");
         }
 
         private void OnDisable()
@@ -78,7 +90,21 @@ namespace EventCenter.EditorTools
         {
             if (_replayMode && _replayPlaying)
             {
-                _replayPlayhead += EditorApplication.timeSinceStartup - _lastUpdateTime;
+                double deltaTime = EditorApplication.timeSinceStartup - _lastUpdateTime;
+                _replayPlayhead += deltaTime;
+                
+                // Auto-pause at end
+                var events = EventCapture.Enumerate().ToList();
+                if (events.Any())
+                {
+                    double maxT = events.Max(e => e.timeRealtime);
+                    if (_replayPlayhead >= maxT)
+                    {
+                        _replayPlayhead = maxT;
+                        _replayPlaying = false;
+                    }
+                }
+                
                 Repaint();
             }
             _lastUpdateTime = EditorApplication.timeSinceStartup;
@@ -91,7 +117,7 @@ namespace EventCenter.EditorTools
             DrawToolbar();
 
             var rect = position;
-            float leftWidth = 200f;
+            float leftWidth = 250f; // Tăng từ 200f để có nhiều không gian hơn
             float rightWidth = 320f;
             float toolbarHeight = 22f;
 
@@ -103,8 +129,9 @@ namespace EventCenter.EditorTools
             GUILayout.BeginArea(left, EditorStyles.helpBox);
             _leftScroll = GUILayout.BeginScrollView(_leftScroll);
             DrawChannelList();
-            GUILayout.Space(8);
+            GUILayout.Space(12);
             DrawWatchAndBreakpoints();
+            GUILayout.FlexibleSpace(); // Đẩy nội dung lên trên, để scroll tự nhiên hơn
             GUILayout.EndScrollView();
             GUILayout.EndArea();
 
@@ -157,6 +184,47 @@ namespace EventCenter.EditorTools
                 _filterSource = GUILayout.TextField(_filterSource, EditorStyles.toolbarTextField, GUILayout.Width(120));
                 GUILayout.Label("Lst:", GUILayout.Width(26));
                 _filterListener = GUILayout.TextField(_filterListener, EditorStyles.toolbarTextField, GUILayout.Width(120));
+                
+                // Time range filter
+                GUILayout.Space(8);
+                GUILayout.Label("Time:", GUILayout.Width(32));
+                float min = (float)_timeMin;
+                float max = (float)_timeMax;
+                EditorGUILayout.MinMaxSlider(ref min, ref max, 0f, 60f, GUILayout.Width(100));
+                _timeMin = min;
+                _timeMax = max;
+                if (GUILayout.Button("Reset", EditorStyles.toolbarButton, GUILayout.Width(40)))
+                {
+                    _timeMin = 0;
+                    _timeMax = 0;
+                }
+                
+                // Preset filters
+                GUILayout.Space(8);
+                if (GUILayout.Button("Errors", EditorStyles.toolbarButton, GUILayout.Width(45)))
+                {
+                    _filterListener = "exception";
+                    _searchText = "";
+                }
+                if (GUILayout.Button("Player", EditorStyles.toolbarButton, GUILayout.Width(45)))
+                {
+                    _filterCategory = "Player";
+                    _searchText = "";
+                }
+                if (GUILayout.Button("UI", EditorStyles.toolbarButton, GUILayout.Width(25)))
+                {
+                    _filterCategory = "UI";
+                    _searchText = "";
+                }
+                if (GUILayout.Button("Clear", EditorStyles.toolbarButton, GUILayout.Width(40)))
+                {
+                    _searchText = "";
+                    _filterCategory = "";
+                    _filterSource = "";
+                    _filterListener = "";
+                    _timeMin = 0;
+                    _timeMax = 0;
+                }
 
                 GUILayout.FlexibleSpace();
 
@@ -172,9 +240,30 @@ namespace EventCenter.EditorTools
                 _replayMode = GUILayout.Toggle(_replayMode, new GUIContent("Replay"), EditorStyles.toolbarButton);
                 using (new EditorGUI.DisabledScope(!_replayMode))
                 {
-                    if (GUILayout.Button(_replayPlaying ? "Pause▶" : "Play▶", EditorStyles.toolbarButton, GUILayout.Width(60)))
+                    if (GUILayout.Button(_replayPlaying ? "Pause" : "Play", EditorStyles.toolbarButton, GUILayout.Width(50)))
                     {
                         _replayPlaying = !_replayPlaying;
+                        if (_replayPlaying && _replayPlayhead <= 0)
+                        {
+                            var events = EventCapture.Enumerate().ToList();
+                            if (events.Any())
+                            {
+                                _replayPlayhead = events.Min(e => e.timeRealtime);
+                            }
+                        }
+                    }
+                    if (GUILayout.Button("Reset", EditorStyles.toolbarButton, GUILayout.Width(40)))
+                    {
+                        _replayPlaying = false;
+                        var events = EventCapture.Enumerate().ToList();
+                        if (events.Any())
+                        {
+                            _replayPlayhead = events.Min(e => e.timeRealtime);
+                        }
+                        else
+                        {
+                            _replayPlayhead = 0;
+                        }
                     }
                 }
 
@@ -191,19 +280,65 @@ namespace EventCenter.EditorTools
 
         private void DrawChannelList()
         {
-            GUILayout.Label("Channels", EditorStyles.boldLabel);
-            var grouped = EventCapture.Enumerate().GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key);
-            foreach (var g in grouped)
+            _showChannels = EditorGUILayout.Foldout(_showChannels, "Channels", true, EditorStyles.foldoutHeader);
+            if (_showChannels)
             {
-                if (!_visibleChannels.ContainsKey(g.Key)) _visibleChannels[g.Key] = true;
-                _visibleChannels[g.Key] = EditorGUILayout.ToggleLeft(g.Key + " (" + g.Count() + ")", _visibleChannels[g.Key]);
+                var allEvents = EventCapture.Enumerate().ToList();
+                Debug.Log($"[EventVisualizerWindow] DrawChannelList - Total events: {allEvents.Count}");
+                
+                var grouped = allEvents.GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key);
+                
+                if (!grouped.Any())
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        EditorGUILayout.LabelField("No events captured", EditorStyles.centeredGreyMiniLabel);
+                        EditorGUILayout.LabelField($"Buffer count: {EventCapture.Count}", EditorStyles.centeredGreyMiniLabel);
+                        EditorGUILayout.LabelField($"Recording: {EventCapture.IsRecording}", EditorStyles.centeredGreyMiniLabel);
+                        EditorGUILayout.LabelField($"Paused: {EventCapture.IsPaused}", EditorStyles.centeredGreyMiniLabel);
+                    }
+                }
+                else
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        foreach (var g in grouped)
+                        {
+                            if (!_visibleChannels.ContainsKey(g.Key)) _visibleChannels[g.Key] = true;
+                            _visibleChannels[g.Key] = EditorGUILayout.ToggleLeft($"{g.Key} ({g.Count()})", _visibleChannels[g.Key]);
+                        }
+                        
+                        GUILayout.Space(4);
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            if (GUILayout.Button("All", GUILayout.Width(30)))
+                            {
+                                foreach (var key in _visibleChannels.Keys.ToList())
+                                {
+                                    _visibleChannels[key] = true;
+                                }
+                            }
+                            if (GUILayout.Button("None", GUILayout.Width(35)))
+                            {
+                                foreach (var key in _visibleChannels.Keys.ToList())
+                                {
+                                    _visibleChannels[key] = false;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
         private void DrawTimelineArea(Rect rect)
         {
             var events = ApplyFilters(EventCapture.Enumerate());
-            if (!events.Any())
+            var eventsList = events.ToList();
+            
+            Debug.Log($"[EventVisualizerWindow] DrawTimelineArea - Total events in buffer: {EventCapture.Count}, After filters: {eventsList.Count}");
+            
+            if (!eventsList.Any())
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("No events.", EditorStyles.centeredGreyMiniLabel);
@@ -212,8 +347,8 @@ namespace EventCenter.EditorTools
             }
 
             // Compute time bounds
-            double minT = events.Min(e => e.timeRealtime);
-            double maxT = events.Max(e => e.timeRealtime);
+            double minT = eventsList.Min(e => e.timeRealtime);
+            double maxT = eventsList.Max(e => e.timeRealtime);
             if (_viewEndTime <= _viewStartTime)
             {
                 _viewStartTime = minT;
@@ -228,7 +363,7 @@ namespace EventCenter.EditorTools
             DrawTimeGrid(canvas, minT, maxT);
 
             // Layout channels vertically
-            var rows = events.GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key).ToList();
+            var rows = eventsList.GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key).ToList();
             float rowHeight = 24f;
             float rowGap = 6f;
             float y = canvas.y + 24f;
@@ -245,7 +380,18 @@ namespace EventCenter.EditorTools
                     var r = new Rect(x, y, 120, rowHeight);
                     ev.lastDrawRect = r;
                     ev.cachedColor = GetColorFor(ev);
-                    EditorGUI.DrawRect(r, new Color(ev.cachedColor.r, ev.cachedColor.g, ev.cachedColor.b, 0.85f));
+                    
+                    // Highlight watch list events
+                    bool isWatched = _watchList.Any(w => !string.IsNullOrEmpty(w) && !string.IsNullOrEmpty(ev.name) && 
+                                                         ev.name.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
+                    
+                    Color bgColor = new Color(ev.cachedColor.r, ev.cachedColor.g, ev.cachedColor.b, 0.85f);
+                    if (isWatched)
+                    {
+                        bgColor = Color.Lerp(bgColor, Color.red, 0.3f);
+                    }
+                    
+                    EditorGUI.DrawRect(r, bgColor);
                     var label = new GUIContent(ev.name);
                     var style = EditorStyles.whiteMiniLabel;
                     var labelRect2 = new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8);
@@ -270,6 +416,32 @@ namespace EventCenter.EditorTools
                 }
 
                 y += rowHeight + rowGap;
+            }
+
+            // Draw playhead in replay mode
+            if (_replayMode && eventsList.Any())
+            {
+                float playheadX = canvas.x + 200 + (float)((_replayPlayhead - minT) * _pixelsPerSecond);
+                if (playheadX >= canvas.x + 200 && playheadX <= canvas.xMax)
+                {
+                    Handles.color = Color.red;
+                    Handles.DrawLine(new Vector2(playheadX, canvas.y), new Vector2(playheadX, canvas.yMax));
+                    
+                    // Scrubbing interaction
+                    var playheadRect = new Rect(playheadX - 5, canvas.y, 10, canvas.height);
+                    if (Event.current.type == EventType.MouseDown && playheadRect.Contains(Event.current.mousePosition))
+                    {
+                        _replayPlaying = false;
+                        Event.current.Use();
+                    }
+                    if (Event.current.type == EventType.MouseDrag && Vector2.Distance(Event.current.mousePosition, new Vector2(playheadX, Event.current.mousePosition.y)) < 20)
+                    {
+                        _replayPlayhead = minT + (Event.current.mousePosition.x - canvas.x - 200) / _pixelsPerSecond;
+                        _replayPlayhead = Math.Max(minT, Math.Min(maxT, _replayPlayhead));
+                        Repaint();
+                        Event.current.Use();
+                    }
+                }
             }
 
             GUILayout.EndScrollView();
@@ -357,34 +529,64 @@ namespace EventCenter.EditorTools
 
         private void DrawWatchAndBreakpoints()
         {
-            GUILayout.Label("Watch List", EditorStyles.boldLabel);
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            // Watch List with foldout
+            _showWatchList = EditorGUILayout.Foldout(_showWatchList, "Watch List", true, EditorStyles.foldoutHeader);
+            if (_showWatchList)
             {
-                for (int i = 0; i < _watchList.Count; i++)
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
-                    using (new EditorGUILayout.HorizontalScope())
+                    if (_watchList.Count == 0)
                     {
-                        _watchList[i] = EditorGUILayout.TextField(_watchList[i]);
-                        if (GUILayout.Button("-", GUILayout.Width(22)))
+                        EditorGUILayout.LabelField("No watch patterns", EditorStyles.centeredGreyMiniLabel);
+                    }
+                    else
+                    {
+                        for (int i = 0; i < _watchList.Count; i++)
                         {
-                            _watchList.RemoveAt(i);
-                            i--;
+                            using (new EditorGUILayout.HorizontalScope())
+                            {
+                                _watchList[i] = EditorGUILayout.TextField(_watchList[i]);
+                                if (GUILayout.Button("-", GUILayout.Width(22)))
+                                {
+                                    _watchList.RemoveAt(i);
+                                    i--;
+                                }
+                            }
                         }
                     }
-                }
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    if (GUILayout.Button("+ Add Watch")) _watchList.Add("");
-                    if (GUILayout.Button("Preserve", GUILayout.Width(70))) { /* reserved flag if needed */ }
+                    
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        if (GUILayout.Button("+ Add Watch")) 
+                        {
+                            _watchList.Add("");
+                        }
+                        if (GUILayout.Button("Clear All", GUILayout.Width(70)) && _watchList.Count > 0) 
+                        {
+                            _watchList.Clear();
+                        }
+                    }
                 }
             }
 
             GUILayout.Space(6);
-            GUILayout.Label("Breakpoints", EditorStyles.boldLabel);
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            
+            // Breakpoints with foldout
+            _showBreakpoints = EditorGUILayout.Foldout(_showBreakpoints, "Breakpoints", true, EditorStyles.foldoutHeader);
+            if (_showBreakpoints)
             {
-                _breakOnMatch = EditorGUILayout.ToggleLeft("Pause on match", _breakOnMatch);
-                _breakpointPattern = EditorGUILayout.TextField("Event Name Contains", _breakpointPattern);
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    _breakOnMatch = EditorGUILayout.ToggleLeft("Pause on match", _breakOnMatch);
+                    GUI.enabled = _breakOnMatch;
+                    _breakpointPattern = EditorGUILayout.TextField("Event Name Contains", _breakpointPattern);
+                    GUI.enabled = true;
+                    
+                    if (_breakOnMatch && !string.IsNullOrEmpty(_breakpointPattern))
+                    {
+                        EditorGUILayout.HelpBox($"Will pause when event name contains: '{_breakpointPattern}'", MessageType.Info);
+                    }
+                }
             }
         }
 
@@ -494,12 +696,15 @@ namespace EventCenter.EditorTools
 
         private void OnEventAppended(EventRecord rec)
         {
+            Debug.Log($"[EventVisualizerWindow] OnEventAppended called - Event: {rec?.name}");
+            
             // Watch highlight (future: panel pinning). For now, repaint is enough.
             // Breakpoint: pause when name contains pattern
             if (_breakOnMatch && !string.IsNullOrEmpty(_breakpointPattern))
             {
                 if (!string.IsNullOrEmpty(rec.name) && rec.name.IndexOf(_breakpointPattern, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
+                    Debug.Log($"[EventVisualizerWindow] Breakpoint hit for event: {rec.name}");
                     EditorApplication.isPaused = true;
                     _selected = rec;
                 }
