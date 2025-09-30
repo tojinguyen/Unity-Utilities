@@ -517,6 +517,40 @@ namespace TirexGame.Utils.EventCenter
                 Debug.Log($"[EventDispatcher] {message}");
         }
         
+        /// <summary>
+        /// Get listeners for a legacy event type (BaseEvent)
+        /// </summary>
+        /// <param name="eventType">The event type to get listeners for</param>
+        /// <returns>List of listener entries or null if none found</returns>
+        public List<ListenerEntry> GetListenersForType(Type eventType)
+        {
+            if (eventType == null) return null;
+            
+            if (_legacyListeners.TryGetValue(eventType, out var listeners))
+            {
+                return new List<ListenerEntry>(listeners);
+            }
+            
+            return null;
+        }
+        
+        /// <summary>
+        /// Get listeners for a struct event type
+        /// </summary>
+        /// <param name="eventType">The struct event type to get listeners for</param>
+        /// <returns>List of listener entries or null if none found</returns>
+        public List<ListenerEntry> GetStructListenersForType(Type eventType)
+        {
+            if (eventType == null) return null;
+            
+            if (_structListeners.TryGetValue(eventType, out var listeners))
+            {
+                return new List<ListenerEntry>(listeners);
+            }
+            
+            return null;
+        }
+
         #endregion
         
         #region Nested Types
@@ -524,7 +558,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Internal wrapper for listener entries
         /// </summary>
-        private class ListenerEntry
+        public class ListenerEntry
         {
             public IEventListener Listener { get; }
             public int Priority { get; }

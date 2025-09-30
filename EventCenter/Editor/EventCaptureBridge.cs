@@ -25,18 +25,61 @@ namespace EventCenter.EditorTools
                 {
                     if (listener != null)
                     {
-                        listenerRecords.Add(new ListenerRecord
+                        try
                         {
-                            name = listener.ToString(),
-                            targetInfo = new SourceInfo
+                            // Extract data from anonymous object using reflection
+                            var listenerType = listener.GetType();
+                            var nameProperty = listenerType.GetProperty("name");
+                            var targetInfoProperty = listenerType.GetProperty("targetInfo");
+                            var durationProperty = listenerType.GetProperty("durationMs");
+                            var exceptionProperty = listenerType.GetProperty("exception");
+                            
+                            var name = nameProperty?.GetValue(listener)?.ToString() ?? "Unknown";
+                            var targetInfo = targetInfoProperty?.GetValue(listener);
+                            var duration = (float)(durationProperty?.GetValue(listener) ?? 0f);
+                            var exception = exceptionProperty?.GetValue(listener)?.ToString();
+                            
+                            // Extract target info if available
+                            SourceInfo sourceInfo = new SourceInfo { objectName = "Unknown", typeName = "Unknown", instanceId = 0 };
+                            if (targetInfo != null)
                             {
-                                objectName = listener.GetType().Name,
-                                typeName = listener.GetType().FullName,
-                                instanceId = listener.GetHashCode()
-                            },
-                            durationMs = 0.0, // Will be measured during dispatch
-                            exception = null
-                        });
+                                var targetType = targetInfo.GetType();
+                                var objectNameProp = targetType.GetProperty("objectName");
+                                var typeNameProp = targetType.GetProperty("typeName");
+                                var instanceIdProp = targetType.GetProperty("instanceId");
+                                
+                                sourceInfo.objectName = objectNameProp?.GetValue(targetInfo)?.ToString() ?? "Unknown";
+                                sourceInfo.typeName = typeNameProp?.GetValue(targetInfo)?.ToString() ?? "Unknown";
+                                sourceInfo.instanceId = (int)(instanceIdProp?.GetValue(targetInfo) ?? 0);
+                            }
+                            
+                            listenerRecords.Add(new ListenerRecord
+                            {
+                                name = name,
+                                targetInfo = sourceInfo,
+                                durationMs = duration,
+                                exception = exception
+                            });
+                            
+                            Debug.Log($"[EventCaptureBridge] Converted listener: {name} on {sourceInfo.typeName}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[EventCaptureBridge] Failed to convert listener: {ex.Message}");
+                            // Fallback for failed conversion
+                            listenerRecords.Add(new ListenerRecord
+                            {
+                                name = "Failed to parse",
+                                targetInfo = new SourceInfo
+                                {
+                                    objectName = listener.ToString(),
+                                    typeName = listener.GetType().Name,
+                                    instanceId = listener.GetHashCode()
+                                },
+                                durationMs = 0.0,
+                                exception = $"Conversion error: {ex.Message}"
+                            });
+                        }
                     }
                 }
             }

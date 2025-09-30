@@ -521,29 +521,48 @@ namespace EventCenter.EditorTools
                 return;
             }
 
-            EditorGUILayout.LabelField("Name", _selected.name);
-            EditorGUILayout.LabelField("Category", _selected.category);
-            EditorGUILayout.LabelField("Time (realtime)", _selected.timeRealtime.ToString("F3") + "s");
-            EditorGUILayout.LabelField("Game Time", _selected.gameTime.ToString("F3") + "s");
+            // Event basic info with proper text wrapping
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Name", _selected.name, EditorStyles.wordWrappedLabel);
+                EditorGUILayout.LabelField("Category", _selected.category, EditorStyles.wordWrappedLabel);
+                EditorGUILayout.LabelField("Time (realtime)", _selected.timeRealtime.ToString("F3") + "s");
+                EditorGUILayout.LabelField("Game Time", _selected.gameTime.ToString("F3") + "s");
+            }
 
             GUILayout.Space(6);
             GUILayout.Label("Source", EditorStyles.miniBoldLabel);
-            EditorGUILayout.LabelField("Object", _selected.sourceInfo.objectName);
-            EditorGUILayout.LabelField("Type", _selected.sourceInfo.typeName);
-            EditorGUILayout.LabelField("Path", _selected.sourceInfo.hierarchyPath);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Object", _selected.sourceInfo.objectName, EditorStyles.wordWrappedLabel);
+                EditorGUILayout.LabelField("Type", _selected.sourceInfo.typeName, EditorStyles.wordWrappedLabel);
+                if (!string.IsNullOrEmpty(_selected.sourceInfo.hierarchyPath))
+                {
+                    EditorGUILayout.LabelField("Path", _selected.sourceInfo.hierarchyPath, EditorStyles.wordWrappedLabel);
+                }
+            }
 
             GUILayout.Space(6);
             GUILayout.Label("Payload", EditorStyles.miniBoldLabel);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.TextArea(_selected.payloadPreview ?? string.Empty, GUILayout.MinHeight(60));
+                var payloadText = _selected.payloadPreview ?? string.Empty;
+                var style = new GUIStyle(EditorStyles.textArea)
+                {
+                    wordWrap = true
+                };
+                EditorGUILayout.TextArea(payloadText, style, GUILayout.MinHeight(60), GUILayout.ExpandHeight(true));
             }
 
             GUILayout.Space(6);
             GUILayout.Label("Listeners", EditorStyles.miniBoldLabel);
             if (_selected.listeners == null || _selected.listeners.Count == 0)
             {
-                GUILayout.Label("None", EditorStyles.centeredGreyMiniLabel);
+                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                {
+                    GUILayout.Label("No listeners captured", EditorStyles.centeredGreyMiniLabel);
+                    EditorGUILayout.HelpBox("Listener information may not be available for this event type or the event was published before listener tracking was implemented.", MessageType.Info);
+                }
             }
             else
             {
@@ -551,12 +570,12 @@ namespace EventCenter.EditorTools
                 {
                     using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
-                        EditorGUILayout.LabelField("Name", l.name);
-                        EditorGUILayout.LabelField("Target", l.targetInfo.objectName + " (" + l.targetInfo.typeName + ")");
+                        EditorGUILayout.LabelField("Name", l.name, EditorStyles.wordWrappedLabel);
+                        EditorGUILayout.LabelField("Target", l.targetInfo.objectName + " (" + l.targetInfo.typeName + ")", EditorStyles.wordWrappedLabel);
                         EditorGUILayout.LabelField("Duration", l.durationMs.ToString("F3") + " ms");
                         if (!string.IsNullOrEmpty(l.exception))
                         {
-                            EditorGUILayout.LabelField("Exception", l.exception);
+                            EditorGUILayout.LabelField("Exception", l.exception, EditorStyles.wordWrappedLabel);
                         }
                     }
                 }
