@@ -689,8 +689,32 @@ namespace TirexGame.Utils.EventCenter
             var listeners = new System.Collections.Generic.List<object>();
             try
             {
-                // This would need implementation based on your dispatcher structure
-                // For now, return empty list - you can implement this based on your needs
+                var eventType = eventData.GetType();
+                Debug.Log($"[EventCenter] Gathering listeners for {eventType.Name}");
+                
+                // Try to get listener count as a fallback while compilation fixes itself
+                var listenerCount = _dispatcher?.GetListenerCount(eventType) ?? 0;
+                Debug.Log($"[EventCenter] Found {listenerCount} listeners for {eventType.Name}");
+                
+                // Create placeholder listener info based on count
+                for (int i = 0; i < listenerCount; i++)
+                {
+                    var listenerInfo = new
+                    {
+                        name = $"Listener_{i + 1}",
+                        targetInfo = new
+                        {
+                            objectName = "Unknown",
+                            typeName = "IEventListener",
+                            instanceId = i
+                        },
+                        durationMs = 0f,
+                        exception = string.Empty
+                    };
+                    listeners.Add(listenerInfo);
+                }
+                
+                Debug.Log($"[EventCenter] Total listeners found: {listeners.Count}");
             }
             catch (System.Exception ex)
             {
@@ -707,8 +731,32 @@ namespace TirexGame.Utils.EventCenter
             var listeners = new System.Collections.Generic.List<object>();
             try
             {
-                // This would need implementation based on your dispatcher structure
-                // For now, return empty list - you can implement this based on your needs
+                var eventType = typeof(T);
+                Debug.Log($"[EventCenter] Gathering struct listeners for {eventType.Name}");
+                
+                // Try to get listener count as a fallback while compilation fixes itself
+                var listenerCount = _dispatcher?.GetListenerCount<T>() ?? 0;
+                Debug.Log($"[EventCenter] Found {listenerCount} struct listeners for {eventType.Name}");
+                
+                // Create placeholder listener info based on count
+                for (int i = 0; i < listenerCount; i++)
+                {
+                    var listenerInfo = new
+                    {
+                        name = $"StructListener_{i + 1}",
+                        targetInfo = new
+                        {
+                            objectName = "Unknown",
+                            typeName = "IEventListener<T>",
+                            instanceId = i
+                        },
+                        durationMs = 0f,
+                        exception = string.Empty
+                    };
+                    listeners.Add(listenerInfo);
+                }
+                
+                Debug.Log($"[EventCenter] Total struct listeners found: {listeners.Count}");
             }
             catch (System.Exception ex)
             {
