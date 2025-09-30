@@ -114,7 +114,11 @@ namespace EventCenter.EditorTools
             lock (_lock) localCount = _count;
             for (int i = 0; i < localCount; i++)
             {
-                yield return Get(i);
+                var record = Get(i);
+                if (record != null)
+                {
+                    yield return record;
+                }
             }
         }
 

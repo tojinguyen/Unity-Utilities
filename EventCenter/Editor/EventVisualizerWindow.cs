@@ -114,36 +114,46 @@ namespace EventCenter.EditorTools
 
         private void OnGUI()
         {
-            DrawToolbar();
+            try
+            {
+                DrawToolbar();
 
-            var rect = position;
-            float leftWidth = 250f; // Tăng từ 200f để có nhiều không gian hơn
-            float rightWidth = 320f;
-            float toolbarHeight = 22f;
+                var rect = position;
+                float leftWidth = 250f; // Tăng từ 200f để có nhiều không gian hơn
+                float rightWidth = 320f;
+                float toolbarHeight = 22f;
 
-            var body = new Rect(0, toolbarHeight, rect.width, rect.height - toolbarHeight);
-            var left = new Rect(body.x, body.y, leftWidth, body.height);
-            var center = new Rect(left.xMax, body.y, body.width - leftWidth - rightWidth, body.height);
-            var right = new Rect(center.xMax, body.y, rightWidth, body.height);
+                var body = new Rect(0, toolbarHeight, rect.width, rect.height - toolbarHeight);
+                var left = new Rect(body.x, body.y, leftWidth, body.height);
+                var center = new Rect(left.xMax, body.y, body.width - leftWidth - rightWidth, body.height);
+                var right = new Rect(center.xMax, body.y, rightWidth, body.height);
 
-            GUILayout.BeginArea(left, EditorStyles.helpBox);
-            _leftScroll = GUILayout.BeginScrollView(_leftScroll);
-            DrawChannelList();
-            GUILayout.Space(12);
-            DrawWatchAndBreakpoints();
-            GUILayout.FlexibleSpace(); // Đẩy nội dung lên trên, để scroll tự nhiên hơn
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+                GUILayout.BeginArea(left, EditorStyles.helpBox);
+                _leftScroll = GUILayout.BeginScrollView(_leftScroll);
+                DrawChannelList();
+                GUILayout.Space(12);
+                DrawWatchAndBreakpoints();
+                GUILayout.FlexibleSpace(); // Đẩy nội dung lên trên, để scroll tự nhiên hơn
+                GUILayout.EndScrollView();
+                GUILayout.EndArea();
 
-            GUILayout.BeginArea(center);
-            DrawTimelineArea(center);
-            GUILayout.EndArea();
+                GUILayout.BeginArea(center);
+                DrawTimelineArea(center);
+                GUILayout.EndArea();
 
-            GUILayout.BeginArea(right, EditorStyles.helpBox);
-            _rightScroll = GUILayout.BeginScrollView(_rightScroll);
-            DrawDetailsPanel();
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+                GUILayout.BeginArea(right, EditorStyles.helpBox);
+                _rightScroll = GUILayout.BeginScrollView(_rightScroll);
+                DrawDetailsPanel();
+                GUILayout.EndScrollView();
+                GUILayout.EndArea();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[EventVisualizerWindow] OnGUI Exception: {ex.Message}");
+                Debug.LogError($"[EventVisualizerWindow] Stack: {ex.StackTrace}");
+                // Force repaint to try to recover
+                Repaint();
+            }
         }
 
         private void DrawToolbar()
@@ -280,75 +290,85 @@ namespace EventCenter.EditorTools
 
         private void DrawChannelList()
         {
-            _showChannels = EditorGUILayout.Foldout(_showChannels, "Channels", true, EditorStyles.foldoutHeader);
-            if (_showChannels)
+            try
             {
-                var allEvents = EventCapture.Enumerate().ToList();
-                Debug.Log($"[EventVisualizerWindow] DrawChannelList - Total events: {allEvents.Count}");
-                
-                var grouped = allEvents.GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key);
-                
-                if (!grouped.Any())
+                _showChannels = EditorGUILayout.Foldout(_showChannels, "Channels", true, EditorStyles.foldoutHeader);
+                if (_showChannels)
                 {
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    var allEvents = EventCapture.Enumerate()?.Where(e => e != null).ToList() ?? new List<EventRecord>();
+                    var grouped = allEvents.GroupBy(e => e?.category ?? "Uncategorized").OrderBy(g => g.Key);
+                    
+                    if (!grouped.Any())
                     {
-                        EditorGUILayout.LabelField("No events captured", EditorStyles.centeredGreyMiniLabel);
-                        EditorGUILayout.LabelField($"Buffer count: {EventCapture.Count}", EditorStyles.centeredGreyMiniLabel);
-                        EditorGUILayout.LabelField($"Recording: {EventCapture.IsRecording}", EditorStyles.centeredGreyMiniLabel);
-                        EditorGUILayout.LabelField($"Paused: {EventCapture.IsPaused}", EditorStyles.centeredGreyMiniLabel);
-                    }
-                }
-                else
-                {
-                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                    {
-                        foreach (var g in grouped)
+                        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                         {
-                            if (!_visibleChannels.ContainsKey(g.Key)) _visibleChannels[g.Key] = true;
-                            _visibleChannels[g.Key] = EditorGUILayout.ToggleLeft($"{g.Key} ({g.Count()})", _visibleChannels[g.Key]);
+                            EditorGUILayout.LabelField("No events captured", EditorStyles.centeredGreyMiniLabel);
+                            EditorGUILayout.LabelField($"Buffer count: {EventCapture.Count}", EditorStyles.centeredGreyMiniLabel);
+                            EditorGUILayout.LabelField($"Recording: {EventCapture.IsRecording}", EditorStyles.centeredGreyMiniLabel);
+                            EditorGUILayout.LabelField($"Paused: {EventCapture.IsPaused}", EditorStyles.centeredGreyMiniLabel);
                         }
-                        
-                        GUILayout.Space(4);
-                        using (new EditorGUILayout.HorizontalScope())
+                    }
+                    else
+                    {
+                        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                         {
-                            if (GUILayout.Button("All", GUILayout.Width(30)))
+                            foreach (var g in grouped)
                             {
-                                foreach (var key in _visibleChannels.Keys.ToList())
-                                {
-                                    _visibleChannels[key] = true;
-                                }
+                                if (!_visibleChannels.ContainsKey(g.Key)) _visibleChannels[g.Key] = true;
+                                _visibleChannels[g.Key] = EditorGUILayout.ToggleLeft($"{g.Key} ({g.Count()})", _visibleChannels[g.Key]);
                             }
-                            if (GUILayout.Button("None", GUILayout.Width(35)))
+                            
+                            GUILayout.Space(4);
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                foreach (var key in _visibleChannels.Keys.ToList())
+                                if (GUILayout.Button("All", GUILayout.Width(30)))
                                 {
-                                    _visibleChannels[key] = false;
+                                    foreach (var key in _visibleChannels.Keys.ToList())
+                                    {
+                                        _visibleChannels[key] = true;
+                                    }
+                                }
+                                if (GUILayout.Button("None", GUILayout.Width(35)))
+                                {
+                                    foreach (var key in _visibleChannels.Keys.ToList())
+                                    {
+                                        _visibleChannels[key] = false;
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[EventVisualizerWindow] DrawChannelList Exception: {ex.Message}");
+                EditorGUILayout.LabelField("Error drawing channels", EditorStyles.centeredGreyMiniLabel);
+            }
         }
 
         private void DrawTimelineArea(Rect rect)
         {
-            var events = ApplyFilters(EventCapture.Enumerate());
-            var eventsList = events.ToList();
+            try
+            {
+                var events = ApplyFilters(EventCapture.Enumerate());
+                var eventsList = events?.Where(e => e != null).ToList() ?? new List<EventRecord>();
             
-            Debug.Log($"[EventVisualizerWindow] DrawTimelineArea - Total events in buffer: {EventCapture.Count}, After filters: {eventsList.Count}");
+            // Always start scroll view first
+            _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
             
             if (!eventsList.Any())
             {
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("No events.", EditorStyles.centeredGreyMiniLabel);
                 GUILayout.FlexibleSpace();
+                GUILayout.EndScrollView();
                 return;
             }
 
             // Compute time bounds
-            double minT = eventsList.Min(e => e.timeRealtime);
-            double maxT = eventsList.Max(e => e.timeRealtime);
+            double minT = eventsList.Count > 0 ? eventsList.Min(e => e?.timeRealtime ?? 0) : 0;
+            double maxT = eventsList.Count > 0 ? eventsList.Max(e => e?.timeRealtime ?? 0) : 10;
             if (_viewEndTime <= _viewStartTime)
             {
                 _viewStartTime = minT;
@@ -357,8 +377,6 @@ namespace EventCenter.EditorTools
 
             // Scrollable timeline canvas
             float totalWidth = Mathf.Max((float)((maxT - minT) * _pixelsPerSecond) + 200f, rect.width);
-            _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
-
             var canvas = GUILayoutUtility.GetRect(totalWidth, rect.height - 8f);
             DrawTimeGrid(canvas, minT, maxT);
 
@@ -374,7 +392,7 @@ namespace EventCenter.EditorTools
                 var labelRect = new Rect(canvas.x + 4, y, 200, rowHeight);
                 EditorGUI.LabelField(labelRect, row.Key, EditorStyles.miniBoldLabel);
 
-                foreach (var ev in row)
+                foreach (var ev in row.Where(e => e != null))
                 {
                     float x = canvas.x + 200 + (float)((ev.timeRealtime - minT) * _pixelsPerSecond);
                     var r = new Rect(x, y, 120, rowHeight);
@@ -445,6 +463,24 @@ namespace EventCenter.EditorTools
             }
 
             GUILayout.EndScrollView();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[EventVisualizerWindow] DrawTimelineArea Exception: {ex.Message}");
+                try
+                {
+                    // Try to end scroll view safely
+                    GUILayout.EndScrollView();
+                }
+                catch { }
+                
+                // Show error message in a new scroll view
+                _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Error drawing timeline", EditorStyles.centeredGreyMiniLabel);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndScrollView();
+            }
         }
 
         private void DrawTimeGrid(Rect canvas, double minT, double maxT)
@@ -529,94 +565,102 @@ namespace EventCenter.EditorTools
 
         private void DrawWatchAndBreakpoints()
         {
-            // Watch List with foldout
-            _showWatchList = EditorGUILayout.Foldout(_showWatchList, "Watch List", true, EditorStyles.foldoutHeader);
-            if (_showWatchList)
+            try
             {
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                // Watch List with foldout
+                _showWatchList = EditorGUILayout.Foldout(_showWatchList, "Watch List", true, EditorStyles.foldoutHeader);
+                if (_showWatchList)
                 {
-                    if (_watchList.Count == 0)
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
-                        EditorGUILayout.LabelField("No watch patterns", EditorStyles.centeredGreyMiniLabel);
-                    }
-                    else
-                    {
-                        for (int i = 0; i < _watchList.Count; i++)
+                        if (_watchList.Count == 0)
                         {
-                            using (new EditorGUILayout.HorizontalScope())
+                            EditorGUILayout.LabelField("No watch patterns", EditorStyles.centeredGreyMiniLabel);
+                        }
+                        else
+                        {
+                            for (int i = 0; i < _watchList.Count; i++)
                             {
-                                _watchList[i] = EditorGUILayout.TextField(_watchList[i]);
-                                if (GUILayout.Button("-", GUILayout.Width(22)))
+                                using (new EditorGUILayout.HorizontalScope())
                                 {
-                                    _watchList.RemoveAt(i);
-                                    i--;
+                                    _watchList[i] = EditorGUILayout.TextField(_watchList[i]);
+                                    if (GUILayout.Button("-", GUILayout.Width(22)))
+                                    {
+                                        _watchList.RemoveAt(i);
+                                        i--;
+                                    }
                                 }
                             }
                         }
-                    }
-                    
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        if (GUILayout.Button("+ Add Watch")) 
+                        
+                        using (new EditorGUILayout.HorizontalScope())
                         {
-                            _watchList.Add("");
+                            if (GUILayout.Button("+ Add Watch")) 
+                            {
+                                _watchList.Add("");
+                            }
+                            if (GUILayout.Button("Clear All", GUILayout.Width(70)) && _watchList.Count > 0) 
+                            {
+                                _watchList.Clear();
+                            }
                         }
-                        if (GUILayout.Button("Clear All", GUILayout.Width(70)) && _watchList.Count > 0) 
+                    }
+                }
+
+                GUILayout.Space(6);
+                
+                // Breakpoints with foldout
+                _showBreakpoints = EditorGUILayout.Foldout(_showBreakpoints, "Breakpoints", true, EditorStyles.foldoutHeader);
+                if (_showBreakpoints)
+                {
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+                    {
+                        _breakOnMatch = EditorGUILayout.ToggleLeft("Pause on match", _breakOnMatch);
+                        GUI.enabled = _breakOnMatch;
+                        _breakpointPattern = EditorGUILayout.TextField("Event Name Contains", _breakpointPattern);
+                        GUI.enabled = true;
+                        
+                        if (_breakOnMatch && !string.IsNullOrEmpty(_breakpointPattern))
                         {
-                            _watchList.Clear();
+                            EditorGUILayout.HelpBox($"Will pause when event name contains: '{_breakpointPattern}'", MessageType.Info);
                         }
                     }
                 }
             }
-
-            GUILayout.Space(6);
-            
-            // Breakpoints with foldout
-            _showBreakpoints = EditorGUILayout.Foldout(_showBreakpoints, "Breakpoints", true, EditorStyles.foldoutHeader);
-            if (_showBreakpoints)
+            catch (System.Exception ex)
             {
-                using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-                {
-                    _breakOnMatch = EditorGUILayout.ToggleLeft("Pause on match", _breakOnMatch);
-                    GUI.enabled = _breakOnMatch;
-                    _breakpointPattern = EditorGUILayout.TextField("Event Name Contains", _breakpointPattern);
-                    GUI.enabled = true;
-                    
-                    if (_breakOnMatch && !string.IsNullOrEmpty(_breakpointPattern))
-                    {
-                        EditorGUILayout.HelpBox($"Will pause when event name contains: '{_breakpointPattern}'", MessageType.Info);
-                    }
-                }
+                Debug.LogError($"[EventVisualizerWindow] DrawWatchAndBreakpoints Exception: {ex.Message}");
+                EditorGUILayout.LabelField("Error drawing watch/breakpoints", EditorStyles.centeredGreyMiniLabel);
             }
         }
 
         private IEnumerable<EventRecord> ApplyFilters(IEnumerable<EventRecord> events)
         {
-            var e = events;
+            var e = events?.Where(x => x != null) ?? Enumerable.Empty<EventRecord>();
             if (!string.IsNullOrEmpty(_searchText))
             {
                 StringComparison cmp = _caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-                e = e.Where(x => (!string.IsNullOrEmpty(x.name) && x.name.IndexOf(_searchText, cmp) >= 0));
+                e = e.Where(x => x != null && !string.IsNullOrEmpty(x.name) && x.name.IndexOf(_searchText, cmp) >= 0);
             }
             if (!string.IsNullOrEmpty(_filterCategory))
             {
                 StringComparison cmp = _caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-                e = e.Where(x => (!string.IsNullOrEmpty(x.category) && x.category.IndexOf(_filterCategory, cmp) >= 0));
+                e = e.Where(x => x != null && !string.IsNullOrEmpty(x.category) && x.category.IndexOf(_filterCategory, cmp) >= 0);
             }
             if (!string.IsNullOrEmpty(_filterSource))
             {
                 StringComparison cmp = _caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-                e = e.Where(x => (!string.IsNullOrEmpty(x.sourceInfo?.objectName) && x.sourceInfo.objectName.IndexOf(_filterSource, cmp) >= 0)
-                                 || (!string.IsNullOrEmpty(x.sourceInfo?.typeName) && x.sourceInfo.typeName.IndexOf(_filterSource, cmp) >= 0));
+                e = e.Where(x => x != null && ((!string.IsNullOrEmpty(x.sourceInfo?.objectName) && x.sourceInfo.objectName.IndexOf(_filterSource, cmp) >= 0)
+                                 || (!string.IsNullOrEmpty(x.sourceInfo?.typeName) && x.sourceInfo.typeName.IndexOf(_filterSource, cmp) >= 0)));
             }
             if (!string.IsNullOrEmpty(_filterListener))
             {
                 StringComparison cmp = _caseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-                e = e.Where(x => x.listeners != null && x.listeners.Any(l => !string.IsNullOrEmpty(l.name) && l.name.IndexOf(_filterListener, cmp) >= 0));
+                e = e.Where(x => x != null && x.listeners != null && x.listeners.Any(l => l != null && !string.IsNullOrEmpty(l.name) && l.name.IndexOf(_filterListener, cmp) >= 0));
             }
             if (_timeMax > _timeMin)
             {
-                e = e.Where(x => x.timeRealtime >= _timeMin && x.timeRealtime <= _timeMax);
+                e = e.Where(x => x != null && x.timeRealtime >= _timeMin && x.timeRealtime <= _timeMax);
             }
             return e;
         }
