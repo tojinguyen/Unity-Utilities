@@ -44,7 +44,7 @@ namespace EventCenter.EditorTools
         private string _breakpointPattern = string.Empty;
         private bool _breakOnMatch;
 
-        [MenuItem("Window/Event Visualizer")] 
+        [MenuItem("TirexGame/Event Center/Event Visualizer")] 
         public static void Open()
         {
             var win = GetWindow<EventVisualizerWindow>("EventCenter Timeline");
