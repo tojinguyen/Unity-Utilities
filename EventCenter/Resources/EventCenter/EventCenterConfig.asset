@@ -17,6 +17,6 @@ MonoBehaviour:
   autoCreatedName: '[EventCenter] - Auto Created'
   maxEventsPerFrame: 10000
   maxBatchSize: 1000
-  enableLogging: 1
+  enableLogging: 0
   enableProfiling: 0
   showStats: 0
