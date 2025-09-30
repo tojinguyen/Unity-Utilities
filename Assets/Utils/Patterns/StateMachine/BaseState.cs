@@ -8,21 +8,9 @@ namespace TirexGame.Utils.Patterns.StateMachine
     /// </summary>
     public abstract class BaseState : IState
     {
-        public abstract string StateName { get; }
-        
         public virtual async UniTask OnEnter()
         {
             await UniTask.Yield();
-        }
-        
-        public virtual void OnUpdate()
-        {
-            // Override in derived classes
-        }
-        
-        public virtual void OnFixedUpdate()
-        {
-            // Override in derived classes
         }
         
         public virtual async UniTask OnExit()
@@ -42,6 +30,29 @@ namespace TirexGame.Utils.Patterns.StateMachine
         public virtual void Initialize(T context)
         {
             Context = context;
+        }
+    }
+    
+    /// <summary>
+    /// Base abstract class for tickable states
+    /// </summary>
+    public abstract class BaseTickableState : BaseState, ITickableState
+    {
+        public virtual void OnTick()
+        {
+            // Override in derived classes
+        }
+    }
+    
+    /// <summary>
+    /// Base abstract class for tickable states with context
+    /// </summary>
+    /// <typeparam name="T">The context type</typeparam>
+    public abstract class BaseTickableState<T> : BaseState<T>, ITickableState
+    {
+        public virtual void OnTick()
+        {
+            // Override in derived classes
         }
     }
 }

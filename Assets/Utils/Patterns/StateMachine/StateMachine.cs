@@ -6,27 +6,40 @@ using Cysharp.Threading.Tasks;
 namespace TirexGame.Utils.Patterns.StateMachine
 {
     /// <summary>
-    /// A flexible state machine implementation for game logic
+    /// A flexible state machine implementation for game logic without MonoBehaviour dependency
     /// </summary>
-    public class StateMachine : MonoBehaviour
+    public class StateMachine
     {
-        [Header("Debug")]
-        [SerializeField] private bool enableDebugLogs = true;
-        [SerializeField] private string currentStateName = "None";
+        private readonly bool _enableDebugLogs;
+        private Type _currentStateType;
         
-        private readonly Dictionary<string, IState> _states = new();
-        private readonly Dictionary<string, List<StateTransition>> _transitions = new();
+        private readonly Dictionary<Type, IState> _states = new();
+        private readonly Dictionary<Type, List<StateTransition>> _transitions = new();
         
         private IState _currentState;
         private bool _isTransitioning;
         
         public event Action<IState, IState> OnStateChanged;
-        public event Action<string> OnTransitionFailed;
+        public event Action<Type> OnTransitionFailed;
+        
+        /// <summary>
+        /// Create a new StateMachine instance
+        /// </summary>
+        /// <param name="enableDebugLogs">Enable debug logging</param>
+        public StateMachine(bool enableDebugLogs = true)
+        {
+            _enableDebugLogs = enableDebugLogs;
+        }
         
         /// <summary>
         /// Current active state
         /// </summary>
         public IState CurrentState => _currentState;
+        
+        /// <summary>
+        /// Current active state type
+        /// </summary>
+        public Type CurrentStateType => _currentStateType;
         
         /// <summary>
         /// Is the state machine currently transitioning
@@ -36,7 +49,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// <summary>
         /// Add a state to the state machine
         /// </summary>
-        public void AddState(IState state)
+        public void AddState<T>(T state) where T : class, IState
         {
             if (state == null)
             {
@@ -44,105 +57,114 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 return;
             }
             
-            var stateName = state.StateName;
-            if (_states.ContainsKey(stateName))
+            var stateType = typeof(T);
+            if (_states.ContainsKey(stateType))
             {
-                LogWarning($"State '{stateName}' already exists. Replacing...");
+                LogWarning($"State '{stateType.Name}' already exists. Replacing...");
             }
             
-            _states[stateName] = state;
-            _transitions[stateName] = new List<StateTransition>();
+            _states[stateType] = state;
+            _transitions[stateType] = new List<StateTransition>();
             
-            Log($"Added state: {stateName}");
+            Log($"Added state: {stateType.Name}");
         }
         
         /// <summary>
         /// Remove a state from the state machine
         /// </summary>
-        public void RemoveState(string stateName)
+        public void RemoveState<T>() where T : class, IState
         {
-            if (!_states.ContainsKey(stateName))
+            var stateType = typeof(T);
+            if (!_states.ContainsKey(stateType))
             {
-                LogWarning($"State '{stateName}' not found");
+                LogWarning($"State '{stateType.Name}' not found");
                 return;
             }
             
-            if (_currentState?.StateName == stateName)
+            if (_currentStateType == stateType)
             {
-                LogError($"Cannot remove current state '{stateName}'");
+                LogError($"Cannot remove current state '{stateType.Name}'");
                 return;
             }
             
-            _states.Remove(stateName);
-            _transitions.Remove(stateName);
+            _states.Remove(stateType);
+            _transitions.Remove(stateType);
             
             // Remove transitions TO this state
             foreach (var transitionList in _transitions.Values)
             {
-                transitionList.RemoveAll(t => t.ToState == stateName);
+                transitionList.RemoveAll(t => t.ToStateType == stateType);
             }
             
-            Log($"Removed state: {stateName}");
+            Log($"Removed state: {stateType.Name}");
         }
         
         /// <summary>
         /// Add a transition between states
         /// </summary>
-        public void AddTransition(string fromState, string toState, Func<bool> condition = null)
+        public void AddTransition<TFrom, TTo>(Func<bool> condition = null) 
+            where TFrom : class, IState 
+            where TTo : class, IState
         {
-            if (!_states.ContainsKey(fromState))
+            var fromStateType = typeof(TFrom);
+            var toStateType = typeof(TTo);
+            
+            if (!_states.ContainsKey(fromStateType))
             {
-                LogError($"From state '{fromState}' not found");
+                LogError($"From state '{fromStateType.Name}' not found");
                 return;
             }
             
-            if (!_states.ContainsKey(toState))
+            if (!_states.ContainsKey(toStateType))
             {
-                LogError($"To state '{toState}' not found");
+                LogError($"To state '{toStateType.Name}' not found");
                 return;
             }
             
-            var transition = new StateTransition(toState, condition);
-            _transitions[fromState].Add(transition);
+            var transition = new StateTransition(toStateType, condition);
+            _transitions[fromStateType].Add(transition);
             
-            Log($"Added transition: {fromState} -> {toState}");
+            Log($"Added transition: {fromStateType.Name} -> {toStateType.Name}");
         }
         
         /// <summary>
         /// Start the state machine with an initial state
         /// </summary>
-        public async UniTask StartAsync(string initialStateName)
+        public async UniTask StartAsync<T>() where T : class, IState
         {
-            if (!_states.ContainsKey(initialStateName))
+            var stateType = typeof(T);
+            if (!_states.ContainsKey(stateType))
             {
-                LogError($"Initial state '{initialStateName}' not found");
+                LogError($"Initial state '{stateType.Name}' not found");
                 return;
             }
             
-            await TransitionToAsync(initialStateName);
-            Log($"Started state machine with initial state: {initialStateName}");
+            await TransitionToAsync<T>();
+            Log($"Started state machine with initial state: {stateType.Name}");
         }
         
         /// <summary>
         /// Manually trigger a transition to a specific state
         /// </summary>
-        public async UniTask<bool> TransitionToAsync(string stateName)
+        public async UniTask<bool> TransitionToAsync<T>() where T : class, IState
         {
+            var stateType = typeof(T);
+            
             if (_isTransitioning)
             {
                 LogWarning("Already transitioning, ignoring request");
                 return false;
             }
             
-            if (!_states.ContainsKey(stateName))
+            if (!_states.ContainsKey(stateType))
             {
-                LogError($"State '{stateName}' not found");
-                OnTransitionFailed?.Invoke(stateName);
+                LogError($"State '{stateType.Name}' not found");
+                OnTransitionFailed?.Invoke(stateType);
                 return false;
             }
             
             var previousState = _currentState;
-            var newState = _states[stateName];
+            var newState = _states[stateType];
             
             _isTransitioning = true;
             
@@ -152,15 +174,15 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 if (_currentState != null)
                 {
                     await _currentState.OnExit();
-                    Log($"Exited state: {_currentState.StateName}");
+                    Log($"Exited state: {_currentStateType?.Name}");
                 }
                 
                 // Enter new state
                 _currentState = newState;
-                currentStateName = _currentState.StateName;
+                _currentStateType = stateType;
                 await _currentState.OnEnter();
                 
-                Log($"Entered state: {_currentState.StateName}");
+                Log($"Entered state: {_currentStateType.Name}");
                 OnStateChanged?.Invoke(previousState, _currentState);
                 
                 return true;
@@ -168,7 +190,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
             catch (Exception e)
             {
                 LogError($"Error during state transition: {e.Message}");
-                OnTransitionFailed?.Invoke(stateName);
+                OnTransitionFailed?.Invoke(stateType);
                 return false;
             }
             finally
@@ -182,18 +204,20 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public async UniTask CheckTransitionsAsync()
         {
-            if (_currentState == null || _isTransitioning)
+            if (_currentState == null || _isTransitioning || _currentStateType == null)
                 return;
             
-            var currentStateName = _currentState.StateName;
-            if (!_transitions.ContainsKey(currentStateName))
+            if (!_transitions.ContainsKey(_currentStateType))
                 return;
             
-            foreach (var transition in _transitions[currentStateName])
+            foreach (var transition in _transitions[_currentStateType])
             {
                 if (transition.Condition == null || transition.Condition.Invoke())
                 {
-                    await TransitionToAsync(transition.ToState);
+                    // Use reflection to call the generic TransitionToAsync method
+                    var method = GetType().GetMethod(nameof(TransitionToAsync));
+                    var genericMethod = method.MakeGenericMethod(transition.ToStateType);
+                    await (UniTask<bool>)genericMethod.Invoke(this, null);
                     break; // Only execute first valid transition
                 }
             }
@@ -207,33 +231,29 @@ namespace TirexGame.Utils.Patterns.StateMachine
             if (_currentState != null)
             {
                 await _currentState.OnExit();
-                Log($"Exited final state: {_currentState.StateName}");
+                Log($"Exited final state: {_currentStateType?.Name}");
             }
             
             _currentState = null;
-            currentStateName = "None";
+            _currentStateType = null;
             Log("State machine stopped");
         }
         
-        private void Update()
+        /// <summary>
+        /// Manual tick method for states that need periodic updates
+        /// Call this method manually when you need to update states
+        /// </summary>
+        public void Tick()
         {
-            if (_currentState != null && !_isTransitioning)
+            if (_currentState != null && !_isTransitioning && _currentState is ITickableState tickableState)
             {
-                _currentState.OnUpdate();
-            }
-        }
-        
-        private void FixedUpdate()
-        {
-            if (_currentState != null && !_isTransitioning)
-            {
-                _currentState.OnFixedUpdate();
+                tickableState.OnTick();
             }
         }
         
         private void Log(string message)
         {
-            if (enableDebugLogs)
+            if (_enableDebugLogs)
             {
                 Debug.Log($"[StateMachine] {message}");
             }
@@ -241,7 +261,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
         
         private void LogWarning(string message)
         {
-            if (enableDebugLogs)
+            if (_enableDebugLogs)
             {
                 Debug.LogWarning($"[StateMachine] {message}");
             }
@@ -254,16 +274,24 @@ namespace TirexGame.Utils.Patterns.StateMachine
     }
     
     /// <summary>
+    /// Interface for states that need manual ticking
+    /// </summary>
+    public interface ITickableState
+    {
+        void OnTick();
+    }
+    
+    /// <summary>
     /// Represents a transition between states
     /// </summary>
     internal class StateTransition
     {
-        public string ToState { get; }
+        public Type ToStateType { get; }
         public Func<bool> Condition { get; }
         
-        public StateTransition(string toState, Func<bool> condition = null)
+        public StateTransition(Type toStateType, Func<bool> condition = null)
         {
-            ToState = toState;
+            ToStateType = toStateType;
             Condition = condition;
         }
     }
