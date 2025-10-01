@@ -12,7 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e771bf5e128c39246961edac1aa2fb48, type: 3}
   m_Name: AddressableImporterConfig
   m_EditorClassIdentifier: 
-  folderConfigurations: []
+  folderConfigurations:
+  - folderPath: Assets/Utils/UI/UINavigator
+    groupName: UIManager
+    namingConvention: 0
+    customPrefix: 
+    includeSubfolders: 1
+    fileExtensions:
+    - .png
+    - .jpg
+    - .jpeg
+    - .tga
+    - .psd
+    - .prefab
+    - .asset
+    isEnabled: 1
   autoImportOnAssetChange: 1
   logImportResults: 1
   removeFromAddressablesOnDelete: 1
