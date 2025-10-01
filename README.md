@@ -29,6 +29,8 @@ A comprehensive collection of high-performance utilities and systems for Unity g
 
 ## 📋 **Table of Contents**
 
+- [Addressables](./Assets/Utils/Addressables/README.md)
+- [Ads](./Assets/Utils/Ads/README.md)
 - [Audio](./Assets/Utils/Audio/README.md)
 - [Data](./Assets/Utils/Data/README.md)
 - [EventCenter](./Assets/Utils/EventCenter/README.md)
