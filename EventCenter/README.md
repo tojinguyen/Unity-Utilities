@@ -13,7 +13,7 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 - [Ví dụ nâng cao | Advanced Examples](#-ví-dụ-nâng-cao--advanced-examples)
 - [Hiệu suất | Performance](#-hiệu-suất--performance)
 - [Best Practices](#-best-practices)
-- [Event Visualizer](#-event-visualizer)
+- [Event Visualizer](EventVisualizer_UserGuide.md)
 - [FAQ](#-faq)
 
 ## 🚀 Tính năng chính | Key Features
@@ -529,18 +529,6 @@ EventSystem.SubscribeWhen<InputPressed>((input) =>
     TryInteract(input.Position);
 }, (input) => input.Key == KeyCode.E);
 ```
-
-## 👁️ Event Visualizer
-
-EventCenter includes a powerful **Event Visualizer** tool to help you debug and analyze your event flow in real-time.
-
-### Features
-- **Timeline View**: See all events on a timeline, grouped by category.
-- **Event Details**: Inspect event payloads, sources, and listeners.
-- **Search & Filter**: Quickly find specific events.
-- **Real-time & Replay**: Monitor events live or replay a recorded session.
-
-For detailed instructions, please see the [Event Visualizer User Guide](./EventVisualizer_UserGuide.md).
 
 ## 🔧 FAQ
 
