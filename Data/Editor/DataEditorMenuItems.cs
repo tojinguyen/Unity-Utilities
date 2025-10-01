@@ -6,7 +6,7 @@ namespace TirexGame.Utils.Data.Editor
 {
     public static class DataEditorMenuItems
     {
-        private const string MENU_ROOT = "Tools/TirexGame/Data/";
+        private const string MENU_ROOT = "TirexGame/Data/";
         
         [MenuItem(MENU_ROOT + "Data Manager Window", priority = 1)]
         public static void OpenDataManager()
