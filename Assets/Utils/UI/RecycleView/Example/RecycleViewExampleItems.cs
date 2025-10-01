@@ -25,39 +25,30 @@ namespace TirexGame.Utils.UI.Example
 
     #region Item Implementations
 
-    // Item script for the TextMessageData prefab
-    public class TextRecycleViewItem : RecycleViewItem
+    // Item script for the TextMessageData prefab, now using the generic base class
+    public class TextRecycleViewItem : RecycleViewItem<TextMessageData>
     {
         [SerializeField] private TextMeshProUGUI messageText;
 
-        public override void BindData(IRecycleViewData data, int index)
+        // The BindData method is now strongly-typed, no casting needed!
+        public override void BindData(TextMessageData data, int index)
         {
-            base.BindData(data, index); // Important to call the base method
-            var textData = data as TextMessageData;
-            if (textData != null)
-            {
-                messageText.text = $"{index}: {textData.Message}";
-            }
+            messageText.text = $"{index}: {data.Message}";
         }
     }
 
-    // Item script for the ImageMessageData prefab
-    public class ImageRecycleViewItem : RecycleViewItem
+    // Item script for the ImageMessageData prefab, now using the generic base class
+    public class ImageRecycleViewItem : RecycleViewItem<ImageMessageData>
     {
         [SerializeField] private Image itemImage;
         [SerializeField] private TextMeshProUGUI captionText;
 
-        public override void BindData(IRecycleViewData data, int index)
+        // The BindData method is now strongly-typed, no casting needed!
+        public override void BindData(ImageMessageData data, int index)
         {
-            base.BindData(data, index); // Important to call the base method
-            var imageData = data as ImageMessageData;
-            if (imageData != null)
-            {
-                itemImage.sprite = imageData.Image;
-                captionText.text = $"{index}: {imageData.Caption}";
-                // You might want to handle null sprites, e.g., by hiding the image
-                itemImage.enabled = imageData.Image != null;
-            }
+            itemImage.sprite = data.Image;
+            captionText.text = $"{index}: {data.Caption}";
+            itemImage.enabled = data.Image != null;
         }
     }
 

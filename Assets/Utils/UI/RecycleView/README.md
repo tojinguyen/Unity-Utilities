@@ -48,24 +48,21 @@ public class ImageMessageData : IRecycleViewData
 
 ### 2. Create Your Item Prefab Scripts
 
-Create a script for each of your prefabs that inherits from `RecycleViewItem`. This script is responsible for updating the prefab's UI when its data changes.
+Create a script for each of your prefabs that inherits from the generic `RecycleViewItem<TData>` class, where `TData` is the specific data class for that item. This gives you a strongly-typed `BindData` method, which is cleaner and safer.
 
 **Example:**
 ```csharp
 using TMPro;
 
-public class TextRecycleViewItem : RecycleViewItem
+// Inherit from RecycleViewItem<TData> with your data class
+public class TextRecycleViewItem : RecycleViewItem<TextMessageData>
 {
     [SerializeField] private TextMeshProUGUI messageText;
 
-    public override void BindData(IRecycleViewData data, int index)
+    // The BindData method is now strongly-typed. No casting needed!
+    public override void BindData(TextMessageData data, int index)
     {
-        base.BindData(data, index); 
-        var textData = data as TextMessageData;
-        if (textData != null)
-        {
-            messageText.text = $"{index}: {textData.Message}";
-        }
+        messageText.text = $"{index}: {data.Message}";
     }
 }
 ```
