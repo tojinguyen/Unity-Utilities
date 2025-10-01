@@ -14,6 +14,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         private AddressableImporterConfig config;
         private Vector2 scrollPosition;
         private bool showAdvancedSettings = false;
+        private int m_IndexToRemove = -1;
 
         [MenuItem("TirexGame/Editor/Addressable Importer")]
         public static void ShowWindow()
@@ -75,6 +76,13 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 DrawFolderConfiguration(i);
             }
 
+            if (m_IndexToRemove != -1)
+            {
+                config.RemoveFolderConfigurationAt(m_IndexToRemove);
+                EditorUtility.SetDirty(config);
+                m_IndexToRemove = -1;
+            }
+
             EditorGUILayout.EndScrollView();
 
             EditorGUILayout.BeginHorizontal();
@@ -96,7 +104,10 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             EditorGUILayout.BeginHorizontal();
 
             folderData.IsEnabled = EditorGUILayout.Toggle(folderData.IsEnabled, GUILayout.Width(20));
-            EditorGUILayout.LabelField($"Configuration {index + 1}", EditorStyles.boldLabel);
+            string headerLabel = string.IsNullOrEmpty(folderData.GroupName) 
+                ? $"Configuration {index + 1}" 
+                : folderData.GroupName;
+            EditorGUILayout.LabelField(headerLabel, EditorStyles.boldLabel);
 
             if (GUILayout.Button("Reimport", GUILayout.Width(80)))
             {
@@ -113,9 +124,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             }
             if (GUILayout.Button("Remove", GUILayout.Width(60)))
             {
-                config.RemoveFolderConfigurationAt(index);
-                EditorUtility.SetDirty(config);
-                return;
+                m_IndexToRemove = index;
             }
 
             EditorGUILayout.EndHorizontal();
