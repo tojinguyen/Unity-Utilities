@@ -1,4 +1,10 @@
 {
     "dotnet.preferCSharpExtension": true,
-    "dotnet.defaultSolution": "Unity-Utilities.sln"
+    "dotnet.defaultSolution": "Unity-Utilities.sln",
+    "files.exclude": {
+        "**/*.meta": true
+    },
+    "search.exclude": {
+        "**/*.meta": true
+    }
 }
