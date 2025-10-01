@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: AddressableImporterConfig
   m_EditorClassIdentifier: 
   folderConfigurations:
-  - folderPath: Assets/Utils/UI/UINavigator
+  - folderPath: Assets/Utils/EventCenter
     groupName: UIManager
     namingConvention: 0
     customPrefix: 
     includeSubfolders: 1
+    groupSubfoldersSeparately: 1
     fileExtensions:
     - .png
     - .jpg

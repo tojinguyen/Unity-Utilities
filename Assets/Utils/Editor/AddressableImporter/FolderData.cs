@@ -12,7 +12,8 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         [SerializeField] private NamingConvention namingConvention;
         [SerializeField] private string customPrefix;
         [SerializeField] private bool includeSubfolders;
-        [SerializeField] private string[] fileExtensions;
+        [SerializeField] private bool groupSubfoldersSeparately;
+        [SerializeField] private string[] excludedFileExtensions;
         [SerializeField] private bool isEnabled;
 
         public string FolderPath
@@ -45,10 +46,16 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             set => includeSubfolders = value;
         }
 
-        public string[] FileExtensions
+        public bool GroupSubfoldersSeparately
         {
-            get => fileExtensions;
-            set => fileExtensions = value;
+            get => groupSubfoldersSeparately;
+            set => groupSubfoldersSeparately = value;
+        }
+
+        public string[] ExcludedFileExtensions
+        {
+            get => excludedFileExtensions;
+            set => excludedFileExtensions = value;
         }
 
         public bool IsEnabled
@@ -64,7 +71,8 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             namingConvention = NamingConvention.FileName;
             customPrefix = "";
             includeSubfolders = true;
-            fileExtensions = new[] { ".png", ".jpg", ".jpeg", ".tga", ".psd", ".prefab", ".asset" };
+            groupSubfoldersSeparately = false;
+            excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
         }
 
@@ -75,7 +83,8 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             namingConvention = NamingConvention.FileName;
             customPrefix = "";
             includeSubfolders = true;
-            fileExtensions = new[] { ".png", ".jpg", ".jpeg", ".tga", ".psd", ".prefab", ".asset" };
+            groupSubfoldersSeparately = false;
+            excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
         }
     }

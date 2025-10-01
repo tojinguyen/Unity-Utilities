@@ -147,15 +147,54 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 // Include Subfolders
                 folderData.IncludeSubfolders = EditorGUILayout.Toggle("Include Subfolders", folderData.IncludeSubfolders);
 
-                // File Extensions
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Extensions:", GUILayout.Width(100));
-                string extensionsString = string.Join(", ", folderData.FileExtensions);
-                string newExtensionsString = EditorGUILayout.TextField(extensionsString);
-                if (newExtensionsString != extensionsString)
+                // Group Subfolders Separately
+                if (folderData.IncludeSubfolders)
                 {
-                    folderData.FileExtensions = newExtensionsString.Split(',').Select(s => s.Trim()).ToArray();
-                    EditorUtility.SetDirty(config);
+                    folderData.GroupSubfoldersSeparately = EditorGUILayout.Toggle("Group Subfolders Separately", folderData.GroupSubfoldersSeparately);
+                }
+
+                // Excluded File Extensions
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField("Excluded Extensions:", GUILayout.Width(120));
+
+                if (Directory.Exists(folderData.FolderPath))
+                {
+                    var availableExtensions = ScanExtensions(folderData.FolderPath, folderData.IncludeSubfolders);
+                    int mask = 0;
+                    for (int i = 0; i < availableExtensions.Length; i++)
+                    {
+                        if (Array.Exists(folderData.ExcludedFileExtensions, ext => ext == availableExtensions[i]))
+                        {
+                            mask |= 1 << i;
+                        }
+                    }
+
+                    int newMask = EditorGUILayout.MaskField(mask, availableExtensions);
+
+                    if (newMask != mask)
+                    {
+                        var newExcluded = new List<string>();
+                        for (int i = 0; i < availableExtensions.Length; i++)
+                        {
+                            if ((newMask & (1 << i)) != 0)
+                            {
+                                newExcluded.Add(availableExtensions[i]);
+                            }
+                        }
+                        folderData.ExcludedFileExtensions = newExcluded.ToArray();
+                        EditorUtility.SetDirty(config);
+                    }
+                }
+                else
+                {
+                    // Fallback to text field if path is invalid
+                    string extensionsString = string.Join(", ", folderData.ExcludedFileExtensions);
+                    string newExtensionsString = EditorGUILayout.TextField(extensionsString);
+                    if (newExtensionsString != extensionsString)
+                    {
+                        folderData.ExcludedFileExtensions = newExtensionsString.Split(',').Select(s => s.Trim()).ToArray();
+                        EditorUtility.SetDirty(config);
+                    }
                 }
                 EditorGUILayout.EndHorizontal();
             }
@@ -247,15 +286,43 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 return 0;
             }
 
-            var searchOption = folderConfig.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            var files = Directory.GetFiles(folderConfig.FolderPath, "*.*", searchOption)
-                .Where(f => folderConfig.FileExtensions.Any(ext => f.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            int processedCount = 0;
+
+            if (folderConfig.GroupSubfoldersSeparately && folderConfig.IncludeSubfolders)
+            {
+                // Process files in the root folder first
+                processedCount += ProcessFilesInDirectory(folderConfig.FolderPath, folderConfig.GroupName, folderConfig, settings, SearchOption.TopDirectoryOnly);
+
+                // Process files in each subfolder
+                var subdirectories = Directory.GetDirectories(folderConfig.FolderPath, "*", SearchOption.TopDirectoryOnly);
+                foreach (var subDir in subdirectories)
+                {
+                    string subDirName = Path.GetFileName(subDir);
+                    string groupName = $"{folderConfig.GroupName}_{subDirName}";
+                    processedCount += ProcessFilesInDirectory(subDir, groupName, folderConfig, settings, SearchOption.AllDirectories);
+                }
+            }
+            else
+            {
+                var searchOption = folderConfig.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                processedCount += ProcessFilesInDirectory(folderConfig.FolderPath, folderConfig.GroupName, folderConfig, settings, searchOption);
+            }
+
+            return processedCount;
+        }
+
+        private int ProcessFilesInDirectory(string path, string groupName, FolderData folderConfig, AddressableAssetSettings settings, SearchOption searchOption)
+        {
+            var files = Directory.GetFiles(path, "*.*", searchOption)
+                .Where(f => !folderConfig.ExcludedFileExtensions.Any(ext => f.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
                 .Where(f => !f.EndsWith(".meta"));
 
-            var group = settings.FindGroup(folderConfig.GroupName);
+            if (!files.Any()) return 0;
+
+            var group = settings.FindGroup(groupName);
             if (group == null)
             {
-                group = settings.CreateGroup(folderConfig.GroupName, false, false, false, null);
+                group = settings.CreateGroup(groupName, false, false, false, null);
             }
 
             int processedCount = 0;
@@ -271,7 +338,6 @@ namespace TirexGame.Utils.Editor.AddressableImporter
 
                 processedCount++;
             }
-
             return processedCount;
         }
 
@@ -311,6 +377,19 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             }
 
             Debug.Log("All addressable groups cleared.");
+        }
+
+        private string[] ScanExtensions(string path, bool includeSubfolders)
+        {
+            if (!Directory.Exists(path)) return new string[0];
+
+            var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            return Directory.GetFiles(path, "*.*", searchOption)
+                .Where(f => !f.EndsWith(".meta"))
+                .Select(Path.GetExtension)
+                .Distinct()
+                .OrderBy(ext => ext)
+                .ToArray();
         }
     }
 }
