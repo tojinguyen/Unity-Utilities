@@ -220,6 +220,58 @@ namespace TirexGame.Utils.EventCenter
         }
         
         /// <summary>
+        /// Log the current status and statistics of the event system
+        /// </summary>
+        public static void LogStatus()
+        {
+            if (!_isInitialized)
+            {
+                // Always log critical issues regardless of logging config
+                Debug.Log("[EventSystem] ❌ EventSystem is not initialized");
+                return;
+            }
+            
+            if (_eventCenter == null)
+            {
+                // Always log critical issues regardless of logging config
+                Debug.Log("[EventSystem] ❌ EventCenter is null");
+                return;
+            }
+            
+            // Check if logging is enabled in the EventCenter configuration
+            if (!_eventCenter.IsLoggingEnabled)
+            {
+                // Silently return if logging is disabled
+                return;
+            }
+            
+            var stats = _eventCenter.GetStats();
+            Debug.Log($"[EventSystem] ✅ Status Report:");
+            Debug.Log($"[EventSystem] • Initialized: {_isInitialized}");
+            Debug.Log($"[EventSystem] • Active Subscriptions: {stats.ActiveSubscriptions}");
+            Debug.Log($"[EventSystem] • Queued Events: {stats.QueuedEvents}");
+            Debug.Log($"[EventSystem] • Events Processed This Frame: {stats.EventsProcessedThisFrame}");
+            Debug.Log($"[EventSystem] • Peak Events Per Frame: {stats.PeakEventsPerFrame}");
+            Debug.Log($"[EventSystem] • Pooled Events: {stats.PooledEvents}");
+            Debug.Log($"[EventSystem] • Average Processing Time: {stats.AverageProcessingTime:F2}ms");
+            Debug.Log($"[EventSystem] • Memory Usage: {stats.MemoryUsage} bytes");
+        }
+        
+        /// <summary>
+        /// Check if logging is enabled in the current EventCenter
+        /// </summary>
+        /// <returns>True if logging is enabled, false otherwise</returns>
+        public static bool IsLoggingEnabled()
+        {
+            if (!_isInitialized || _eventCenter == null)
+            {
+                return false;
+            }
+            
+            return _eventCenter.IsLoggingEnabled;
+        }
+        
+        /// <summary>
         /// Shutdown the static event system
         /// </summary>
         public static void Shutdown()

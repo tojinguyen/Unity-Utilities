@@ -179,6 +179,11 @@ namespace TirexGame.Utils.EventCenter
         /// Get statistics about the event system
         /// </summary>
         EventCenterStats GetStats();
+        
+        /// <summary>
+        /// Check if logging is enabled for this EventCenter
+        /// </summary>
+        bool IsLoggingEnabled { get; }
     }
     
     /// <summary>
