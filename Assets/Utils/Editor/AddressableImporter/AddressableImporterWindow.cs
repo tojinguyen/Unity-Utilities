@@ -280,8 +280,18 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             if (config == null)
             {
                 config = CreateInstance<AddressableImporterConfig>();
-                string configPath = "Assets/Utils/Editor/AddressableImporter/AddressableImporterConfig.asset";
-                Directory.CreateDirectory(Path.GetDirectoryName(configPath));
+
+                // Define a robust path in the host project and ensure folders exist
+                if (!AssetDatabase.IsValidFolder("Assets/Editor"))
+                {
+                    AssetDatabase.CreateFolder("Assets", "Editor");
+                }
+                if (!AssetDatabase.IsValidFolder("Assets/Editor/AddressableImporter"))
+                {
+                    AssetDatabase.CreateFolder("Assets/Editor", "AddressableImporter");
+                }
+
+                string configPath = "Assets/Editor/AddressableImporter/AddressableImporterConfig.asset";
                 AssetDatabase.CreateAsset(config, configPath);
                 AssetDatabase.SaveAssets();
                 Debug.Log($"Created new AddressableImporterConfig at {configPath}");
