@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   folderConfigurations:
   - folderPath: Assets/Utils/EventCenter
-    groupName: UIManager
+    groupName: EventCenter
     namingConvention: 0
     customPrefix: 
     includeSubfolders: 1
