@@ -63,6 +63,23 @@ namespace EventCenter.EditorTools
         private GUIStyle _eventLabelStyle;
         private GUIStyle _timeLabelStyle;
         
+        // Color palette for diverse and appealing colors
+        private static readonly Color[] ColorPalette = new Color[]
+        {
+            new Color(0.9f, 0.3f, 0.3f),  // Soft Red
+            new Color(0.3f, 0.7f, 0.9f),  // Sky Blue  
+            new Color(0.4f, 0.8f, 0.4f),  // Fresh Green
+            new Color(0.9f, 0.6f, 0.2f),  // Orange
+            new Color(0.7f, 0.4f, 0.8f),  // Purple
+            new Color(0.9f, 0.8f, 0.3f),  // Yellow
+            new Color(0.5f, 0.8f, 0.8f),  // Cyan
+            new Color(0.8f, 0.5f, 0.6f),  // Pink
+            new Color(0.6f, 0.7f, 0.4f),  // Olive Green
+            new Color(0.7f, 0.6f, 0.9f),  // Lavender
+            new Color(0.9f, 0.7f, 0.5f),  // Peach
+            new Color(0.4f, 0.6f, 0.8f)   // Steel Blue
+        };
+        
         private void InitializeStyles()
         {
             if (_timelineLabelStyle == null)
@@ -526,60 +543,93 @@ namespace EventCenter.EditorTools
             
             const float eventWidth = 120f;
             const float eventHeight = 24f;
-            const float layerOffset = 130f; // Horizontal spacing between layers
+            const float layerOffset = 135f; // Horizontal spacing between layers
             const float timelineAxisX = 60f;
-            const float eventSpacing = 4f; // Minimum vertical spacing between events
+            const float minVerticalSpacing = 6f; // Minimum vertical spacing between events
+            const double timeCollisionThreshold = 0.1; // 100ms threshold for collision detection
             
-            // Group events by time proximity to detect collisions
-            var timeGroups = new List<List<EventRecord>>();
-            const double timeThreshold = 0.05; // Events within 50ms are considered overlapping
+            // Advanced collision detection with both time and space considerations
+            var occupiedRegions = new List<Rect>(); // Track occupied screen space
             
             foreach (var ev in eventsByTime)
             {
-                bool addedToGroup = false;
-                foreach (var group in timeGroups)
+                float baseY = canvas.y + (float)((ev.timeRealtime - minT) * _pixelsPerSecond);
+                int bestLayer = 0;
+                bool foundValidPosition = false;
+                
+                // Try each layer until we find one without collisions
+                for (int layer = 0; layer < 10 && !foundValidPosition; layer++) // Max 10 layers
                 {
-                    if (group.Any(existingEvent => Math.Abs(existingEvent.timeRealtime - ev.timeRealtime) <= timeThreshold))
+                    float x = canvas.x + timelineAxisX + 20f + (layer * layerOffset);
+                    float y = baseY;
+                    
+                    // Check for collisions with existing events in both time and space
+                    bool hasCollision = false;
+                    
+                    // Create proposed rect for this event
+                    var proposedRect = new Rect(x, y, eventWidth, eventHeight);
+                    
+                    // Check collision with all existing events
+                    foreach (var existingRegion in occupiedRegions)
                     {
-                        group.Add(ev);
-                        addedToGroup = true;
-                        break;
+                        // Check both spatial overlap and time proximity
+                        if (proposedRect.Overlaps(existingRegion))
+                        {
+                            hasCollision = true;
+                            break;
+                        }
+                    }
+                    
+                    // Also check time-based collision with events in the same layer
+                    foreach (var existingLayout in layouts.Where(l => l.layer == layer))
+                    {
+                        double timeDiff = Math.Abs(existingLayout.eventRecord.timeRealtime - ev.timeRealtime);
+                        if (timeDiff <= timeCollisionThreshold)
+                        {
+                            hasCollision = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!hasCollision)
+                    {
+                        bestLayer = layer;
+                        foundValidPosition = true;
+                        
+                        // Add some padding to prevent tight packing
+                        var occupiedRect = new Rect(x - 2, y - minVerticalSpacing/2, 
+                                                   eventWidth + 4, eventHeight + minVerticalSpacing);
+                        occupiedRegions.Add(occupiedRect);
                     }
                 }
                 
-                if (!addedToGroup)
+                // If we couldn't find a good position, use the best layer we found
+                if (!foundValidPosition)
                 {
-                    timeGroups.Add(new List<EventRecord> { ev });
+                    bestLayer = layouts.Where(l => Math.Abs(l.eventRecord.timeRealtime - ev.timeRealtime) <= timeCollisionThreshold)
+                                     .Select(l => l.layer)
+                                     .DefaultIfEmpty(-1)
+                                     .Max() + 1;
                 }
-            }
-            
-            // Layout each time group
-            foreach (var group in timeGroups)
-            {
-                // Calculate vertical position for the group (use average time)
-                double avgTime = group.Average(e => e.timeRealtime);
-                float baseY = canvas.y + (float)((avgTime - minT) * _pixelsPerSecond);
                 
-                // Arrange events in layers to avoid overlap
-                for (int i = 0; i < group.Count; i++)
+                float finalX = canvas.x + timelineAxisX + 20f + (bestLayer * layerOffset);
+                float finalY = baseY;
+                
+                var eventRect = new Rect(finalX, finalY, eventWidth, eventHeight);
+                var connectionPoint = new Vector2(canvas.x + timelineAxisX, baseY);
+                
+                layouts.Add(new EventLayout
                 {
-                    var ev = group[i];
-                    int layer = i; // Simple layering: first event in layer 0, second in layer 1, etc.
-                    
-                    float x = canvas.x + timelineAxisX + 20f + (layer * layerOffset);
-                    float y = baseY + (i * eventSpacing) - (group.Count * eventSpacing / 2f); // Center the group vertically
-                    
-                    var eventRect = new Rect(x, y, eventWidth, eventHeight);
-                    var connectionPoint = new Vector2(canvas.x + timelineAxisX, baseY);
-                    
-                    layouts.Add(new EventLayout
-                    {
-                        eventRecord = ev,
-                        rect = eventRect,
-                        layer = layer,
-                        connectionPoint = connectionPoint
-                    });
-                }
+                    eventRecord = ev,
+                    rect = eventRect,
+                    layer = bestLayer,
+                    connectionPoint = connectionPoint
+                });
+                
+                // Add final occupied region
+                var finalOccupiedRect = new Rect(finalX - 2, finalY - minVerticalSpacing/2, 
+                                               eventWidth + 4, eventHeight + minVerticalSpacing);
+                occupiedRegions.Add(finalOccupiedRect);
             }
             
             return layouts;
@@ -920,32 +970,53 @@ namespace EventCenter.EditorTools
 
         private Color GetColorFor(EventRecord ev)
         {
-            // Config-driven colors with fallback hashing
+            // Config-driven colors with fallback to diverse palette
             if (_config != null)
             {
                 var cc = _config.GetChannelColor(ev.category ?? "Uncategorized");
-                if (cc.a > 0f) return cc;
+                if (cc.a > 0f) return EnsureGoodContrast(cc);
             }
             
-            // Generate colors with better contrast and visibility
-            int hash = (ev.category ?? "").GetHashCode();
-            UnityEngine.Random.InitState(hash);
+            // Use category-based color assignment for consistency
+            string category = ev.category ?? "Uncategorized";
+            int categoryHash = category.GetHashCode();
             
-            // Use HSV to generate bright, saturated colors that work well with dark text
-            float hue = UnityEngine.Random.Range(0f, 1f);
-            float saturation = UnityEngine.Random.Range(0.6f, 0.9f); // High saturation for vibrant colors
-            float value = UnityEngine.Random.Range(0.7f, 0.95f);     // High brightness for good contrast with dark text
+            // First try to get a palette color based on category
+            int paletteIndex = Math.Abs(categoryHash) % ColorPalette.Length;
+            Color baseColor = ColorPalette[paletteIndex];
             
-            Color hsvColor = Color.HSVToRGB(hue, saturation, value);
+            // Add some variation based on event name to avoid identical colors
+            string eventName = ev.name ?? "";
+            int eventHash = eventName.GetHashCode();
+            UnityEngine.Random.InitState(eventHash);
             
+            // Slight variation in saturation and brightness
+            float satVariation = UnityEngine.Random.Range(-0.1f, 0.1f);
+            float valueVariation = UnityEngine.Random.Range(-0.05f, 0.1f);
+            
+            Color.RGBToHSV(baseColor, out float h, out float s, out float v);
+            s = Mathf.Clamp01(s + satVariation);
+            v = Mathf.Clamp01(v + valueVariation);
+            
+            Color finalColor = Color.HSVToRGB(h, s, v);
+            return EnsureGoodContrast(finalColor);
+        }
+        
+        private Color EnsureGoodContrast(Color color)
+        {
             // Ensure minimum brightness for text readability
-            float brightness = hsvColor.r * 0.299f + hsvColor.g * 0.587f + hsvColor.b * 0.114f;
+            float brightness = color.r * 0.299f + color.g * 0.587f + color.b * 0.114f;
             if (brightness < 0.6f)
             {
-                hsvColor = Color.Lerp(hsvColor, Color.white, 0.3f);
+                color = Color.Lerp(color, Color.white, 0.3f);
             }
             
-            return hsvColor;
+            // Ensure the color is vibrant enough
+            Color.RGBToHSV(color, out float h, out float s, out float v);
+            if (s < 0.4f) s = 0.4f; // Minimum saturation
+            if (v < 0.7f) v = 0.7f; // Minimum brightness
+            
+            return Color.HSVToRGB(h, s, v);
         }
 
         private void ExportJson()
