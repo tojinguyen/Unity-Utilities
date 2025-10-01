@@ -287,6 +287,11 @@ namespace TirexGame.Utils.EventCenter
         }
         
         /// <summary>
+        /// Check if logging is enabled for this EventCenter
+        /// </summary>
+        public bool IsLoggingEnabled => enableLogging;
+        
+        /// <summary>
         /// Publish a struct event to the event system
         /// </summary>
         /// <typeparam name="T">Type of struct payload</typeparam>
