@@ -33,7 +33,7 @@ namespace TirexGame.Utils.Data.Editor
         private DataManagerConfig _config;
         private string _dataPath;
         
-        [MenuItem("Tools/TirexGame/Data Manager")]
+        [MenuItem("TirexGame/Data/Data Manager")]
         public static void ShowWindow()
         {
             var window = GetWindow<DataManagerWindow>("Data Manager");
