@@ -19,14 +19,9 @@ MonoBehaviour:
     customPrefix: 
     includeSubfolders: 1
     groupSubfoldersSeparately: 1
-    fileExtensions:
-    - .png
-    - .jpg
-    - .jpeg
-    - .tga
-    - .psd
-    - .prefab
-    - .asset
+    excludedFileExtensions:
+    - .cs
+    - .md
     isEnabled: 1
   autoImportOnAssetChange: 1
   logImportResults: 1

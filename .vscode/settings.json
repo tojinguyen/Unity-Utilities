@@ -8,7 +8,8 @@
         "**/Logs": true,
         "**/ProjectSettings": true,
         "**/UserSettings": true,
-        "**/IndexingPerformanceReport": true
+        "**/IndexingPerformanceReport": true,
+        "**/*.csproj": true,
     },
     "search.exclude": {
         "**/*.meta": true
