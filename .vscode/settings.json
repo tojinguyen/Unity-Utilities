@@ -1,4 +1,17 @@
 {
     "dotnet.preferCSharpExtension": true,
-    "dotnet.defaultSolution": "Unity-Utilities.sln"
+    "dotnet.defaultSolution": "Unity-Utilities.sln",
+    "files.exclude": {
+        "**/*.meta": true,
+        "**/Library": true,
+        "**/Temp": true,
+        "**/Logs": true,
+        "**/ProjectSettings": true,
+        "**/UserSettings": true,
+        "**/IndexingPerformanceReport": true,
+        "**/*.csproj": true,
+    },
+    "search.exclude": {
+        "**/*.meta": true
+    }
 }
