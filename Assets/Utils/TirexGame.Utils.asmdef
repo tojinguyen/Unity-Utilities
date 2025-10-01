@@ -19,7 +19,8 @@
         "DOTweenPro.Scripts",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
-        "Unity.Notifications.Android"
+        "Unity.Notifications.Android",
+        "Unity.Addressables.Editor"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
