@@ -15,6 +15,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         private Vector2 scrollPosition;
         private bool showAdvancedSettings = false;
         private int m_IndexToRemove = -1;
+        private string m_SearchQuery = "";
 
         [MenuItem("TirexGame/Editor/Addressable Importer")]
         public static void ShowWindow()
@@ -69,10 +70,23 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField("Folder Configurations", EditorStyles.boldLabel);
 
+            m_SearchQuery = EditorGUILayout.TextField("Search", m_SearchQuery);
+            EditorGUILayout.Space();
+
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
 
             for (int i = 0; i < config.FolderConfigurations.Count; i++)
             {
+                var folderData = config.FolderConfigurations[i];
+
+                // Filtering logic
+                if (!string.IsNullOrEmpty(m_SearchQuery) &&
+                    !folderData.GroupName.ToLowerInvariant().Contains(m_SearchQuery.ToLowerInvariant()) &&
+                    !folderData.FolderPath.ToLowerInvariant().Contains(m_SearchQuery.ToLowerInvariant()))
+                {
+                    continue; // Skip if it doesn't match
+                }
+
                 DrawFolderConfiguration(i);
             }
 
