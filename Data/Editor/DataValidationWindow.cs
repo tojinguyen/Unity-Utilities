@@ -37,7 +37,7 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        [MenuItem("Tools/TirexGame/Data Validation")]
+        [MenuItem("TirexGame/Data/Data Validation")]
         public static void ShowWindow()
         {
             var window = GetWindow<DataValidationWindow>("Data Validation");

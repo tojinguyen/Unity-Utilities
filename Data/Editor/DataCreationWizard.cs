@@ -39,7 +39,7 @@ namespace TirexGame.Utils.Data.Editor
             public string description = "";
         }
         
-        [MenuItem("Tools/TirexGame/Data Creation Wizard")]
+        [MenuItem("TirexGame/Data/Data Creation Wizard")]
         public static void CreateWizard()
         {
             var wizard = DisplayWizard<DataCreationWizard>("Data Model Creation Wizard", "Create", "Cancel");
