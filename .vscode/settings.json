@@ -10,6 +10,8 @@
         "**/UserSettings": true,
         "**/IndexingPerformanceReport": true,
         "**/*.csproj": true,
+        "**/*.sln*": true,
+        "**/obj": true,
     },
     "search.exclude": {
         "**/*.meta": true
