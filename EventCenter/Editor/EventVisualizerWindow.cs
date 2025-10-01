@@ -49,6 +49,55 @@ namespace EventCenter.EditorTools
         private bool _showBreakpoints = true;
         private bool _showChannels = true;
 
+        // Vertical Timeline Layout Data
+        private struct EventLayout
+        {
+            public EventRecord eventRecord;
+            public Rect rect;
+            public int layer; // 0 = closest to timeline axis, 1+ = further right
+            public Vector2 connectionPoint; // Point on timeline axis for connection line
+        }
+
+        // Custom styles for better contrast
+        private GUIStyle _timelineLabelStyle;
+        private GUIStyle _eventLabelStyle;
+        private GUIStyle _timeLabelStyle;
+        
+        private void InitializeStyles()
+        {
+            if (_timelineLabelStyle == null)
+            {
+                _timelineLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(0.9f, 0.9f, 0.9f, 1f) }, // Light gray for good contrast
+                    fontSize = 10,
+                    fontStyle = FontStyle.Normal
+                };
+            }
+            
+            if (_eventLabelStyle == null)
+            {
+                _eventLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = Color.black }, // Black text for event labels
+                    fontSize = 10,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleLeft
+                };
+            }
+            
+            if (_timeLabelStyle == null)
+            {
+                _timeLabelStyle = new GUIStyle(EditorStyles.miniLabel)
+                {
+                    normal = { textColor = new Color(1f, 1f, 1f, 0.9f) }, // High contrast white
+                    fontSize = 9,
+                    fontStyle = FontStyle.Normal,
+                    alignment = TextAnchor.MiddleLeft
+                };
+            }
+        }
+
         [MenuItem("TirexGame/Event Center/Event Visualizer")] 
         public static void Open()
         {
@@ -354,115 +403,46 @@ namespace EventCenter.EditorTools
                 var events = ApplyFilters(EventCapture.Enumerate());
                 var eventsList = events?.Where(e => e != null).ToList() ?? new List<EventRecord>();
             
-            // Always start scroll view first
-            _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
-            
-            if (!eventsList.Any())
-            {
-                GUILayout.FlexibleSpace();
-                GUILayout.Label("No events.", EditorStyles.centeredGreyMiniLabel);
-                GUILayout.FlexibleSpace();
-                GUILayout.EndScrollView();
-                return;
-            }
+                // Always start scroll view first
+                _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
+                
+                if (!eventsList.Any())
+                {
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label("No events captured", EditorStyles.centeredGreyMiniLabel);
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndScrollView();
+                    return;
+                }
 
-            // Compute time bounds
-            double minT = eventsList.Count > 0 ? eventsList.Min(e => e?.timeRealtime ?? 0) : 0;
-            double maxT = eventsList.Count > 0 ? eventsList.Max(e => e?.timeRealtime ?? 0) : 10;
-            if (_viewEndTime <= _viewStartTime)
-            {
+                // Calculate time bounds
+                double minT = eventsList.Min(e => e.timeRealtime);
+                double maxT = eventsList.Max(e => e.timeRealtime);
+                double span = Math.Max(0.1, maxT - minT);
                 _viewStartTime = minT;
-                _viewEndTime = minT + 10.0;
-            }
+                _viewEndTime = maxT;
 
-            // Scrollable timeline canvas
-            float totalWidth = Mathf.Max((float)((maxT - minT) * _pixelsPerSecond) + 200f, rect.width);
-            var canvas = GUILayoutUtility.GetRect(totalWidth, rect.height - 8f);
-            DrawTimeGrid(canvas, minT, maxT);
-
-            // Layout channels vertically
-            var rows = eventsList.GroupBy(e => e.category ?? "Uncategorized").OrderBy(g => g.Key).ToList();
-            float rowHeight = 24f;
-            float rowGap = 6f;
-            float y = canvas.y + 24f;
-
-            foreach (var row in rows)
-            {
-                if (_visibleChannels.TryGetValue(row.Key, out var visible) && !visible) continue;
-                var labelRect = new Rect(canvas.x + 4, y, 200, rowHeight);
-                EditorGUI.LabelField(labelRect, row.Key, EditorStyles.miniBoldLabel);
-
-                foreach (var ev in row.Where(e => e != null))
+                // Vertical timeline: Height is based on time span
+                float totalTimelineHeight = (float)(span * _pixelsPerSecond) + 200f; // Extra padding
+                
+                var timelineRect = GUILayoutUtility.GetRect(rect.width, totalTimelineHeight);
+                
+                // Draw vertical timeline
+                DrawVerticalTimelineGrid(timelineRect, minT, maxT);
+                
+                // Process events with collision detection and layout
+                var eventLayouts = CalculateEventLayout(eventsList, timelineRect, minT, maxT);
+                
+                // Draw events with connection lines
+                DrawEventsWithConnections(eventLayouts, timelineRect);
+                
+                // Draw playhead in replay mode
+                if (_replayMode && eventsList.Any())
                 {
-                    float x = canvas.x + 200 + (float)((ev.timeRealtime - minT) * _pixelsPerSecond);
-                    var r = new Rect(x, y, 120, rowHeight);
-                    ev.lastDrawRect = r;
-                    ev.cachedColor = GetColorFor(ev);
-                    
-                    // Highlight watch list events
-                    bool isWatched = _watchList.Any(w => !string.IsNullOrEmpty(w) && !string.IsNullOrEmpty(ev.name) && 
-                                                         ev.name.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
-                    
-                    Color bgColor = new Color(ev.cachedColor.r, ev.cachedColor.g, ev.cachedColor.b, 0.85f);
-                    if (isWatched)
-                    {
-                        bgColor = Color.Lerp(bgColor, Color.red, 0.3f);
-                    }
-                    
-                    EditorGUI.DrawRect(r, bgColor);
-                    var label = new GUIContent(ev.name);
-                    var style = EditorStyles.whiteMiniLabel;
-                    var labelRect2 = new Rect(r.x + 4, r.y + 4, r.width - 8, r.height - 8);
-                    Color old = GUI.color;
-                    if (_selected == ev) GUI.color = Color.yellow;
-                    GUI.Label(labelRect2, label, style);
-                    GUI.color = old;
-
-                    // Selection
-                    if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
-                    {
-                        _selected = ev;
-                        Repaint();
-                        Event.current.Use();
-                    }
-
-                    // Draw link lines to listeners when selected
-                    if (_selected == ev && ev.listeners != null && ev.listeners.Count > 0)
-                    {
-                        DrawListenerLinks(r, ev.listeners, y + rowHeight + 3);
-                    }
+                    DrawVerticalPlayhead(timelineRect, minT, maxT);
                 }
 
-                y += rowHeight + rowGap;
-            }
-
-            // Draw playhead in replay mode
-            if (_replayMode && eventsList.Any())
-            {
-                float playheadX = canvas.x + 200 + (float)((_replayPlayhead - minT) * _pixelsPerSecond);
-                if (playheadX >= canvas.x + 200 && playheadX <= canvas.xMax)
-                {
-                    Handles.color = Color.red;
-                    Handles.DrawLine(new Vector2(playheadX, canvas.y), new Vector2(playheadX, canvas.yMax));
-                    
-                    // Scrubbing interaction
-                    var playheadRect = new Rect(playheadX - 5, canvas.y, 10, canvas.height);
-                    if (Event.current.type == EventType.MouseDown && playheadRect.Contains(Event.current.mousePosition))
-                    {
-                        _replayPlaying = false;
-                        Event.current.Use();
-                    }
-                    if (Event.current.type == EventType.MouseDrag && Vector2.Distance(Event.current.mousePosition, new Vector2(playheadX, Event.current.mousePosition.y)) < 20)
-                    {
-                        _replayPlayhead = minT + (Event.current.mousePosition.x - canvas.x - 200) / _pixelsPerSecond;
-                        _replayPlayhead = Math.Max(minT, Math.Min(maxT, _replayPlayhead));
-                        Repaint();
-                        Event.current.Use();
-                    }
-                }
-            }
-
-            GUILayout.EndScrollView();
+                GUILayout.EndScrollView();
             }
             catch (System.Exception ex)
             {
@@ -495,6 +475,249 @@ namespace EventCenter.EditorTools
                 Handles.DrawLine(new Vector2(x, canvas.y), new Vector2(x, canvas.yMax));
                 var rect = new Rect(x + 2, canvas.y, 100, 18);
                 GUI.Label(rect, t.ToString("F2") + "s", EditorStyles.miniLabel);
+            }
+        }
+
+        // ✨ Vertical Timeline Methods - New UX Implementation ✨
+        
+        private void DrawVerticalTimelineGrid(Rect canvas, double minT, double maxT)
+        {
+            InitializeStyles();
+            
+            // Background - darker for better contrast
+            EditorGUI.DrawRect(canvas, new Color(0.08f, 0.08f, 0.08f, 1f));
+            
+            // Timeline axis position (left side of canvas)
+            float timelineAxisX = canvas.x + 60f;
+            
+            // Draw main vertical timeline axis
+            Handles.color = new Color(1f, 1f, 1f, 0.9f); // Brighter axis
+            Handles.DrawLine(new Vector2(timelineAxisX, canvas.y), new Vector2(timelineAxisX, canvas.yMax));
+            
+            // Draw time markers along the axis
+            Handles.color = new Color(1, 1, 1, 0.4f); // Slightly brighter markers
+            float secondsStep = Mathf.Max(0.1f, 1f * (100f / _pixelsPerSecond));
+            double start = Math.Floor(minT / secondsStep) * secondsStep;
+            
+            for (double t = start; t < maxT + 2 * secondsStep; t += secondsStep)
+            {
+                float y = canvas.y + (float)((t - minT) * _pixelsPerSecond);
+                if (y >= canvas.y && y <= canvas.yMax)
+                {
+                    // Time marker tick - longer for better visibility
+                    Handles.DrawLine(new Vector2(timelineAxisX - 8, y), new Vector2(timelineAxisX + 8, y));
+                    
+                    // Time label with better contrast
+                    var labelRect = new Rect(canvas.x + 2, y - 8, 55, 16);
+                    GUI.Label(labelRect, t.ToString("F2") + "s", _timelineLabelStyle);
+                    
+                    // Optional horizontal grid lines
+                    Handles.color = new Color(1, 1, 1, 0.08f); // Subtle grid lines
+                    Handles.DrawLine(new Vector2(timelineAxisX, y), new Vector2(canvas.xMax, y));
+                    Handles.color = new Color(1, 1, 1, 0.4f);
+                }
+            }
+        }
+        
+        private List<EventLayout> CalculateEventLayout(List<EventRecord> events, Rect canvas, double minT, double maxT)
+        {
+            var layouts = new List<EventLayout>();
+            var eventsByTime = events.OrderBy(e => e.timeRealtime).ToList();
+            
+            const float eventWidth = 120f;
+            const float eventHeight = 24f;
+            const float layerOffset = 130f; // Horizontal spacing between layers
+            const float timelineAxisX = 60f;
+            const float eventSpacing = 4f; // Minimum vertical spacing between events
+            
+            // Group events by time proximity to detect collisions
+            var timeGroups = new List<List<EventRecord>>();
+            const double timeThreshold = 0.05; // Events within 50ms are considered overlapping
+            
+            foreach (var ev in eventsByTime)
+            {
+                bool addedToGroup = false;
+                foreach (var group in timeGroups)
+                {
+                    if (group.Any(existingEvent => Math.Abs(existingEvent.timeRealtime - ev.timeRealtime) <= timeThreshold))
+                    {
+                        group.Add(ev);
+                        addedToGroup = true;
+                        break;
+                    }
+                }
+                
+                if (!addedToGroup)
+                {
+                    timeGroups.Add(new List<EventRecord> { ev });
+                }
+            }
+            
+            // Layout each time group
+            foreach (var group in timeGroups)
+            {
+                // Calculate vertical position for the group (use average time)
+                double avgTime = group.Average(e => e.timeRealtime);
+                float baseY = canvas.y + (float)((avgTime - minT) * _pixelsPerSecond);
+                
+                // Arrange events in layers to avoid overlap
+                for (int i = 0; i < group.Count; i++)
+                {
+                    var ev = group[i];
+                    int layer = i; // Simple layering: first event in layer 0, second in layer 1, etc.
+                    
+                    float x = canvas.x + timelineAxisX + 20f + (layer * layerOffset);
+                    float y = baseY + (i * eventSpacing) - (group.Count * eventSpacing / 2f); // Center the group vertically
+                    
+                    var eventRect = new Rect(x, y, eventWidth, eventHeight);
+                    var connectionPoint = new Vector2(canvas.x + timelineAxisX, baseY);
+                    
+                    layouts.Add(new EventLayout
+                    {
+                        eventRecord = ev,
+                        rect = eventRect,
+                        layer = layer,
+                        connectionPoint = connectionPoint
+                    });
+                }
+            }
+            
+            return layouts;
+        }
+        
+        private void DrawEventsWithConnections(List<EventLayout> eventLayouts, Rect canvas)
+        {
+            foreach (var layout in eventLayouts)
+            {
+                var ev = layout.eventRecord;
+                var rect = layout.rect;
+                
+                // Skip if event is filtered out by channel visibility
+                if (_visibleChannels.TryGetValue(ev.category ?? "Uncategorized", out bool visible) && !visible)
+                    continue;
+                
+                // Cache color
+                if (ev.cachedColor == Color.white)
+                    ev.cachedColor = GetColorFor(ev);
+                
+                // Check if watched
+                bool isWatched = _watchList.Any(w => !string.IsNullOrEmpty(w) && !string.IsNullOrEmpty(ev.name) && 
+                                                     ev.name.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
+                
+                // Draw connection line (dotted line from timeline axis to event)
+                DrawConnectionLine(layout.connectionPoint, new Vector2(rect.x, rect.center.y), ev.cachedColor);
+                
+                // Draw event box with better colors
+                Color bgColor = ev.cachedColor;
+                // Ensure background is bright enough for dark text
+                float brightness = bgColor.r * 0.299f + bgColor.g * 0.587f + bgColor.b * 0.114f;
+                if (brightness < 0.5f)
+                {
+                    // Lighten dark colors for better contrast
+                    bgColor = Color.Lerp(bgColor, Color.white, 0.4f);
+                }
+                bgColor.a = 0.9f;
+                
+                if (isWatched)
+                {
+                    bgColor = Color.Lerp(bgColor, new Color(1f, 0.6f, 0.6f), 0.4f); // Light red for watched
+                }
+                
+                EditorGUI.DrawRect(rect, bgColor);
+                
+                // Draw border for selected events
+                if (_selected == ev)
+                {
+                    var borderColor = new Color(1f, 0.8f, 0f, 1f); // Golden border
+                    EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2), borderColor);
+                    EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 2, rect.width, 2), borderColor);
+                    EditorGUI.DrawRect(new Rect(rect.x, rect.y, 2, rect.height), borderColor);
+                    EditorGUI.DrawRect(new Rect(rect.xMax - 2, rect.y, 2, rect.height), borderColor);
+                }
+                
+                // Draw event label with high contrast
+                var labelRect = new Rect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8);
+                GUI.Label(labelRect, ev.name, _eventLabelStyle);
+                
+                // Draw time label on connection point with high contrast
+                var timeLabel = ev.timeRealtime.ToString("F2") + "s";
+                var timeLabelRect = new Rect(layout.connectionPoint.x + 10, layout.connectionPoint.y - 8, 60, 16);
+                GUI.Label(timeLabelRect, timeLabel, _timeLabelStyle);
+                
+                // Handle selection
+                if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
+                {
+                    _selected = ev;
+                    Repaint();
+                    Event.current.Use();
+                }
+                
+                // Update cached rect for other systems
+                ev.lastDrawRect = rect;
+            }
+        }
+        
+        private void DrawConnectionLine(Vector2 timelinePoint, Vector2 eventPoint, Color color)
+        {
+            // Use brighter, more visible color for connection lines
+            Color lineColor = color;
+            float brightness = lineColor.r * 0.299f + lineColor.g * 0.587f + lineColor.b * 0.114f;
+            if (brightness < 0.3f)
+            {
+                // Brighten very dark colors
+                lineColor = Color.Lerp(lineColor, Color.white, 0.6f);
+            }
+            lineColor.a = 0.8f;
+            Handles.color = lineColor;
+            
+            // Create dotted line effect with better visibility
+            Vector2 direction = eventPoint - timelinePoint;
+            float distance = direction.magnitude;
+            Vector2 normalizedDir = direction.normalized;
+            
+            const float dashLength = 5f; // Longer dashes
+            const float gapLength = 2f;  // Shorter gaps
+            const float totalDashUnit = dashLength + gapLength;
+            
+            float currentDistance = 0f;
+            while (currentDistance < distance)
+            {
+                Vector2 dashStart = timelinePoint + normalizedDir * currentDistance;
+                Vector2 dashEnd = timelinePoint + normalizedDir * Mathf.Min(currentDistance + dashLength, distance);
+                
+                Handles.DrawAAPolyLine(2f, dashStart, dashEnd); // Anti-aliased thicker lines
+                currentDistance += totalDashUnit;
+            }
+        }
+        
+        private void DrawVerticalPlayhead(Rect canvas, double minT, double maxT)
+        {
+            float playheadY = canvas.y + (float)((_replayPlayhead - minT) * _pixelsPerSecond);
+            if (playheadY >= canvas.y && playheadY <= canvas.yMax)
+            {
+                // Draw horizontal playhead line
+                Handles.color = Color.red;
+                Handles.DrawLine(new Vector2(canvas.x, playheadY), new Vector2(canvas.xMax, playheadY));
+                
+                // Draw playhead indicator on timeline axis
+                float timelineAxisX = canvas.x + 60f;
+                var playheadRect = new Rect(timelineAxisX - 8, playheadY - 4, 16, 8);
+                EditorGUI.DrawRect(playheadRect, Color.red);
+                
+                // Scrubbing interaction
+                var interactionRect = new Rect(canvas.x, playheadY - 5, canvas.width, 10);
+                if (Event.current.type == EventType.MouseDown && interactionRect.Contains(Event.current.mousePosition))
+                {
+                    _replayPlaying = false;
+                    Event.current.Use();
+                }
+                if (Event.current.type == EventType.MouseDrag && Vector2.Distance(Event.current.mousePosition, new Vector2(Event.current.mousePosition.x, playheadY)) < 20)
+                {
+                    _replayPlayhead = minT + (Event.current.mousePosition.y - canvas.y) / _pixelsPerSecond;
+                    _replayPlayhead = Math.Max(minT, Math.Min(maxT, _replayPlayhead));
+                    Repaint();
+                    Event.current.Use();
+                }
             }
         }
 
@@ -703,9 +926,26 @@ namespace EventCenter.EditorTools
                 var cc = _config.GetChannelColor(ev.category ?? "Uncategorized");
                 if (cc.a > 0f) return cc;
             }
+            
+            // Generate colors with better contrast and visibility
             int hash = (ev.category ?? "").GetHashCode();
             UnityEngine.Random.InitState(hash);
-            return new Color(UnityEngine.Random.Range(0.2f,0.9f), UnityEngine.Random.Range(0.2f,0.9f), UnityEngine.Random.Range(0.2f,0.9f));
+            
+            // Use HSV to generate bright, saturated colors that work well with dark text
+            float hue = UnityEngine.Random.Range(0f, 1f);
+            float saturation = UnityEngine.Random.Range(0.6f, 0.9f); // High saturation for vibrant colors
+            float value = UnityEngine.Random.Range(0.7f, 0.95f);     // High brightness for good contrast with dark text
+            
+            Color hsvColor = Color.HSVToRGB(hue, saturation, value);
+            
+            // Ensure minimum brightness for text readability
+            float brightness = hsvColor.r * 0.299f + hsvColor.g * 0.587f + hsvColor.b * 0.114f;
+            if (brightness < 0.6f)
+            {
+                hsvColor = Color.Lerp(hsvColor, Color.white, 0.3f);
+            }
+            
+            return hsvColor;
         }
 
         private void ExportJson()
