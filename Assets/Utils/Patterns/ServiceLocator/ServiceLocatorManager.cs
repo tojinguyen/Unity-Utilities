@@ -7,6 +7,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
     /// Provides a global access point for service resolution with Unity lifecycle support.
     /// This implementation follows the Singleton pattern and integrates with Unity's component system.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class ServiceLocatorManager : MonoSingleton<ServiceLocatorManager>
     {
         [Header("Configuration")]
