@@ -13,6 +13,16 @@ namespace TirexGame.Utils.EventCenter
     {
         #region Fields
         
+        // Thread safety lock
+        private readonly object _lock = new object();
+        
+        // Dispatch state tracking
+        private bool _isDispatching = false;
+        private int _dispatchDepth = 0;
+        
+        // Deferred modification queues
+        private readonly Queue<System.Action> _deferredOperations = new Queue<System.Action>();
+        
         // Event type to listeners mapping (for struct payloads)
         private readonly Dictionary<Type, List<ListenerEntry>> _structListeners 
             = new Dictionary<Type, List<ListenerEntry>>();
@@ -33,9 +43,49 @@ namespace TirexGame.Utils.EventCenter
         private int _totalListeners;
         private float _lastDispatchTime;
         
-        private readonly bool _enableLogging;
+        #endregion
+        
+        #region Deferred Operations
+        
+        /// <summary>
+        /// Execute all deferred operations accumulated during dispatch
+        /// </summary>
+        private void ProcessDeferredOperations()
+        {
+            while (_deferredOperations.Count > 0)
+            {
+                var operation = _deferredOperations.Dequeue();
+                try
+                {
+                    operation.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error processing deferred operation: {ex.Message}");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Execute operation immediately or defer if dispatching
+        /// </summary>
+        private void ExecuteOrDefer(System.Action operation)
+        {
+            if (_isDispatching)
+            {
+                _deferredOperations.Enqueue(operation);
+            }
+            else
+            {
+                operation.Invoke();
+            }
+        }
         
         #endregion
+        
+        #region Constructors
+        
+        private readonly bool _enableLogging;
         
         #region Properties
         
@@ -80,25 +130,31 @@ namespace TirexGame.Utils.EventCenter
         {
             if (listener == null) return;
             
-            var eventType = typeof(T);
-            if (!_structListeners.TryGetValue(eventType, out var listenerList))
+            lock (_lock)
             {
-                listenerList = new List<ListenerEntry>();
-                _structListeners[eventType] = listenerList;
+                ExecuteOrDefer(() =>
+                {
+                    var eventType = typeof(T);
+                    if (!_structListeners.TryGetValue(eventType, out var listenerList))
+                    {
+                        listenerList = new List<ListenerEntry>();
+                        _structListeners[eventType] = listenerList;
+                    }
+                    
+                    // Check if already subscribed
+                    if (listenerList.Any(entry => entry.Listener == listener))
+                    {
+                        return;
+                    }
+                    
+                    // Add and sort by priority
+                    var entry = new ListenerEntry(listener);
+                    listenerList.Add(entry);
+                    listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+                    
+                    _totalListeners++;
+                });
             }
-            
-            // Check if already subscribed
-            if (listenerList.Any(entry => entry.Listener == listener))
-            {
-                return;
-            }
-            
-            // Add and sort by priority
-            var entry = new ListenerEntry(listener);
-            listenerList.Add(entry);
-            listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-            
-            _totalListeners++;
         }
         
         /// <summary>
@@ -116,24 +172,30 @@ namespace TirexGame.Utils.EventCenter
                 return;
             }
             
-            if (!_legacyListeners.TryGetValue(eventType, out var listenerList))
+            lock (_lock)
             {
-                listenerList = new List<ListenerEntry>();
-                _legacyListeners[eventType] = listenerList;
+                ExecuteOrDefer(() =>
+                {
+                    if (!_legacyListeners.TryGetValue(eventType, out var listenerList))
+                    {
+                        listenerList = new List<ListenerEntry>();
+                        _legacyListeners[eventType] = listenerList;
+                    }
+                    
+                    // Check if already subscribed
+                    if (listenerList.Any(entry => entry.Listener == listener))
+                    {
+                        return;
+                    }
+                    
+                    // Add and sort by priority
+                    var entry = new ListenerEntry(listener);
+                    listenerList.Add(entry);
+                    listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+                    
+                    _totalListeners++;
+                });
             }
-            
-            // Check if already subscribed
-            if (listenerList.Any(entry => entry.Listener == listener))
-            {
-                return;
-            }
-            
-            // Add and sort by priority
-            var entry = new ListenerEntry(listener);
-            listenerList.Add(entry);
-            listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
-            
-            _totalListeners++;
         }
         
         /// <summary>
@@ -145,19 +207,25 @@ namespace TirexGame.Utils.EventCenter
         {
             if (listener == null) return;
             
-            var eventType = typeof(T);
-            if (_structListeners.TryGetValue(eventType, out var listenerList))
+            lock (_lock)
             {
-                var initialCount = listenerList.Count;
-                listenerList.RemoveAll(entry => entry.Listener == listener);
-                
-                var removedCount = initialCount - listenerList.Count;
-                _totalListeners -= removedCount;
-                
-                if (listenerList.Count == 0)
+                ExecuteOrDefer(() =>
                 {
-                    _structListeners.Remove(eventType);
-                }
+                    var eventType = typeof(T);
+                    if (_structListeners.TryGetValue(eventType, out var listenerList))
+                    {
+                        var initialCount = listenerList.Count;
+                        listenerList.RemoveAll(entry => entry.Listener == listener);
+                        
+                        var removedCount = initialCount - listenerList.Count;
+                        _totalListeners -= removedCount;
+                        
+                        if (listenerList.Count == 0)
+                        {
+                            _structListeners.Remove(eventType);
+                        }
+                    }
+                });
             }
         }
         
@@ -170,18 +238,24 @@ namespace TirexGame.Utils.EventCenter
         {
             if (eventType == null || listener == null) return;
             
-            if (_legacyListeners.TryGetValue(eventType, out var listenerList))
+            lock (_lock)
             {
-                var initialCount = listenerList.Count;
-                listenerList.RemoveAll(entry => entry.Listener == listener);
-                
-                var removedCount = initialCount - listenerList.Count;
-                _totalListeners -= removedCount;
-                
-                if (listenerList.Count == 0)
+                ExecuteOrDefer(() =>
                 {
-                    _legacyListeners.Remove(eventType);
-                }
+                    if (_legacyListeners.TryGetValue(eventType, out var listenerList))
+                    {
+                        var initialCount = listenerList.Count;
+                        listenerList.RemoveAll(entry => entry.Listener == listener);
+                        
+                        var removedCount = initialCount - listenerList.Count;
+                        _totalListeners -= removedCount;
+                        
+                        if (listenerList.Count == 0)
+                        {
+                            _legacyListeners.Remove(eventType);
+                        }
+                    }
+                });
             }
         }
         
@@ -253,33 +327,57 @@ namespace TirexGame.Utils.EventCenter
             var eventType = typeof(T);
             var listenersNotified = 0;
             
-            _tempListeners.Clear();
+            List<ListenerEntry> listenersToNotify = new List<ListenerEntry>();
             
-            // Collect all relevant listeners for this struct type
-            if (_structListeners.TryGetValue(eventType, out var listenerList))
+            // Set dispatch state and collect listeners safely
+            lock (_lock)
             {
-                foreach (var entry in listenerList)
+                _isDispatching = true;
+                _dispatchDepth++;
+                
+                if (_structListeners.TryGetValue(eventType, out var listenerList))
                 {
-                    if (entry.IsActive)
+                    // Direct iteration - no ToArray() needed since modifications are deferred
+                    foreach (var entry in listenerList)
                     {
-                        _tempListeners.Add(entry);
+                        if (entry.IsActive)
+                        {
+                            listenersToNotify.Add(entry);
+                        }
                     }
                 }
             }
             
             // Sort by priority
-            _tempListeners.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+            listenersToNotify.Sort((a, b) => b.Priority.CompareTo(a.Priority));
             
-            // Dispatch to listeners
-            foreach (var entry in _tempListeners)
+            // Dispatch to listeners (outside lock for better performance)
+            foreach (var entry in listenersToNotify)
             {
-                if (entry.Listener is IEventListener<T> typedListener)
+                try
                 {
-                    if (typedListener.HandleEvent(payload))
+                    if (entry.Listener is IEventListener<T> typedListener)
                     {
-                        listenersNotified++;
+                        if (typedListener.HandleEvent(payload))
+                        {
+                            listenersNotified++;
+                        }
                     }
-                    listenersNotified++;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
+                }
+            }
+            
+            // Clean up dispatch state and process deferred operations
+            lock (_lock)
+            {
+                _dispatchDepth--;
+                if (_dispatchDepth == 0)
+                {
+                    _isDispatching = false;
+                    ProcessDeferredOperations();
                 }
             }
             
@@ -308,38 +406,63 @@ namespace TirexGame.Utils.EventCenter
             // Get all types in the inheritance hierarchy
             var typeHierarchy = GetTypeHierarchy(eventType);
             
-            _tempListeners.Clear();
+            List<ListenerEntry> listenersToNotify = new List<ListenerEntry>();
             
-            // Collect all relevant listeners
-            foreach (var type in typeHierarchy)
+            // Collect all relevant listeners with dispatch state tracking
+            lock (_lock)
             {
-                if (_legacyListeners.TryGetValue(type, out var listenerList))
+                _isDispatching = true;
+                _dispatchDepth++;
+                
+                foreach (var type in typeHierarchy)
                 {
-                    foreach (var entry in listenerList)
+                    if (_legacyListeners.TryGetValue(type, out var listenerList))
                     {
-                        if (entry.IsActive && !_tempListeners.Contains(entry))
+                        // Direct iteration - no ToArray() needed since modifications are deferred
+                        foreach (var entry in listenerList)
                         {
-                            _tempListeners.Add(entry);
+                            if (entry.IsActive && !listenersToNotify.Contains(entry))
+                            {
+                                listenersToNotify.Add(entry);
+                            }
                         }
                     }
                 }
             }
             
             // Sort by priority
-            _tempListeners.Sort((a, b) => b.Priority.CompareTo(a.Priority));
+            listenersToNotify.Sort((a, b) => b.Priority.CompareTo(a.Priority));
             
-            // Dispatch to listeners
-            foreach (var entry in _tempListeners)
+            // Dispatch to listeners (outside lock for better performance)
+            foreach (var entry in listenersToNotify)
             {
-                if (entry.Listener.HandleEvent(eventData))
+                try
                 {
-                    listenersNotified++;
+                    if (entry.Listener.HandleEvent(eventData))
+                    {
+                        listenersNotified++;
+                    }
+                    
+                    // Stop if event is marked as handled and should stop propagation
+                    if (eventData.IsHandled)
+                    {
+                        break;
+                    }
                 }
-                
-                // Stop if event is marked as handled and should stop propagation
-                if (eventData.IsHandled)
+                catch (Exception ex)
                 {
-                    break;
+                    Debug.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
+                }
+            }
+            
+            // Clean up dispatch state and process deferred operations
+            lock (_lock)
+            {
+                _dispatchDepth--;
+                if (_dispatchDepth == 0)
+                {
+                    _isDispatching = false;
+                    ProcessDeferredOperations();
                 }
             }
             
@@ -560,4 +683,6 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public float AverageListenersPerType => TotalEventTypesCount > 0 ? (float)TotalListeners / TotalEventTypesCount : 0f;
     }
+    
+    #endregion
 }
