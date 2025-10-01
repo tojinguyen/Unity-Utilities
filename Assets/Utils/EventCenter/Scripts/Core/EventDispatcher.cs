@@ -90,7 +90,6 @@ namespace TirexGame.Utils.EventCenter
             // Check if already subscribed
             if (listenerList.Any(entry => entry.Listener == listener))
             {
-                Log($"Listener already subscribed to struct {eventType.Name}");
                 return;
             }
             
@@ -100,7 +99,6 @@ namespace TirexGame.Utils.EventCenter
             listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
             
             _totalListeners++;
-            Log($"Subscribed listener to struct {eventType.Name}, total listeners: {_totalListeners}");
         }
         
         /// <summary>
@@ -115,7 +113,6 @@ namespace TirexGame.Utils.EventCenter
             // Check if it's a struct type
             if (eventType.IsValueType && !eventType.IsEnum && !eventType.IsPrimitive)
             {
-                Log($"Warning: Use generic Subscribe<T> method for struct type {eventType.Name}");
                 return;
             }
             
@@ -128,7 +125,6 @@ namespace TirexGame.Utils.EventCenter
             // Check if already subscribed
             if (listenerList.Any(entry => entry.Listener == listener))
             {
-                Log($"Listener already subscribed to {eventType.Name}");
                 return;
             }
             
@@ -138,7 +134,6 @@ namespace TirexGame.Utils.EventCenter
             listenerList.Sort((a, b) => b.Priority.CompareTo(a.Priority));
             
             _totalListeners++;
-            Log($"Subscribed listener to {eventType.Name}, total listeners: {_totalListeners}");
         }
         
         /// <summary>
@@ -163,8 +158,6 @@ namespace TirexGame.Utils.EventCenter
                 {
                     _structListeners.Remove(eventType);
                 }
-                
-                Log($"Unsubscribed listener from struct {eventType.Name}, removed {removedCount} entries");
             }
         }
         
@@ -189,8 +182,6 @@ namespace TirexGame.Utils.EventCenter
                 {
                     _legacyListeners.Remove(eventType);
                 }
-                
-                Log($"Unsubscribed listener from {eventType.Name}, removed {removedCount} entries");
             }
         }
         
@@ -248,7 +239,6 @@ namespace TirexGame.Utils.EventCenter
             }
             
             _totalListeners -= totalRemoved;
-            Log($"Unsubscribed listener from all events, removed {totalRemoved} entries");
         }
         
         /// <summary>
@@ -259,80 +249,42 @@ namespace TirexGame.Utils.EventCenter
         /// <returns>Number of listeners that processed the event</returns>
         public int Dispatch<T>(T payload) where T : struct
         {
-            Debug.Log($"[EventDispatcher] Dispatch<T> called for struct: {typeof(T).Name}");
-            
             var startTime = Time.realtimeSinceStartup;
             var eventType = typeof(T);
             var listenersNotified = 0;
-            
-            Debug.Log($"[EventDispatcher] Looking for listeners of type: {eventType.Name}");
-            Debug.Log($"[EventDispatcher] Total struct listener types: {_structListeners.Keys.Count}");
-            
-            foreach (var key in _structListeners.Keys)
-            {
-                Debug.Log($"[EventDispatcher] Available listener type: {key.Name}");
-            }
             
             _tempListeners.Clear();
             
             // Collect all relevant listeners for this struct type
             if (_structListeners.TryGetValue(eventType, out var listenerList))
             {
-                Debug.Log($"[EventDispatcher] Found {listenerList.Count} listeners for {eventType.Name}");
-                
                 foreach (var entry in listenerList)
                 {
                     if (entry.IsActive)
                     {
                         _tempListeners.Add(entry);
-                        Debug.Log($"[EventDispatcher] Added active listener: {entry.Listener?.GetType()?.Name}");
-                    }
-                    else
-                    {
-                        Debug.Log($"[EventDispatcher] Skipped inactive listener: {entry.Listener?.GetType()?.Name}");
                     }
                 }
-            }
-            else
-            {
-                Debug.Log($"[EventDispatcher] ❌ No listeners found for struct type: {eventType.Name}");
             }
             
             // Sort by priority
             _tempListeners.Sort((a, b) => b.Priority.CompareTo(a.Priority));
             
-            Debug.Log($"[EventDispatcher] About to dispatch to {_tempListeners.Count} listeners");
-            
             // Dispatch to listeners
             foreach (var entry in _tempListeners)
             {
-                try
+                if (entry.Listener is IEventListener<T> typedListener)
                 {
-                    Debug.Log($"[EventDispatcher] Dispatching to listener: {entry.Listener?.GetType()?.Name}");
-                    
-                    if (entry.Listener is IEventListener<T> typedListener)
+                    if (typedListener.HandleEvent(payload))
                     {
-                        Debug.Log($"[EventDispatcher] Calling HandleEvent on typed listener");
-                        if (typedListener.HandleEvent(payload))
-                        {
-                            listenersNotified++;
-                            Debug.Log($"[EventDispatcher] ✅ Listener handled event successfully");
-                        }
-                        {
-                            listenersNotified++;
-                        }
+                        listenersNotified++;
                     }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"Error dispatching struct event {eventType.Name} to listener: {ex.Message}");
+                    listenersNotified++;
                 }
             }
             
             _totalDispatched++;
             _lastDispatchTime = (Time.realtimeSinceStartup - startTime) * 1000f;
-            
-            Log($"Dispatched struct {eventType.Name} to {listenersNotified} listeners in {_lastDispatchTime:F3}ms");
             
             return listenersNotified;
         }
@@ -344,22 +296,14 @@ namespace TirexGame.Utils.EventCenter
         /// <returns>Number of listeners that processed the event</returns>
         public int Dispatch(BaseEvent eventData)
         {
-            Debug.Log($"[EventDispatcher] Dispatch called for: {eventData?.GetType()?.Name}");
-            
             if (eventData == null || eventData.IsDisposed)
             {
-                Debug.Log("[EventDispatcher] Event is null or disposed - returning 0");
-                Log("Attempted to dispatch null or disposed event");
                 return 0;
             }
             
             var startTime = Time.realtimeSinceStartup;
             var eventType = eventData.GetType();
             var listenersNotified = 0;
-            
-            Debug.Log($"[EventDispatcher] Event type: {eventType.Name}");
-            Debug.Log($"[EventDispatcher] Total struct listeners: {_structListeners.Count}");
-            Debug.Log($"[EventDispatcher] Total legacy listeners: {_legacyListeners.Count}");
             
             // Get all types in the inheritance hierarchy
             var typeHierarchy = GetTypeHierarchy(eventType);
@@ -387,29 +331,20 @@ namespace TirexGame.Utils.EventCenter
             // Dispatch to listeners
             foreach (var entry in _tempListeners)
             {
-                try
+                if (entry.Listener.HandleEvent(eventData))
                 {
-                    if (entry.Listener.HandleEvent(eventData))
-                    {
-                        listenersNotified++;
-                    }
-                    
-                    // Stop if event is marked as handled and should stop propagation
-                    if (eventData.IsHandled)
-                    {
-                        break;
-                    }
+                    listenersNotified++;
                 }
-                catch (Exception ex)
+                
+                // Stop if event is marked as handled and should stop propagation
+                if (eventData.IsHandled)
                 {
-                    Debug.LogError($"Error dispatching event {eventType.Name} to listener: {ex.Message}");
+                    break;
                 }
             }
             
             _totalDispatched++;
             _lastDispatchTime = (Time.realtimeSinceStartup - startTime) * 1000f;
-            
-            Log($"Dispatched {eventType.Name} to {listenersNotified} listeners in {_lastDispatchTime:F3}ms");
             
             return listenersNotified;
         }
@@ -461,7 +396,6 @@ namespace TirexGame.Utils.EventCenter
             _legacyListeners.Clear();
             _typeHierarchyCache.Clear();
             _totalListeners = 0;
-            Log("Cleared all event listeners");
         }
         
         /// <summary>
@@ -511,11 +445,7 @@ namespace TirexGame.Utils.EventCenter
             return result;
         }
         
-        private void Log(string message)
-        {
-            if (_enableLogging)
-                Debug.Log($"[EventDispatcher] {message}");
-        }
+
         
         /// <summary>
         /// Get listeners for a legacy event type (BaseEvent)

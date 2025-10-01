@@ -131,14 +131,12 @@ namespace TirexGame.Utils.EventCenter
             _stats = new EventCenterStats();
             
             _isInitialized = true;
-            Log("EventCenter initialized");
         }
         
         private void PreWarmCommonEventTypes()
         {
             // Pre-warm pools for common event types
             // You can extend this based on your game's common events
-            Log("Pre-warming event pools...");
         }
         
         #endregion
@@ -165,7 +163,6 @@ namespace TirexGame.Utils.EventCenter
             }
             _listenerSubscriptions[listener].Add(subscription);
             
-            Log($"Subscribed to {eventType.Name}");
             return subscription;
         }
         
@@ -198,8 +195,6 @@ namespace TirexGame.Utils.EventCenter
                 }
                 _listenerSubscriptions.Remove(listener);
             }
-            
-            Log($"Unsubscribed listener");
         }
         
         /// <summary>
@@ -212,8 +207,6 @@ namespace TirexGame.Utils.EventCenter
             var eventType = typeof(T);
             // Call the generic Unsubscribe method for struct types
             _dispatcher.Unsubscribe<T>(listener);
-            
-            Log($"Unsubscribed from {eventType.Name}");
         }
         
         /// <summary>
@@ -236,8 +229,6 @@ namespace TirexGame.Utils.EventCenter
             {
                 _eventQueue.Enqueue(eventData);
             }
-            
-            Log($"Published {eventData.GetType().Name}");
         }
         
         /// <summary>
@@ -260,8 +251,6 @@ namespace TirexGame.Utils.EventCenter
             {
                 eventData.Dispose();
             }
-            
-            Log($"Immediately processed {eventData.GetType().Name} to {listenersNotified} listeners");
         }
         
         /// <summary>
@@ -287,8 +276,6 @@ namespace TirexGame.Utils.EventCenter
             }
             _subscriptions.Clear();
             _listenerSubscriptions.Clear();
-            
-            Log("Cleared EventCenter");
         }
         
         /// <summary>
@@ -307,20 +294,13 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEvent<T>(T payload, int priority = 0) where T : struct
         {
-            Debug.Log($"[EventCenter] PublishEvent called for {typeof(T).Name}");
-            Debug.Log($"[EventCenter] Priority: {priority}, Initialized: {_isInitialized}");
-            
 #if UNITY_EDITOR
             // Hook for Editor tracking - struct events
             NotifyEditorOnPublishStruct(payload, priority);
 #endif
             
             // Dispatch immediately - no queuing, no wrapper
-            Debug.Log($"[EventCenter] Dispatching struct directly to listeners...");
             var listenersNotified = _dispatcher.Dispatch(payload);
-            Debug.Log($"[EventCenter] Struct dispatched to {listenersNotified} listeners");
-            
-            Log($"Published struct event {typeof(T).Name}");
         }
         
         /// <summary>
@@ -337,8 +317,6 @@ namespace TirexGame.Utils.EventCenter
 #endif
             // Dispatch immediately - no queuing, no wrapper (same implementation as regular PublishEvent for structs)
             var listenersNotified = _dispatcher.Dispatch(payload);
-            
-            Log($"Published struct event immediate {typeof(T).Name}");
         }
         
         /// <summary>
@@ -363,7 +341,6 @@ namespace TirexGame.Utils.EventCenter
             }
             _listenerSubscriptions[listener].Add(subscription);
             
-            Log($"Legacy subscribed to {eventType.Name}");
             return subscription;
         }
         
@@ -432,24 +409,18 @@ namespace TirexGame.Utils.EventCenter
         
         private void ProcessSingleEvent(BaseEvent eventData)
         {
-            Debug.Log($"[EventCenter] ProcessSingleEvent called for: {eventData?.GetType()?.Name}");
-            
             if (eventData == null || eventData.IsDisposed || !eventData.IsValid())
             {
-                Debug.Log("[EventCenter] Event is null, disposed, or invalid - skipping");
                 return;
             }
             
             // Simple BaseEvent dispatch - no reflection needed
-            Debug.Log("[EventCenter] Dispatching BaseEvent to listeners...");
             var listenersNotified = _dispatcher.Dispatch(eventData);
-            Debug.Log($"[EventCenter] BaseEvent dispatched to {listenersNotified} listeners");
             
             // Return to pool if poolable
             if (eventData.IsPoolable)
-            {
+            { 
                 eventData.Dispose();
-                Debug.Log("[EventCenter] Event returned to pool");
             }
         }
         
@@ -485,10 +456,6 @@ namespace TirexGame.Utils.EventCenter
         
         private void LogStats()
         {
-            Log($"Stats - Events/Frame: {_stats.EventsProcessedThisFrame}, " +
-                $"Queued: {_stats.QueuedEvents}, " +
-                $"Subscriptions: {_stats.ActiveSubscriptions}, " +
-                $"Avg Time: {_stats.AverageProcessingTime:F2}ms");
         }
         
         #endregion
@@ -532,11 +499,7 @@ namespace TirexGame.Utils.EventCenter
             return GetListenerCount<T>() > 0;
         }
         
-        private void Log(string message)
-        {
-            if (enableLogging)
-                Debug.Log($"[EventCenter] {message}");
-        }
+
         
         #endregion
         
@@ -582,50 +545,27 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         private void NotifyEditorOnPublish(BaseEvent eventData)
         {
-            try
+            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            System.Type bridgeType = null;
+            
+            foreach (var assembly in assemblies)
             {
-                Debug.Log($"[EventCenter] NotifyEditorOnPublish called for {eventData.GetType().Name}");
-                
-                // Use reflection to avoid hard dependency on Editor assembly
-                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-                System.Type bridgeType = null;
-                
-                // Try to find EventCaptureBridge in any assembly
-                foreach (var assembly in assemblies)
-                {
-                    bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
-                    if (bridgeType != null)
-                    {
-                        Debug.Log($"[EventCenter] Found EventCaptureBridge in assembly: {assembly.GetName().Name}");
-                        break;
-                    }
-                }
-                
+                bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
                 if (bridgeType != null)
                 {
-                    var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    if (publishMethod != null)
-                    {
-                        Debug.Log($"[EventCenter] Found Publish method, calling...");
-                        var listeners = GatherListenerInfo(eventData);
-                        var category = ResolveEventCategory(eventData.GetType().Name);
-                        publishMethod.Invoke(null, new object[] { eventData.GetType().Name, eventData, this, category, listeners });
-                        Debug.Log($"[EventCenter] Editor notification sent successfully for {eventData.GetType().Name}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[EventCenter] Publish method not found in EventCaptureBridge");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[EventCenter] EventCaptureBridge type not found in any assembly");
+                    break;
                 }
             }
-            catch (System.Exception ex)
+            
+            if (bridgeType != null)
             {
-                Debug.LogWarning($"[EventCenter] Failed to notify editor: {ex.Message}");
-                Debug.LogWarning($"[EventCenter] Stack trace: {ex.StackTrace}");
+                var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (publishMethod != null)
+                {
+                    var listeners = GatherListenerInfo(eventData);
+                    var category = ResolveEventCategory(eventData.GetType().Name);
+                    publishMethod.Invoke(null, new object[] { eventData.GetType().Name, eventData, this, category, listeners });
+                }
             }
         }
         
@@ -634,50 +574,27 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         private void NotifyEditorOnPublishStruct<T>(T payload, int priority) where T : struct
         {
-            try
+            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
+            System.Type bridgeType = null;
+            
+            foreach (var assembly in assemblies)
             {
-                Debug.Log($"[EventCenter] NotifyEditorOnPublishStruct called for {typeof(T).Name}");
-                
-                // Use reflection to avoid hard dependency on Editor assembly
-                var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-                System.Type bridgeType = null;
-                
-                // Try to find EventCaptureBridge in any assembly
-                foreach (var assembly in assemblies)
-                {
-                    bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
-                    if (bridgeType != null)
-                    {
-                        Debug.Log($"[EventCenter] Found EventCaptureBridge in assembly: {assembly.GetName().Name}");
-                        break;
-                    }
-                }
-                
+                bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
                 if (bridgeType != null)
                 {
-                    var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    if (publishMethod != null)
-                    {
-                        Debug.Log($"[EventCenter] Found Publish method, calling for struct...");
-                        var listeners = GatherStructListenerInfo<T>();
-                        var category = ResolveEventCategory(typeof(T).Name);
-                        publishMethod.Invoke(null, new object[] { typeof(T).Name, payload, this, category, listeners });
-                        Debug.Log($"[EventCenter] Editor notification sent successfully for struct {typeof(T).Name}");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[EventCenter] Publish method not found in EventCaptureBridge");
-                    }
-                }
-                else
-                {
-                    Debug.LogWarning($"[EventCenter] EventCaptureBridge type not found in any assembly");
+                    break;
                 }
             }
-            catch (System.Exception ex)
+            
+            if (bridgeType != null)
             {
-                Debug.LogWarning($"[EventCenter] Failed to notify editor for struct: {ex.Message}");
-                Debug.LogWarning($"[EventCenter] Stack trace: {ex.StackTrace}");
+                var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                if (publishMethod != null)
+                {
+                    var listeners = GatherStructListenerInfo<T>();
+                    var category = ResolveEventCategory(typeof(T).Name);
+                    publishMethod.Invoke(null, new object[] { typeof(T).Name, payload, this, category, listeners });
+                }
             }
         }
         
@@ -690,13 +607,8 @@ namespace TirexGame.Utils.EventCenter
             try
             {
                 var eventType = eventData.GetType();
-                Debug.Log($"[EventCenter] Gathering listeners for {eventType.Name}");
-                
-                // Try to get listener count as a fallback while compilation fixes itself
                 var listenerCount = _dispatcher?.GetListenerCount(eventType) ?? 0;
-                Debug.Log($"[EventCenter] Found {listenerCount} listeners for {eventType.Name}");
                 
-                // Create placeholder listener info based on count
                 for (int i = 0; i < listenerCount; i++)
                 {
                     var listenerInfo = new
@@ -713,12 +625,9 @@ namespace TirexGame.Utils.EventCenter
                     };
                     listeners.Add(listenerInfo);
                 }
-                
-                Debug.Log($"[EventCenter] Total listeners found: {listeners.Count}");
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning($"[EventCenter] Failed to gather listener info: {ex.Message}");
             }
             return listeners;
         }
@@ -732,13 +641,8 @@ namespace TirexGame.Utils.EventCenter
             try
             {
                 var eventType = typeof(T);
-                Debug.Log($"[EventCenter] Gathering struct listeners for {eventType.Name}");
-                
-                // Try to get listener count as a fallback while compilation fixes itself
                 var listenerCount = _dispatcher?.GetListenerCount<T>() ?? 0;
-                Debug.Log($"[EventCenter] Found {listenerCount} struct listeners for {eventType.Name}");
                 
-                // Create placeholder listener info based on count
                 for (int i = 0; i < listenerCount; i++)
                 {
                     var listenerInfo = new
@@ -755,12 +659,9 @@ namespace TirexGame.Utils.EventCenter
                     };
                     listeners.Add(listenerInfo);
                 }
-                
-                Debug.Log($"[EventCenter] Total struct listeners found: {listeners.Count}");
             }
             catch (System.Exception ex)
             {
-                Debug.LogWarning($"[EventCenter] Failed to gather struct listener info: {ex.Message}");
             }
             return listeners;
         }
