@@ -13,6 +13,7 @@ Hệ thống Event Center hiệu suất cao cho Unity, hỗ trợ xử lý hàng
 - [Ví dụ nâng cao | Advanced Examples](#-ví-dụ-nâng-cao--advanced-examples)
 - [Hiệu suất | Performance](#-hiệu-suất--performance)
 - [Best Practices](#-best-practices)
+- [Event Visualizer](EventVisualizer_UserGuide.md)
 - [FAQ](#-faq)
 
 ## 🚀 Tính năng chính | Key Features
