@@ -626,7 +626,7 @@ namespace TirexGame.Utils.EventCenter
                     listeners.Add(listenerInfo);
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
             }
             return listeners;
@@ -660,7 +660,7 @@ namespace TirexGame.Utils.EventCenter
                     listeners.Add(listenerInfo);
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
             }
             return listeners;
