@@ -3,45 +3,59 @@ using UnityEngine;
 namespace TirexGame.Utils.UI
 {
     /// <summary>
-    /// Abstract base class for all UI items that can be displayed in a RecycleView.
+    /// Non-generic abstract base class for all UI items. 
+    /// This is used by the core RecycleView system to manage items of different types.
     /// </summary>
     public abstract class RecycleViewItem : MonoBehaviour
     {
-        /// <summary>
-        /// A reference to the parent RecycleView that manages this item.
-        /// </summary>
-        public RecycleView ParentRecycleView { get; private set; }
+        public RecycleView ParentRecycleView { get; internal set; }
+        public int CurrentDataIndex { get; internal set; }
 
-        /// <summary>
-        /// The data index this item currently represents in the master list.
-        /// </summary>
-        public int CurrentDataIndex { get; private set; }
-
-        /// <summary>
-        /// Initializes the item with a reference to its parent view.
-        /// This is called by the RecycleView when the item is first instantiated.
-        /// </summary>
-        /// <param name="parent">The parent RecycleView</param>
         public virtual void Initialize(RecycleView parent)
         {
             ParentRecycleView = parent;
         }
 
         /// <summary>
-        /// This method is called by the RecycleView when this item needs to display new data.
-        /// Implement this in your concrete item class to update the UI elements.
+        /// Non-generic method for the RecycleView to call. 
+        /// This will be implemented by the generic child class.
         /// </summary>
-        /// <param name="data">The data to display</param>
-        /// <param name="index">The index of this data in the list</param>
         public abstract void BindData(IRecycleViewData data, int index);
 
-        /// <summary>
-        /// A helper method to notify the parent RecycleView that this item was clicked.
-        /// You can call this from a Button's OnClick event in the prefab.
-        /// </summary>
         public void NotifyItemClicked()
         {
             ParentRecycleView.OnItemClicked?.Invoke(this);
         }
+    }
+
+    /// <summary>
+    /// Generic base class for UI items, providing a strongly-typed BindData method.
+    /// Developers should inherit from this class.
+    /// </summary>
+    /// <typeparam name="TData">The type of data this item will display, must implement IRecycleViewData</typeparam>
+    public abstract class RecycleViewItem<TData> : RecycleViewItem where TData : class, IRecycleViewData
+    {
+        /// <summary>
+        /// Sealed override of the non-generic BindData. This handles the type casting.
+        /// </summary>
+        public sealed override void BindData(IRecycleViewData data, int index)
+        {
+            CurrentDataIndex = index;
+            // Safe cast handled internally
+            TData typedData = data as TData;
+            if (typedData == null)
+            {
+                Debug.LogError($"Invalid data type passed to item. Expected {typeof(TData)} but got {data.GetType()} at index {index}", gameObject);
+                return;
+            }
+            BindData(typedData, index);
+        }
+
+        /// <summary>
+        /// Implement this in your concrete item class to update the UI elements with strongly-typed data.
+        /// </summary>
+        /// <param name="data">The strongly-typed data to display</param>
+        /// <param name="index">The index of this data in the list</param>
+        public abstract void BindData(TData data, int index);
     }
 }
