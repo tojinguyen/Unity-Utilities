@@ -189,6 +189,36 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                     folderData.GroupSubfoldersSeparately = EditorGUILayout.Toggle("Group Subfolders Separately", folderData.GroupSubfoldersSeparately);
                 }
 
+                // Excluded Folder
+                if (folderData.GroupSubfoldersSeparately)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Exclude Folder:", GUILayout.Width(120));
+
+                    if (Directory.Exists(folderData.FolderPath))
+                    {
+                        var subdirectories = Directory.GetDirectories(folderData.FolderPath, "*", SearchOption.TopDirectoryOnly)
+                            .Select(Path.GetFileName).ToList();
+                        subdirectories.Insert(0, "None");
+
+                        int selectedIndex = subdirectories.IndexOf(folderData.ExcludedFolder);
+                        if (selectedIndex == -1) selectedIndex = 0;
+
+                        int newIndex = EditorGUILayout.Popup(selectedIndex, subdirectories.ToArray());
+
+                        if (newIndex != selectedIndex)
+                        {
+                            folderData.ExcludedFolder = subdirectories[newIndex];
+                            EditorUtility.SetDirty(config);
+                        }
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField("Path is not valid");
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+
                 // Excluded File Extensions
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField("Excluded Extensions:", GUILayout.Width(120));
@@ -344,6 +374,11 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 foreach (var subDir in subdirectories)
                 {
                     string subDirName = Path.GetFileName(subDir);
+                    if (folderConfig.GroupSubfoldersSeparately && !string.IsNullOrEmpty(folderConfig.ExcludedFolder) && folderConfig.ExcludedFolder != "None" && subDirName == folderConfig.ExcludedFolder)
+                    {
+                        continue;
+                    }
+                    
                     string groupName = $"{folderConfig.GroupName}_{subDirName}";
                     processedCount += ProcessFilesInDirectory(subDir, groupName, folderConfig, settings, SearchOption.AllDirectories);
                 }
