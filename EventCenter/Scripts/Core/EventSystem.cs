@@ -26,24 +26,14 @@ namespace TirexGame.Utils.EventCenter
         {
             if (_isInitialized) return;
             
-            try
+            _eventCenter = EventCenterService.Current;
+            
+            if (_eventCenter == null)
             {
-                _eventCenter = EventCenterService.Current;
-                
-                if (_eventCenter == null)
-                {
-                    Debug.LogError("[EventSystem] No EventCenter available. Make sure you have an EventCenter GameObject in your scene.");
-                    return;
-                }
-                
-                _isInitialized = true;
-                Debug.Log("[EventSystem] Static event system initialized successfully");
+                return;
             }
-            catch (Exception ex)
-            {
-                Debug.LogError($"[EventSystem] Failed to initialize: {ex.Message}");
-                throw;
-            }
+            
+            _isInitialized = true;
         }
         
         /// <summary>
@@ -58,10 +48,7 @@ namespace TirexGame.Utils.EventCenter
                 // If initialization still failed, throw an exception
                 if (_eventCenter == null)
                 {
-                    throw new InvalidOperationException(
-                        "[EventSystem] EventCenter is not available. " +
-                        "Make sure you have an EventCenter GameObject in your scene or " +
-                        "manually set it using EventCenterService.SetCurrent().");
+                    throw new InvalidOperationException();
                 }
             }
         }
@@ -97,11 +84,7 @@ namespace TirexGame.Utils.EventCenter
         public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : struct
         {
             EnsureInitialized();
-            Debug.Log($"[EventSystem] Subscribing to {typeof(T).Name} events");
-            Debug.Log($"[EventSystem] EventCenter instance: {_eventCenter}");
-            Debug.Log($"[EventSystem] Callback: {callback?.Method?.Name ?? "null"}");
             var subscription = _eventCenter.Subscribe(callback, priority);
-            Debug.Log($"[EventSystem] Subscription result: {subscription}");
             return subscription;
         }
         
@@ -139,10 +122,7 @@ namespace TirexGame.Utils.EventCenter
         public static void Publish<T>(T payload, int priority = 0) where T : struct
         {
             EnsureInitialized();
-            Debug.Log($"[EventSystem] Publishing event {typeof(T).Name} with priority {priority}");
-            Debug.Log($"[EventSystem] EventCenter instance: {_eventCenter}");
             _eventCenter.PublishEvent(payload, priority);
-            Debug.Log($"[EventSystem] Event {typeof(T).Name} sent to EventCenter");
         }
         
         /// <summary>
@@ -249,7 +229,6 @@ namespace TirexGame.Utils.EventCenter
                 Clear();
                 _eventCenter = null;
                 _isInitialized = false;
-                Debug.Log("[EventSystem] Static event system shutdown");
             }
         }
         
@@ -311,38 +290,6 @@ namespace TirexGame.Utils.EventCenter
         
         #endregion
         
-        #region Debug and Diagnostics
-        
-        /// <summary>
-        /// Log current event system status
-        /// </summary>
-        public static void LogStatus()
-        {
-            if (!_isInitialized)
-            {
-                Debug.Log("[EventSystem] Not initialized");
-                return;
-            }
-            
-            var stats = GetStats();
-            Debug.Log($"[EventSystem] Status:\n" +
-                     $"- Events processed this frame: {stats.EventsProcessedThisFrame}\n" +
-                     $"- Queued events: {stats.QueuedEvents}\n" +
-                     $"- Active subscriptions: {stats.ActiveSubscriptions}\n" +
-                     $"- Average processing time: {stats.AverageProcessingTime:F3}ms\n" +
-                     $"- Memory usage: {stats.MemoryUsage / 1024f:F1} KB");
-        }
-        
-        /// <summary>
-        /// Enable or disable debug logging for the event system
-        /// </summary>
-        /// <param name="enabled">Whether to enable debug logging</param>
-        public static void SetDebugLogging(bool enabled)
-        {
-            // This would need to be implemented in the underlying EventCenter
-            Debug.Log($"[EventSystem] Debug logging {(enabled ? "enabled" : "disabled")}");
-        }
-        
-        #endregion
+
     }
 }
