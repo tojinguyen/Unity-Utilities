@@ -737,11 +737,6 @@ namespace EventCenter.EditorTools
                 var labelRect = new Rect(rect.x + 4, rect.y + 2, rect.width - 8, rect.height - 4);
                 GUI.Label(labelRect, ev.name, _eventLabelStyle);
                 
-                // Draw time label directly on the timeline axis at event's Y position
-                var timeLabel = ev.timeRealtime.ToString("F2") + "s";
-                var timeLabelRect = new Rect(layout.connectionPoint.x - 25, layout.connectionPoint.y - 8, 50, 16);
-                GUI.Label(timeLabelRect, timeLabel, _timeLabelStyle);
-                
                 // Handle selection
                 if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
                 {
