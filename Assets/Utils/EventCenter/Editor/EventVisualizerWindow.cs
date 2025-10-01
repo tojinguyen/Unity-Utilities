@@ -77,8 +77,19 @@ namespace EventCenter.EditorTools
             new Color(0.6f, 0.7f, 0.4f),  // Olive Green
             new Color(0.7f, 0.6f, 0.9f),  // Lavender
             new Color(0.9f, 0.7f, 0.5f),  // Peach
-            new Color(0.4f, 0.6f, 0.8f)   // Steel Blue
+            new Color(0.4f, 0.6f, 0.8f),  // Steel Blue
+            new Color(0.8f, 0.3f, 0.5f),  // Deep Pink
+            new Color(0.5f, 0.9f, 0.4f),  // Lime Green
+            new Color(0.9f, 0.5f, 0.3f),  // Coral
+            new Color(0.4f, 0.8f, 0.9f),  // Light Blue
+            new Color(0.8f, 0.8f, 0.4f),  // Gold
+            new Color(0.6f, 0.4f, 0.9f),  // Violet
+            new Color(0.9f, 0.6f, 0.7f),  // Rose
+            new Color(0.4f, 0.9f, 0.8f)   // Mint
         };
+        
+        // Event counter for simple color cycling (1 event = 1 color change)
+        private static int _eventColorCounter = 0;
         
         private void InitializeStyles()
         {
@@ -350,6 +361,15 @@ namespace EventCenter.EditorTools
                 if (GUILayout.Button("Export CSV", EditorStyles.toolbarButton))
                 {
                     ExportCsv();
+                }
+                
+                GUILayout.Space(8);
+                
+                // Color cycling controls
+                GUILayout.Label($"Color: {_eventColorCounter % ColorPalette.Length + 1}/{ColorPalette.Length}", GUILayout.Width(80));
+                if (GUILayout.Button("Reset Colors", EditorStyles.toolbarButton, GUILayout.Width(80)))
+                {
+                    ResetColorCycling();
                 }
             }
         }
@@ -646,16 +666,12 @@ namespace EventCenter.EditorTools
                 if (_visibleChannels.TryGetValue(ev.category ?? "Uncategorized", out bool visible) && !visible)
                     continue;
                 
-                // Cache color
-                if (ev.cachedColor == Color.white)
-                    ev.cachedColor = GetColorFor(ev);
+                // Force color regeneration for simple cycling system
+                ev.cachedColor = GetColorFor(ev);
                 
                 // Check if watched
                 bool isWatched = _watchList.Any(w => !string.IsNullOrEmpty(w) && !string.IsNullOrEmpty(ev.name) && 
                                                      ev.name.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0);
-                
-                // Draw connection line (dotted line from timeline axis to event)
-                DrawConnectionLine(layout.connectionPoint, new Vector2(rect.x, rect.center.y), ev.cachedColor);
                 
                 // Draw event box with better colors
                 Color bgColor = ev.cachedColor;
@@ -686,12 +702,12 @@ namespace EventCenter.EditorTools
                 }
                 
                 // Draw event label with high contrast
-                var labelRect = new Rect(rect.x + 4, rect.y + 4, rect.width - 8, rect.height - 8);
+                var labelRect = new Rect(rect.x + 4, rect.y + 2, rect.width - 8, rect.height - 4);
                 GUI.Label(labelRect, ev.name, _eventLabelStyle);
                 
-                // Draw time label on connection point with high contrast
+                // Draw time label directly on the timeline axis at event's Y position
                 var timeLabel = ev.timeRealtime.ToString("F2") + "s";
-                var timeLabelRect = new Rect(layout.connectionPoint.x + 10, layout.connectionPoint.y - 8, 60, 16);
+                var timeLabelRect = new Rect(layout.connectionPoint.x - 25, layout.connectionPoint.y - 8, 50, 16);
                 GUI.Label(timeLabelRect, timeLabel, _timeLabelStyle);
                 
                 // Handle selection
@@ -704,39 +720,6 @@ namespace EventCenter.EditorTools
                 
                 // Update cached rect for other systems
                 ev.lastDrawRect = rect;
-            }
-        }
-        
-        private void DrawConnectionLine(Vector2 timelinePoint, Vector2 eventPoint, Color color)
-        {
-            // Use brighter, more visible color for connection lines
-            Color lineColor = color;
-            float brightness = lineColor.r * 0.299f + lineColor.g * 0.587f + lineColor.b * 0.114f;
-            if (brightness < 0.3f)
-            {
-                // Brighten very dark colors
-                lineColor = Color.Lerp(lineColor, Color.white, 0.6f);
-            }
-            lineColor.a = 0.8f;
-            Handles.color = lineColor;
-            
-            // Create dotted line effect with better visibility
-            Vector2 direction = eventPoint - timelinePoint;
-            float distance = direction.magnitude;
-            Vector2 normalizedDir = direction.normalized;
-            
-            const float dashLength = 5f; // Longer dashes
-            const float gapLength = 2f;  // Shorter gaps
-            const float totalDashUnit = dashLength + gapLength;
-            
-            float currentDistance = 0f;
-            while (currentDistance < distance)
-            {
-                Vector2 dashStart = timelinePoint + normalizedDir * currentDistance;
-                Vector2 dashEnd = timelinePoint + normalizedDir * Mathf.Min(currentDistance + dashLength, distance);
-                
-                Handles.DrawAAPolyLine(2f, dashStart, dashEnd); // Anti-aliased thicker lines
-                currentDistance += totalDashUnit;
             }
         }
         
@@ -970,33 +953,25 @@ namespace EventCenter.EditorTools
 
         private Color GetColorFor(EventRecord ev)
         {
-            // Config-driven colors with fallback to diverse palette
+            // Config-driven colors with fallback to simple cycling
             if (_config != null)
             {
                 var cc = _config.GetChannelColor(ev.category ?? "Uncategorized");
                 if (cc.a > 0f) return EnsureGoodContrast(cc);
             }
             
-            // Use category-based color assignment for consistency
-            string category = ev.category ?? "Uncategorized";
-            int categoryHash = category.GetHashCode();
+            // Simple strategy: just cycle through colors for each event
+            _eventColorCounter++;
+            int colorIndex = _eventColorCounter % ColorPalette.Length;
             
-            // First try to get a palette color based on category
-            int paletteIndex = Math.Abs(categoryHash) % ColorPalette.Length;
-            Color baseColor = ColorPalette[paletteIndex];
+            Color baseColor = ColorPalette[colorIndex];
             
-            // Add some variation based on event name to avoid identical colors
-            string eventName = ev.name ?? "";
-            int eventHash = eventName.GetHashCode();
-            UnityEngine.Random.InitState(eventHash);
-            
-            // Slight variation in saturation and brightness
-            float satVariation = UnityEngine.Random.Range(-0.1f, 0.1f);
-            float valueVariation = UnityEngine.Random.Range(-0.05f, 0.1f);
+            // Add very subtle variation based on event ID to avoid identical colors
+            UnityEngine.Random.InitState(ev.id.GetHashCode());
+            float hueVariation = UnityEngine.Random.Range(-0.05f, 0.05f);
             
             Color.RGBToHSV(baseColor, out float h, out float s, out float v);
-            s = Mathf.Clamp01(s + satVariation);
-            v = Mathf.Clamp01(v + valueVariation);
+            h = Mathf.Repeat(h + hueVariation, 1f);
             
             Color finalColor = Color.HSVToRGB(h, s, v);
             return EnsureGoodContrast(finalColor);
@@ -1017,6 +992,12 @@ namespace EventCenter.EditorTools
             if (v < 0.7f) v = 0.7f; // Minimum brightness
             
             return Color.HSVToRGB(h, s, v);
+        }
+        
+        // Method to reset color cycling for testing
+        private void ResetColorCycling()
+        {
+            _eventColorCounter = 0;
         }
 
         private void ExportJson()

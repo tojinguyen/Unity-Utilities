@@ -436,11 +436,22 @@ namespace TirexGame.Utils.EventCenter.Examples
             Log("▶️ Auto event generation started");
         }
         
-        [ContextMenu("Clear All Events")]
-        private void MenuClearEvents()
+        [ContextMenu("Test Simple Color Cycling")]
+        private void MenuTestSimpleColorCycling()
         {
-            // This will be handled by the EventCapture.Clear() method in the visualizer
-            Log("🧹 Use 'Clear' button in Event Visualizer to clear events");
+            Log("🎨 Testing simple color cycling - each event = new color");
+            
+            // Generate 10 simple events to see color progression
+            for (int i = 0; i < 10; i++)
+            {
+                var evt = new TimelineTestEvent($"ColorTest{i}", i, Random.Range(0.1f, 1f), "Test");
+                EventSystem.Publish(evt);
+                
+                // Small delay to see them in sequence
+                System.Threading.Thread.Sleep(50);
+            }
+            
+            Log("🌈 Simple color cycling test completed - should see 10 different colors!");
         }
         
         #endregion
@@ -515,6 +526,13 @@ namespace TirexGame.Utils.EventCenter.Examples
             if (GUILayout.Button("🌈 Generate Mixed Burst", buttonStyle))
             {
                 StartCoroutine(GenerateMixedEventBurst());
+            }
+            
+            GUILayout.Space(10);
+            
+            if (GUILayout.Button("🎨 Test Simple Colors", buttonStyle))
+            {
+                MenuTestSimpleColorCycling();
             }
             
             GUILayout.Space(10);
