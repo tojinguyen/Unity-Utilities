@@ -436,22 +436,22 @@ namespace TirexGame.Utils.EventCenter.Examples
             Log("▶️ Auto event generation started");
         }
         
-        [ContextMenu("Test Simple Color Cycling")]
-        private void MenuTestSimpleColorCycling()
+        [ContextMenu("Test Horizontal Scrolling")]
+        private void MenuTestHorizontalScrolling()
         {
-            Log("🎨 Testing simple color cycling - each event = new color");
+            Log("📏 Testing horizontal scrolling with collision events");
             
-            // Generate 10 simple events to see color progression
-            for (int i = 0; i < 10; i++)
+            // Generate many events at same time to force multiple layers
+            for (int i = 0; i < 15; i++)
             {
-                var evt = new TimelineTestEvent($"ColorTest{i}", i, Random.Range(0.1f, 1f), "Test");
+                var evt = new TimelineTestEvent($"Layer{i}", i, Random.Range(0.1f, 1f), $"Category{i % 3}");
                 EventSystem.Publish(evt);
                 
-                // Small delay to see them in sequence
-                System.Threading.Thread.Sleep(50);
+                // Very small delay to create collision
+                System.Threading.Thread.Sleep(5);
             }
             
-            Log("🌈 Simple color cycling test completed - should see 10 different colors!");
+            Log("📏 Horizontal scrolling test completed - check for layers and scroll!");
         }
         
         #endregion
@@ -530,9 +530,9 @@ namespace TirexGame.Utils.EventCenter.Examples
             
             GUILayout.Space(10);
             
-            if (GUILayout.Button("🎨 Test Simple Colors", buttonStyle))
+            if (GUILayout.Button("📏 Test Horizontal Scroll", buttonStyle))
             {
-                MenuTestSimpleColorCycling();
+                MenuTestHorizontalScrolling();
             }
             
             GUILayout.Space(10);

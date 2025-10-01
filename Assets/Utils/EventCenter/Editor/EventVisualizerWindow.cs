@@ -371,6 +371,23 @@ namespace EventCenter.EditorTools
                 {
                     ResetColorCycling();
                 }
+                
+                GUILayout.Space(8);
+                
+                // Layer information for horizontal scrolling
+                var currentEvents = ApplyFilters(EventCapture.Enumerate())?.Where(e => e != null).ToList() ?? new List<EventRecord>();
+                if (currentEvents.Any())
+                {
+                    var tempRect = new Rect(0, 0, 800, 600);
+                    var tempLayouts = CalculateEventLayout(currentEvents, tempRect, 0, 10);
+                    int maxLayer = tempLayouts.Any() ? tempLayouts.Max(l => l.layer) + 1 : 0;
+                    
+                    GUILayout.Label($"Layers: {maxLayer}", GUILayout.Width(60));
+                    if (maxLayer > 3) // Show scroll hint when many layers
+                    {
+                        GUILayout.Label("→ Scroll →", EditorStyles.miniLabel, GUILayout.Width(50));
+                    }
+                }
             }
         }
 
@@ -440,11 +457,9 @@ namespace EventCenter.EditorTools
                 var events = ApplyFilters(EventCapture.Enumerate());
                 var eventsList = events?.Where(e => e != null).ToList() ?? new List<EventRecord>();
             
-                // Always start scroll view first
-                _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
-                
                 if (!eventsList.Any())
                 {
+                    _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
                     GUILayout.FlexibleSpace();
                     GUILayout.Label("No events captured", EditorStyles.centeredGreyMiniLabel);
                     GUILayout.FlexibleSpace();
@@ -459,18 +474,37 @@ namespace EventCenter.EditorTools
                 _viewStartTime = minT;
                 _viewEndTime = maxT;
 
-                // Vertical timeline: Height is based on time span
-                float totalTimelineHeight = (float)(span * _pixelsPerSecond) + 200f; // Extra padding
+                // Pre-calculate event layouts to determine required width
+                var tempRect = new Rect(0, 0, rect.width, (float)(span * _pixelsPerSecond) + 200f);
+                var eventLayouts = CalculateEventLayout(eventsList, tempRect, minT, maxT);
                 
-                var timelineRect = GUILayoutUtility.GetRect(rect.width, totalTimelineHeight);
+                // Calculate required width based on maximum layer
+                int maxLayer = eventLayouts.Any() ? eventLayouts.Max(l => l.layer) : 0;
+                const float timelineAxisX = 60f;
+                const float layerOffset = 135f;
+                const float eventWidth = 120f;
+                const float padding = 50f;
+                
+                float requiredWidth = timelineAxisX + 20f + (maxLayer + 1) * layerOffset + eventWidth + padding;
+                float actualWidth = Math.Max(rect.width, requiredWidth);
+
+                // Vertical timeline: Height is based on time span
+                float totalTimelineHeight = (float)(span * _pixelsPerSecond) + 200f;
+                
+                // Start scroll view with both horizontal and vertical scrolling
+                _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, 
+                    GUILayout.ExpandHeight(true), 
+                    GUILayout.ExpandWidth(true));
+                
+                var timelineRect = GUILayoutUtility.GetRect(actualWidth, totalTimelineHeight);
                 
                 // Draw vertical timeline
                 DrawVerticalTimelineGrid(timelineRect, minT, maxT);
                 
-                // Process events with collision detection and layout
-                var eventLayouts = CalculateEventLayout(eventsList, timelineRect, minT, maxT);
+                // Recalculate layouts with actual rect
+                eventLayouts = CalculateEventLayout(eventsList, timelineRect, minT, maxT);
                 
-                // Draw events with connection lines
+                // Draw events
                 DrawEventsWithConnections(eventLayouts, timelineRect);
                 
                 // Draw playhead in replay mode
@@ -486,12 +520,10 @@ namespace EventCenter.EditorTools
                 Debug.LogError($"[EventVisualizerWindow] DrawTimelineArea Exception: {ex.Message}");
                 try
                 {
-                    // Try to end scroll view safely
                     GUILayout.EndScrollView();
                 }
                 catch { }
                 
-                // Show error message in a new scroll view
                 _timelineScroll = GUILayout.BeginScrollView(_timelineScroll, GUILayout.ExpandHeight(true));
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("Error drawing timeline", EditorStyles.centeredGreyMiniLabel);
