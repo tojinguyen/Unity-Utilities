@@ -26,15 +26,7 @@ namespace TirexGame.Utils.UI.Example
             exampleDataList = new List<IRecycleViewData>();
             for (int i = 0; i < dataCount; i++)
             {
-                if (i % 10 == 0) // Every 10th item is a large text message
-                {
-                    exampleDataList.Add(new LargeTextMessageData
-                    {
-                        Message = $"This is a large text message with more content at index {i}. It should have a taller height to accommodate more text content.",
-                        CustomHeight = 120f + (i % 3) * 20f // Varying heights: 120, 140, 160
-                    });
-                }
-                else if (i % 5 == 0) // Every 5th item is an image message
+                if (i % 5 == 0) // Every 5th item is an image message
                 {
                     exampleDataList.Add(new ImageMessageData
                     {
@@ -45,10 +37,12 @@ namespace TirexGame.Utils.UI.Example
                 }
                 else // Other items are text messages
                 {
+                    // Some text messages have custom heights for variety
+                    string message = i % 3 == 0 ? "Short message" : $"This is a longer text message at index {i} with more content to display.";
                     exampleDataList.Add(new TextMessageData
                     {
-                        Message = $"Text message {i}",
-                        CustomHeight = i % 4 == 0 ? 80f : -1f // Some items have custom height, others use default
+                        Message = message,
+                        CustomHeight = i % 4 == 0 ? (80f + (i % 3) * 20f) : -1f // Some items have custom height: 80, 100, 120
                     });
                 }
             }
@@ -81,10 +75,6 @@ namespace TirexGame.Utils.UI.Example
             else if (data is ImageMessageData imageData)
             {
                 Debug.Log($"Image Item Caption: {imageData.Caption}");
-            }
-            else if (data is LargeTextMessageData largeTextData)
-            {
-                Debug.Log($"Large Text Item Message: {largeTextData.Message}");
             }
         }
     }

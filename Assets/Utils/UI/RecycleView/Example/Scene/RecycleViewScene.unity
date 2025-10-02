@@ -548,10 +548,18 @@ MonoBehaviour:
   itemTypeMappings:
   - TypeId: 0
     Prefab: {fileID: 5907353471733447767, guid: 103838e1950467a42858868a5fdbd2d7, type: 3}
+    CustomHeight: -1
+    CustomWidth: -1
   - TypeId: 1
     Prefab: {fileID: 6095638913217057381, guid: f5dd32b05a6f4034b80de61d55a4e6bb, type: 3}
-  itemHeight: 100
-  itemWidth: 100
+    CustomHeight: -1
+    CustomWidth: -1
+  - TypeId: 2
+    Prefab: {fileID: 3872319034893283447, guid: 98ee4db9fe84f9640844f1e4f014c3fa, type: 3}
+    CustomHeight: -1
+    CustomWidth: -1
+  defaultItemHeight: 100
+  defaultItemWidth: 100
   viewBuffer: 2
   layoutMode: 0
   scrollRect: {fileID: 1595256830}

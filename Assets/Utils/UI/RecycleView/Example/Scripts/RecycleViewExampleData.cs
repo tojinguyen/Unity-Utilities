@@ -21,13 +21,5 @@ namespace TirexGame.Utils.UI.Example
         public float CustomHeight { get; set; } = -1f; // Use default height
     }
 
-    // Data for a large text message item with custom height (Type 2)
-    public class LargeTextMessageData : IRecycleViewData
-    {
-        public int ItemType => 2;
-        public string Message { get; set; }
-        public float CustomHeight { get; set; } = 150f; // Custom height
-    }
-
     #endregion
 }
