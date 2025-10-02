@@ -190,10 +190,10 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 }
 
                 // Excluded Folder
-                if (folderData.GroupSubfoldersSeparately)
+                if (folderData.IncludeSubfolders)
                 {
                     EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField("Exclude Folder:", GUILayout.Width(120));
+                    EditorGUILayout.LabelField("Exclude Subfolder:", GUILayout.Width(120));
 
                     if (Directory.Exists(folderData.FolderPath))
                     {
@@ -201,14 +201,14 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                             .Select(Path.GetFileName).ToList();
                         subdirectories.Insert(0, "None");
 
-                        int selectedIndex = subdirectories.IndexOf(folderData.ExcludedFolder);
+                        int selectedIndex = subdirectories.IndexOf(folderData.ExcludedSubfolder);
                         if (selectedIndex == -1) selectedIndex = 0;
 
                         int newIndex = EditorGUILayout.Popup(selectedIndex, subdirectories.ToArray());
 
                         if (newIndex != selectedIndex)
                         {
-                            folderData.ExcludedFolder = subdirectories[newIndex];
+                            folderData.ExcludedSubfolder = subdirectories[newIndex];
                             EditorUtility.SetDirty(config);
                         }
                     }
@@ -364,29 +364,31 @@ namespace TirexGame.Utils.Editor.AddressableImporter
 
             int processedCount = 0;
 
-            if (folderConfig.GroupSubfoldersSeparately && folderConfig.IncludeSubfolders)
-            {
-                // Process files in the root folder first
-                processedCount += ProcessFilesInDirectory(folderConfig.FolderPath, folderConfig.GroupName, folderConfig, settings, SearchOption.TopDirectoryOnly);
+            // Process files in the root folder first, regardless of subfolder settings
+            processedCount += ProcessFilesInDirectory(folderConfig.FolderPath, folderConfig.GroupName, folderConfig, settings, SearchOption.TopDirectoryOnly);
 
-                // Process files in each subfolder
+            // If including subfolders, iterate through them and handle exclusions
+            if (folderConfig.IncludeSubfolders)
+            {
                 var subdirectories = Directory.GetDirectories(folderConfig.FolderPath, "*", SearchOption.TopDirectoryOnly);
                 foreach (var subDir in subdirectories)
                 {
                     string subDirName = Path.GetFileName(subDir);
-                    if (folderConfig.GroupSubfoldersSeparately && !string.IsNullOrEmpty(folderConfig.ExcludedFolder) && folderConfig.ExcludedFolder != "None" && subDirName == folderConfig.ExcludedFolder)
+
+                    // Check if the subdirectory should be excluded
+                    if (!string.IsNullOrEmpty(folderConfig.ExcludedSubfolder) && folderConfig.ExcludedSubfolder != "None" && subDirName == folderConfig.ExcludedSubfolder)
                     {
-                        continue;
+                        continue; // Skip this folder
                     }
-                    
-                    string groupName = $"{folderConfig.GroupName}_{subDirName}";
+
+                    // Determine the group name based on whether we are grouping separately
+                    string groupName = folderConfig.GroupSubfoldersSeparately
+                        ? $"{folderConfig.GroupName}_{subDirName}"
+                        : folderConfig.GroupName;
+
+                    // Process files in the subdirectory (recursively)
                     processedCount += ProcessFilesInDirectory(subDir, groupName, folderConfig, settings, SearchOption.AllDirectories);
                 }
-            }
-            else
-            {
-                var searchOption = folderConfig.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                processedCount += ProcessFilesInDirectory(folderConfig.FolderPath, folderConfig.GroupName, folderConfig, settings, searchOption);
             }
 
             return processedCount;
