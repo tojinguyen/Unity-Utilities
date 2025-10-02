@@ -671,5 +671,50 @@ namespace TirexGame.Utils.UI
         }
 
         #endregion
+
+        #region Public API Extensions
+
+        /// <summary>
+        /// Refreshes a specific item by index. This will update the visual representation
+        /// of the item if it's currently visible.
+        /// </summary>
+        /// <param name="index">The index of the item to refresh</param>
+        public void RefreshItem(int index)
+        {
+            if (_dataList == null || index < 0 || index >= _dataList.Count)
+            {
+                Debug.LogWarning($"Cannot refresh item at index {index}: index out of bounds");
+                return;
+            }
+
+            // Find the active item with this index
+            foreach (var activeItem in _activeItems)
+            {
+                if (activeItem.CurrentDataIndex == index)
+                {
+                    var data = _dataList[index];
+                    activeItem.BindData(data, index);
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Refreshes all currently visible items. Useful when data has been modified
+        /// and you want to ensure all visible items reflect the latest state.
+        /// </summary>
+        public void RefreshAllVisibleItems()
+        {
+            foreach (var activeItem in _activeItems)
+            {
+                if (activeItem.CurrentDataIndex >= 0 && activeItem.CurrentDataIndex < _dataList.Count)
+                {
+                    var data = _dataList[activeItem.CurrentDataIndex];
+                    activeItem.BindData(data, activeItem.CurrentDataIndex);
+                }
+            }
+        }
+
+        #endregion
     }
 }
