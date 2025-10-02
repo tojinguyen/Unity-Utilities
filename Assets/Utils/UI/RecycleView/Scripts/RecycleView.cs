@@ -21,6 +21,9 @@ namespace TirexGame.Utils.UI
         [Header("Layout Settings")]
         [Tooltip("The layout mode for arranging items.")]
         [SerializeField] private LayoutMode layoutMode = LayoutMode.Vertical;
+        
+        [Tooltip("Padding between items in pixels.")]
+        [SerializeField] private float itemPadding = 0f;
 
         [Header("References")]
         [Tooltip("The ScrollRect component.")]
@@ -155,6 +158,29 @@ namespace TirexGame.Utils.UI
 
         #endregion
 
+        #region Public Properties
+
+        /// <summary>
+        /// Gets or sets the padding between items. Rebuilds the list when changed.
+        /// </summary>
+        public float ItemPadding
+        {
+            get => itemPadding;
+            set
+            {
+                if (Math.Abs(itemPadding - value) > 0.001f)
+                {
+                    itemPadding = value;
+                    if (_dataList != null && _dataList.Count > 0)
+                    {
+                        Rebuild();
+                    }
+                }
+            }
+        }
+
+        #endregion
+
         #region Public API
 
         /// <summary>
@@ -172,6 +198,15 @@ namespace TirexGame.Utils.UI
         public void Refresh()
         {
             UpdateVisibleItems();
+        }
+
+        /// <summary>
+        /// Sets the padding between items and rebuilds the list.
+        /// </summary>
+        /// <param name="padding">The new padding value in pixels.</param>
+        public void SetItemPadding(float padding)
+        {
+            ItemPadding = padding;
         }
 
         #endregion
@@ -230,11 +265,11 @@ namespace TirexGame.Utils.UI
             {
                 if (layoutMode == LayoutMode.Vertical)
                 {
-                    _itemPositions[i] = _itemPositions[i - 1] + GetItemHeight(i - 1);
+                    _itemPositions[i] = _itemPositions[i - 1] + GetItemHeight(i - 1) + itemPadding;
                 }
                 else
                 {
-                    _itemPositions[i] = _itemPositions[i - 1] + GetItemWidth(i - 1);
+                    _itemPositions[i] = _itemPositions[i - 1] + GetItemWidth(i - 1) + itemPadding;
                 }
             }
 
@@ -245,11 +280,11 @@ namespace TirexGame.Utils.UI
                 {
                     if (layoutMode == LayoutMode.Vertical)
                     {
-                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}");
+                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
                     }
                     else
                     {
-                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}");
+                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
                     }
                 }
             }

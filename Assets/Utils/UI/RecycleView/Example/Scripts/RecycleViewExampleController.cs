@@ -11,6 +11,7 @@ namespace TirexGame.Utils.UI.Example
         [SerializeField] private RecycleView recycleView;
         [SerializeField] private int dataCount = 1000;
         [SerializeField] private Sprite sampleSprite; // Assign a sample sprite in the inspector
+        [SerializeField] private float itemPadding = 5f; // Padding between items
 
         private List<IRecycleViewData> exampleDataList;
 
@@ -47,6 +48,9 @@ namespace TirexGame.Utils.UI.Example
             // Set the data to the RecycleView
             recycleView.SetData(exampleDataList);
 
+            // Set the padding between items
+            recycleView.SetItemPadding(itemPadding);
+
             // Subscribe to the item click event
             recycleView.OnItemClicked += HandleItemClicked;
         }
@@ -73,6 +77,38 @@ namespace TirexGame.Utils.UI.Example
             {
                 Debug.Log($"Image Item Caption: {imageData.Caption}");
             }
+        }
+
+        /// <summary>
+        /// Example method to demonstrate changing padding at runtime.
+        /// Can be called from UI buttons or other events.
+        /// </summary>
+        public void IncreasePadding()
+        {
+            itemPadding += 5f;
+            recycleView.SetItemPadding(itemPadding);
+            Debug.Log($"Increased padding to: {itemPadding}");
+        }
+
+        /// <summary>
+        /// Example method to demonstrate changing padding at runtime.
+        /// Can be called from UI buttons or other events.
+        /// </summary>
+        public void DecreasePadding()
+        {
+            itemPadding = Mathf.Max(0f, itemPadding - 5f);
+            recycleView.SetItemPadding(itemPadding);
+            Debug.Log($"Decreased padding to: {itemPadding}");
+        }
+
+        /// <summary>
+        /// Set a specific padding value.
+        /// </summary>
+        public void SetPadding(float padding)
+        {
+            itemPadding = Mathf.Max(0f, padding);
+            recycleView.SetItemPadding(itemPadding);
+            Debug.Log($"Set padding to: {itemPadding}");
         }
     }
 }
