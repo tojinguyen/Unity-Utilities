@@ -65,18 +65,48 @@ namespace TirexGame.Utils.UI.Example
 
         private void HandleItemClicked(RecycleViewItem item)
         {
-            Debug.Log($"Clicked on item at index: {item.CurrentDataIndex}");
+            Debug.Log($"=== Item Clicked at Index: {item.CurrentDataIndex} ===");
+            
             // You can access the specific data like this:
             var data = exampleDataList[item.CurrentDataIndex];
             
             if (data is TextMessageData textData)
             {
                 Debug.Log($"Text Item Message: {textData.Message}");
+                // Example: Could open an edit dialog, copy to clipboard, etc.
+                HandleTextItemClick(textData, item.CurrentDataIndex);
             }
             else if (data is ImageMessageData imageData)
             {
                 Debug.Log($"Image Item Caption: {imageData.Caption}");
+                // Example: Could open image in fullscreen, show details, etc.
+                HandleImageItemClick(imageData, item.CurrentDataIndex);
             }
+        }
+        
+        private void HandleTextItemClick(TextMessageData textData, int index)
+        {
+            // Example specific handling for text items
+            Debug.Log($"Handling text item click - could implement: edit text, copy message, etc.");
+            
+            // Example: Change the message text
+            if (index % 10 == 0) // Every 10th item gets a special message
+            {
+                textData.Message = $"CLICKED! Original was at index {index}";
+                // Refresh the item to show updated data
+                recycleView.RefreshItem(index);
+            }
+        }
+        
+        private void HandleImageItemClick(ImageMessageData imageData, int index)
+        {
+            // Example specific handling for image items
+            Debug.Log($"Handling image item click - could implement: fullscreen view, image editor, etc.");
+            
+            // Example: Update the caption
+            imageData.Caption += " [CLICKED]";
+            // Refresh the item to show updated data
+            recycleView.RefreshItem(index);
         }
 
         /// <summary>
