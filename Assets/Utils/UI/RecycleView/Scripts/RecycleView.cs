@@ -80,6 +80,22 @@ namespace TirexGame.Utils.UI
 
             _content = scrollRect.content;
 
+            // Ensure content has correct anchor settings for consistent item positioning
+            if (layoutMode == LayoutMode.Vertical)
+            {
+                // For vertical scrolling, anchor content to top
+                _content.anchorMin = new Vector2(0, 1);
+                _content.anchorMax = new Vector2(1, 1);
+                _content.pivot = new Vector2(0.5f, 1);
+            }
+            else
+            {
+                // For horizontal scrolling, anchor content to left
+                _content.anchorMin = new Vector2(0, 0);
+                _content.anchorMax = new Vector2(0, 1);
+                _content.pivot = new Vector2(0, 0.5f);
+            }
+
             // Initialize prefab map and auto-detect sizes from prefabs
             _itemPrefabMap = new Dictionary<int, GameObject>();
             foreach (var mapping in itemTypeMappings)
@@ -215,6 +231,22 @@ namespace TirexGame.Utils.UI
                     _itemPositions[i] = _itemPositions[i - 1] + GetItemWidth(i - 1);
                 }
             }
+
+            // Debug log for position verification
+            if (_dataList.Count <= 10) // Only log for small lists to avoid spam
+            {
+                for (int i = 0; i < _dataList.Count; i++)
+                {
+                    if (layoutMode == LayoutMode.Vertical)
+                    {
+                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}");
+                    }
+                    else
+                    {
+                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -342,11 +374,37 @@ namespace TirexGame.Utils.UI
                 var data = _dataList[i];
                 var item = GetItemFromPool(data.ItemType);
 
+                // Ensure correct anchor and pivot settings for consistent positioning
+                var itemRect = ((RectTransform)item.transform);
+                
                 // Position using calculated positions
                 if (layoutMode == LayoutMode.Vertical)
-                    ((RectTransform)item.transform).anchoredPosition = new Vector2(0, -GetItemPosition(i));
+                {
+                    // Set anchor to top-left for vertical layout
+                    itemRect.anchorMin = new Vector2(0, 1);
+                    itemRect.anchorMax = new Vector2(1, 1);
+                    itemRect.pivot = new Vector2(0.5f, 1);
+                    
+                    // Position from top, accounting for the item's height
+                    itemRect.anchoredPosition = new Vector2(0, -GetItemPosition(i));
+                    
+                    // Ensure the item has the correct size
+                    float itemHeight = GetItemHeight(i);
+                    itemRect.sizeDelta = new Vector2(itemRect.sizeDelta.x, itemHeight);
+                }
                 else
-                    ((RectTransform)item.transform).anchoredPosition = new Vector2(GetItemPosition(i), 0);
+                {
+                    // Set anchor to top-left for horizontal layout
+                    itemRect.anchorMin = new Vector2(0, 0);
+                    itemRect.anchorMax = new Vector2(0, 1);
+                    itemRect.pivot = new Vector2(0, 0.5f);
+                    
+                    itemRect.anchoredPosition = new Vector2(GetItemPosition(i), 0);
+                    
+                    // Ensure the item has the correct size
+                    float itemWidth = GetItemWidth(i);
+                    itemRect.sizeDelta = new Vector2(itemWidth, itemRect.sizeDelta.y);
+                }
 
                 item.BindData(data, i);
                 _activeItems.Add(item);
@@ -446,6 +504,21 @@ namespace TirexGame.Utils.UI
                 var instance = Instantiate(prefab, _content);
                 item = instance.GetComponent<RecycleViewItem>();
                 item.Initialize(this);
+                
+                // Ensure newly created items have consistent anchor settings
+                var itemRect = instance.GetComponent<RectTransform>();
+                if (layoutMode == LayoutMode.Vertical)
+                {
+                    itemRect.anchorMin = new Vector2(0, 1);
+                    itemRect.anchorMax = new Vector2(1, 1);
+                    itemRect.pivot = new Vector2(0.5f, 1);
+                }
+                else
+                {
+                    itemRect.anchorMin = new Vector2(0, 0);
+                    itemRect.anchorMax = new Vector2(0, 1);
+                    itemRect.pivot = new Vector2(0, 0.5f);
+                }
             }
 
             item.gameObject.SetActive(true);
