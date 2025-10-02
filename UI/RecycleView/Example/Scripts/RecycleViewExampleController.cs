@@ -62,11 +62,11 @@ namespace TirexGame.Utils.UI.Example
             // You can access the specific data like this:
             if (item is TextRecycleViewItem textItem)
             {
-                // Handle text item click
+                Debug.Log($"Text Item Message: {textItem.CurrentDataIndex}");
             }
             else if (item is ImageRecycleViewItem imageItem)
             {
-                // Handle image item click
+                Debug.Log($"Image Item Caption: {imageItem.CurrentDataIndex}");
             }
         }
     }
