@@ -22,7 +22,7 @@ namespace TirexGame.Utils.UI.Example
                 return;
             }
 
-            // Generate a large list of mixed data types with varying heights
+            // Generate a large list of mixed data types
             exampleDataList = new List<IRecycleViewData>();
             for (int i = 0; i < dataCount; i++)
             {
@@ -31,18 +31,15 @@ namespace TirexGame.Utils.UI.Example
                     exampleDataList.Add(new ImageMessageData
                     {
                         Image = sampleSprite,
-                        Caption = $"Image item {i}",
-                        CustomHeight = 100f + (i % 2) * 30f // Varying heights: 100, 130
+                        Caption = $"Image item {i}"
                     });
                 }
                 else // Other items are text messages
                 {
-                    // Some text messages have custom heights for variety
                     string message = i % 3 == 0 ? "Short message" : $"This is a longer text message at index {i} with more content to display.";
                     exampleDataList.Add(new TextMessageData
                     {
-                        Message = message,
-                        CustomHeight = i % 4 == 0 ? (80f + (i % 3) * 20f) : -1f // Some items have custom height: 80, 100, 120
+                        Message = message
                     });
                 }
             }

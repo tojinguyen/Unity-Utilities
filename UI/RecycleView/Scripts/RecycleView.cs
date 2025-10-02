@@ -67,10 +67,6 @@ namespace TirexGame.Utils.UI
         {
             public int TypeId;
             public RecycleViewItem Prefab;
-            [Tooltip("Custom height for this item type. Use -1 to use default height.")]
-            public float CustomHeight = -1f;
-            [Tooltip("Custom width for this item type. Use -1 to use default width.")]
-            public float CustomWidth = -1f;
         }
 
         #endregion
@@ -84,7 +80,7 @@ namespace TirexGame.Utils.UI
 
             _content = scrollRect.content;
 
-            // Initialize prefab map and size maps for quick lookups
+            // Initialize prefab map and auto-detect sizes from prefabs
             _itemPrefabMap = new Dictionary<int, GameObject>();
             foreach (var mapping in itemTypeMappings)
             {
@@ -97,12 +93,26 @@ namespace TirexGame.Utils.UI
                 {
                     _itemPrefabMap.Add(mapping.TypeId, mapping.Prefab.gameObject);
                     
-                    // Set item type dimensions
-                    float itemHeight = mapping.CustomHeight > 0 ? mapping.CustomHeight : defaultItemHeight;
-                    float itemWidth = mapping.CustomWidth > 0 ? mapping.CustomWidth : defaultItemWidth;
-                    
-                    _itemTypeHeights[mapping.TypeId] = itemHeight;
-                    _itemTypeWidths[mapping.TypeId] = itemWidth;
+                    // Auto-detect dimensions from prefab RectTransform
+                    var prefabRect = mapping.Prefab.GetComponent<RectTransform>();
+                    if (prefabRect != null)
+                    {
+                        float itemHeight = prefabRect.sizeDelta.y > 0 ? prefabRect.sizeDelta.y : defaultItemHeight;
+                        float itemWidth = prefabRect.sizeDelta.x > 0 ? prefabRect.sizeDelta.x : defaultItemWidth;
+                        
+                        _itemTypeHeights[mapping.TypeId] = itemHeight;
+                        _itemTypeWidths[mapping.TypeId] = itemWidth;
+                        
+                        Debug.Log($"RecycleView: Auto-detected size for TypeId {mapping.TypeId}: {itemWidth}x{itemHeight}");
+                    }
+                    else
+                    {
+                        // Fallback to default dimensions
+                        _itemTypeHeights[mapping.TypeId] = defaultItemHeight;
+                        _itemTypeWidths[mapping.TypeId] = defaultItemWidth;
+                        
+                        Debug.LogWarning($"RecycleView: Could not detect size for TypeId {mapping.TypeId}, using default dimensions");
+                    }
                 }
                 else
                 {
@@ -155,12 +165,8 @@ namespace TirexGame.Utils.UI
                 return defaultItemHeight;
 
             var data = _dataList[index];
-            
-            // Check if data has custom height
-            if (data.CustomHeight > 0)
-                return data.CustomHeight;
                 
-            // Use item type height
+            // Use item type height (auto-detected from prefab)
             if (_itemTypeHeights.ContainsKey(data.ItemType))
                 return _itemTypeHeights[data.ItemType];
                 
