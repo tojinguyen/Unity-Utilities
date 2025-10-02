@@ -1,5 +1,6 @@
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -52,6 +53,8 @@ namespace TirexGame.Utils.UI
         private float[] _itemPositions; // Cache of item positions for performance
         private int _firstVisibleIndex = -1;
         private int _lastVisibleIndex = -1;
+        private bool _isCalculatingPositions = false; // Flag to prevent multiple calculations
+        private Coroutine _positionCalculationCoroutine;
 
         #endregion
 
@@ -249,6 +252,7 @@ namespace TirexGame.Utils.UI
 
         /// <summary>
         /// Pre-calculate all item positions for performance.
+        /// Uses coroutine for large datasets to prevent frame drops.
         /// </summary>
         private void CalculateItemPositions()
         {
@@ -258,6 +262,32 @@ namespace TirexGame.Utils.UI
                 return;
             }
 
+            // Prevent multiple simultaneous calculations
+            if (_isCalculatingPositions)
+            {
+                if (_positionCalculationCoroutine != null)
+                {
+                    StopCoroutine(_positionCalculationCoroutine);
+                }
+            }
+
+            // For large datasets, use coroutine to spread calculation across frames
+            if (_dataList.Count > 1000)
+            {
+                _isCalculatingPositions = true;
+                _positionCalculationCoroutine = StartCoroutine(CalculateItemPositionsCoroutine());
+            }
+            else
+            {
+                CalculateItemPositionsImmediate();
+            }
+        }
+
+        /// <summary>
+        /// Calculate positions immediately for small datasets.
+        /// </summary>
+        private void CalculateItemPositionsImmediate()
+        {
             _itemPositions = new float[_dataList.Count];
             _itemPositions[0] = 0;
 
@@ -276,16 +306,71 @@ namespace TirexGame.Utils.UI
             // Debug log for position verification
             if (_dataList.Count <= 10) // Only log for small lists to avoid spam
             {
-                for (int i = 0; i < _dataList.Count; i++)
+                LogItemPositions();
+            }
+        }
+
+        /// <summary>
+        /// Calculate positions using coroutine to spread work across frames for large datasets.
+        /// </summary>
+        private System.Collections.IEnumerator CalculateItemPositionsCoroutine()
+        {
+            _itemPositions = new float[_dataList.Count];
+            _itemPositions[0] = 0;
+
+            const int itemsPerFrame = 200; // Process 200 items per frame
+            int processedCount = 1; // Start from 1 since position[0] = 0
+
+            while (processedCount < _dataList.Count)
+            {
+                int endIndex = Mathf.Min(processedCount + itemsPerFrame, _dataList.Count);
+                
+                for (int i = processedCount; i < endIndex; i++)
                 {
                     if (layoutMode == LayoutMode.Vertical)
                     {
-                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
+                        _itemPositions[i] = _itemPositions[i - 1] + GetItemHeight(i - 1) + itemPadding;
                     }
                     else
                     {
-                        Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
+                        _itemPositions[i] = _itemPositions[i - 1] + GetItemWidth(i - 1) + itemPadding;
                     }
+                }
+
+                processedCount = endIndex;
+                
+                // Yield control back to Unity for one frame
+                yield return null;
+            }
+
+            // Mark calculation as complete
+            _isCalculatingPositions = false;
+            _positionCalculationCoroutine = null;
+
+            // Update content size and visible items once calculation is complete
+            float totalSize = CalculateTotalContentSize();
+            if (layoutMode == LayoutMode.Vertical)
+                _content.sizeDelta = new Vector2(_content.sizeDelta.x, totalSize);
+            else
+                _content.sizeDelta = new Vector2(totalSize, _content.sizeDelta.y);
+
+            OnScroll(Vector2.zero);
+        }
+
+        /// <summary>
+        /// Helper method to log item positions for debugging.
+        /// </summary>
+        private void LogItemPositions()
+        {
+            for (int i = 0; i < _dataList.Count; i++)
+            {
+                if (layoutMode == LayoutMode.Vertical)
+                {
+                    Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
+                }
+                else
+                {
+                    Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
                 }
             }
         }
@@ -335,18 +420,22 @@ namespace TirexGame.Utils.UI
             _firstVisibleIndex = -1;
             _lastVisibleIndex = -1;
 
-            // Calculate item positions and total content size
+            // Calculate item positions (may use coroutine for large datasets)
             CalculateItemPositions();
-            float totalSize = CalculateTotalContentSize();
 
-            // Set content size
-            if (layoutMode == LayoutMode.Vertical)
-                _content.sizeDelta = new Vector2(_content.sizeDelta.x, totalSize);
-            else
-                _content.sizeDelta = new Vector2(totalSize, _content.sizeDelta.y);
+            // For small datasets, update content size and show items immediately
+            if (_dataList != null && _dataList.Count <= 1000)
+            {
+                float totalSize = CalculateTotalContentSize();
+                
+                if (layoutMode == LayoutMode.Vertical)
+                    _content.sizeDelta = new Vector2(_content.sizeDelta.x, totalSize);
+                else
+                    _content.sizeDelta = new Vector2(totalSize, _content.sizeDelta.y);
 
-            // Immediately update to show initial items
-            OnScroll(Vector2.zero);
+                OnScroll(Vector2.zero);
+            }
+            // For large datasets, content size update and item display will be handled by coroutine
         }
 
         private void OnScroll(Vector2 scrollPos)
