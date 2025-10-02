@@ -17,7 +17,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         private int m_IndexToRemove = -1;
         private string m_SearchQuery = "";
 
-        [MenuItem("TirexGame/Editor/Addressable Importer")]
+        [MenuItem("TirexGame/Editor/Addressable/Addressable Importer")]
         public static void ShowWindow()
         {
             var window = GetWindow<AddressableImporterWindow>("Addressable Importer");
