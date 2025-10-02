@@ -11,6 +11,7 @@ This package is ideal for leaderboards, inventory screens, chat logs, or any oth
 - **Multi-Item Type Support:** Display multiple different prefabs/layouts within the same list.
 - **Efficient Pooling:** Each item type gets its own object pool for fast reuse.
 - **Layouts:** Supports both Vertical and Horizontal linear layouts.
+- **Item Padding:** Configurable spacing between items for better visual layout.
 - **Simple API:** A clean interface for setting data and handling user interaction.
 - **Inspector Integration:** Configure all prefabs and settings directly in the Unity Inspector.
 
@@ -103,7 +104,10 @@ public class UIManager : MonoBehaviour
         // 2. Set the data
         myRecycleView.SetData(dataList);
 
-        // 3. (Optional) Listen for clicks
+        // 3. (Optional) Set padding between items
+        myRecycleView.SetItemPadding(10f); // 10 pixels padding
+
+        // 4. (Optional) Listen for clicks
         myRecycleView.OnItemClicked += OnListItemClicked;
     }
 
@@ -118,4 +122,27 @@ public class UIManager : MonoBehaviour
 
 - `void SetData(List<IRecycleViewData> data)`: Clears the list and rebuilds it with the new data.
 - `void Refresh()`: Updates the data of currently visible items without a full rebuild.
+- `void SetItemPadding(float padding)`: Sets the padding between items in pixels and rebuilds the list.
+- `float ItemPadding { get; set; }`: Property to get or set the padding between items.
 - `Action<RecycleViewItem> OnItemClicked`: An event that fires when an item's `NotifyItemClicked()` method is called (e.g., from a button's `OnClick` event).
+
+## Configuration Options
+
+### Inspector Settings
+
+- **Item Type Mappings:** Configure which prefabs correspond to which item types.
+- **View Buffer:** Number of extra items to instantiate outside the visible area to reduce pop-in.
+- **Layout Mode:** Choose between Vertical or Horizontal scrolling.
+- **Item Padding:** Set the spacing between items in pixels.
+
+### Runtime Configuration
+
+You can change the padding at runtime:
+
+```csharp
+// Change padding through property
+myRecycleView.ItemPadding = 15f;
+
+// Or through method
+myRecycleView.SetItemPadding(15f);
+```
