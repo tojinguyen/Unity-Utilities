@@ -130,16 +130,12 @@ namespace TirexGame.Utils.UI
                         
                         _itemTypeHeights[mapping.TypeId] = itemHeight;
                         _itemTypeWidths[mapping.TypeId] = itemWidth;
-                        
-                        Debug.Log($"RecycleView: Auto-detected size for TypeId {mapping.TypeId}: {itemWidth}x{itemHeight}");
                     }
                     else
                     {
                         // Fallback to default dimensions
                         _itemTypeHeights[mapping.TypeId] = 100f; // Use fixed fallback
                         _itemTypeWidths[mapping.TypeId] = 100f; // Use fixed fallback
-                        
-                        Debug.LogWarning($"RecycleView: Could not detect size for TypeId {mapping.TypeId}, using default dimensions");
                     }
                 }
                 else

@@ -7,7 +7,7 @@ namespace TirexGame.Utils.UI.Example
     /// <summary>
     /// Image item with selection support and visual feedback
     /// </summary>
-    public class SelectableImageRecycleViewItem : RecycleViewItem<SelectableImageData>
+    public class SelectableImageRecycleViewItem : RecycleViewItem<ImageMessageData>
     {
         [SerializeField] private Image itemImage;
         [SerializeField] private TextMeshProUGUI captionText;
@@ -19,9 +19,10 @@ namespace TirexGame.Utils.UI.Example
         [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color selectedColor = Color.green;
 
-        private SelectableImageData _currentData;
+        private ImageMessageData _currentData;
+        private bool _isSelected = false;
 
-        public override void BindData(SelectableImageData data, int index)
+        public override void BindData(ImageMessageData data, int index)
         {
             _currentData = data;
             itemImage.sprite = data.Image;
@@ -38,26 +39,26 @@ namespace TirexGame.Utils.UI.Example
             // Update background color
             if (backgroundImage != null)
             {
-                backgroundImage.color = _currentData.IsSelected ? selectedColor : normalColor;
+                backgroundImage.color = _isSelected ? selectedColor : normalColor;
             }
 
             // Update selection overlay
             if (selectionOverlay != null)
             {
-                selectionOverlay.SetActive(_currentData.IsSelected);
+                selectionOverlay.SetActive(_isSelected);
             }
 
             // Update checkmark
             if (selectionCheckmark != null)
             {
-                selectionCheckmark.SetActive(_currentData.IsSelected);
+                selectionCheckmark.SetActive(_isSelected);
             }
 
             // Dim/brighten image based on selection
             if (itemImage != null)
             {
                 var color = itemImage.color;
-                color.a = _currentData.IsSelected ? 0.8f : 1f;
+                color.a = _isSelected ? 0.8f : 1f;
                 itemImage.color = color;
             }
         }
@@ -66,8 +67,12 @@ namespace TirexGame.Utils.UI.Example
         {
             base.OnItemClicked();
             
+            // Toggle selection state
+            _isSelected = !_isSelected;
+            UpdateSelectionVisual();
+            
             // Add pulse effect on click
-            if (selectionCheckmark != null && _currentData.IsSelected)
+            if (selectionCheckmark != null && _isSelected)
             {
                 StartCoroutine(PulseEffect());
             }
