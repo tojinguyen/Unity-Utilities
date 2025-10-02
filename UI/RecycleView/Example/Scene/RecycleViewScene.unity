@@ -551,7 +551,7 @@ MonoBehaviour:
   - TypeId: 1
     Prefab: {fileID: 6095638913217057381, guid: f5dd32b05a6f4034b80de61d55a4e6bb, type: 3}
   viewBuffer: 2
-  layoutMode: 1
+  layoutMode: 0
   scrollRect: {fileID: 1595256830}
 --- !u!1 &1961108306
 GameObject:

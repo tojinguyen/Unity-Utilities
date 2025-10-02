@@ -74,6 +74,18 @@ namespace TirexGame.Utils.UI
 
             _content = scrollRect.content;
 
+            // Configure ScrollRect based on layout mode
+            if (layoutMode == LayoutMode.Vertical)
+            {
+                scrollRect.horizontal = false;
+                scrollRect.vertical = true;
+            }
+            else
+            {
+                scrollRect.horizontal = true;
+                scrollRect.vertical = false;
+            }
+
             // Ensure content has correct anchor settings for consistent item positioning
             if (layoutMode == LayoutMode.Vertical)
             {
