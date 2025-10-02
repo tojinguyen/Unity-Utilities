@@ -15,12 +15,6 @@ namespace TirexGame.Utils.UI
         [Tooltip("Mapping of item types to their prefabs. Each type must have a unique integer ID.")]
         [SerializeField] private List<RecycleViewItemType> itemTypeMappings;
 
-        [Tooltip("The default height of a single item. Used when no custom height is specified.")]
-        [SerializeField] private float defaultItemHeight = 100f;
-
-        [Tooltip("The default width of a single item. Used when no custom width is specified.")]
-        [SerializeField] private float defaultItemWidth = 100f;
-
         [Tooltip("Buffer of items to instantiate above and below the visible area to reduce pop-in.")]
         [SerializeField] private int viewBuffer = 2;
 
@@ -113,8 +107,8 @@ namespace TirexGame.Utils.UI
                     var prefabRect = mapping.Prefab.GetComponent<RectTransform>();
                     if (prefabRect != null)
                     {
-                        float itemHeight = prefabRect.sizeDelta.y > 0 ? prefabRect.sizeDelta.y : defaultItemHeight;
-                        float itemWidth = prefabRect.sizeDelta.x > 0 ? prefabRect.sizeDelta.x : defaultItemWidth;
+                        float itemHeight = prefabRect.sizeDelta.y > 0 ? prefabRect.sizeDelta.y : 100f; // Use fixed fallback
+                        float itemWidth = prefabRect.sizeDelta.x > 0 ? prefabRect.sizeDelta.x : 100f; // Use fixed fallback
                         
                         _itemTypeHeights[mapping.TypeId] = itemHeight;
                         _itemTypeWidths[mapping.TypeId] = itemWidth;
@@ -124,8 +118,8 @@ namespace TirexGame.Utils.UI
                     else
                     {
                         // Fallback to default dimensions
-                        _itemTypeHeights[mapping.TypeId] = defaultItemHeight;
-                        _itemTypeWidths[mapping.TypeId] = defaultItemWidth;
+                        _itemTypeHeights[mapping.TypeId] = 100f; // Use fixed fallback
+                        _itemTypeWidths[mapping.TypeId] = 100f; // Use fixed fallback
                         
                         Debug.LogWarning($"RecycleView: Could not detect size for TypeId {mapping.TypeId}, using default dimensions");
                     }
@@ -178,7 +172,7 @@ namespace TirexGame.Utils.UI
         private float GetItemHeight(int index)
         {
             if (_dataList == null || index < 0 || index >= _dataList.Count)
-                return defaultItemHeight;
+                return 100f; // Use fixed fallback
 
             var data = _dataList[index];
                 
@@ -186,7 +180,7 @@ namespace TirexGame.Utils.UI
             if (_itemTypeHeights.ContainsKey(data.ItemType))
                 return _itemTypeHeights[data.ItemType];
                 
-            return defaultItemHeight;
+            return 100f; // Use fixed fallback
         }
 
         /// <summary>
@@ -195,7 +189,7 @@ namespace TirexGame.Utils.UI
         private float GetItemWidth(int index)
         {
             if (_dataList == null || index < 0 || index >= _dataList.Count)
-                return defaultItemWidth;
+                return 100f; // Use fixed fallback
 
             var data = _dataList[index];
             
@@ -203,7 +197,7 @@ namespace TirexGame.Utils.UI
             if (_itemTypeWidths.ContainsKey(data.ItemType))
                 return _itemTypeWidths[data.ItemType];
                 
-            return defaultItemWidth;
+            return 100f; // Use fixed fallback
         }
 
         /// <summary>
