@@ -24,7 +24,16 @@ namespace TirexGame.Utils.UI
 
         public void NotifyItemClicked()
         {
+            OnItemClicked();
             ParentRecycleView.OnItemClicked?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Override this method to handle item click events.
+        /// </summary>
+        protected virtual void OnItemClicked()
+        {
+            // Default implementation does nothing
         }
     }
 
