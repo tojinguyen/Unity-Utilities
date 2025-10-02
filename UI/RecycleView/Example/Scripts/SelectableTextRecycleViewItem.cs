@@ -7,7 +7,7 @@ namespace TirexGame.Utils.UI.Example
     /// <summary>
     /// Text item with selection support and visual feedback
     /// </summary>
-    public class SelectableTextRecycleViewItem : RecycleViewItem<SelectableTextData>
+    public class SelectableTextRecycleViewItem : RecycleViewItem<TextMessageData>
     {
         [SerializeField] private TextMeshProUGUI messageText;
         [SerializeField] private Image backgroundImage;
@@ -19,7 +19,8 @@ namespace TirexGame.Utils.UI.Example
         [SerializeField] private Color selectedColor = Color.cyan;
         [SerializeField] private Color hoverColor = new Color(0.8f, 0.8f, 0.8f, 1f); // Light gray
 
-        private SelectableTextData _currentData;
+        private TextMessageData _currentData;
+        private bool _isSelected = false;
 
         public override void Initialize(RecycleView parent)
         {
@@ -36,7 +37,7 @@ namespace TirexGame.Utils.UI.Example
             }
         }
 
-        public override void BindData(SelectableTextData data, int index)
+        public override void BindData(TextMessageData data, int index)
         {
             _currentData = data;
             messageText.text = $"{index}: {data.Message}";
@@ -51,25 +52,29 @@ namespace TirexGame.Utils.UI.Example
             // Update background color
             if (backgroundImage != null)
             {
-                backgroundImage.color = _currentData.IsSelected ? selectedColor : normalColor;
+                backgroundImage.color = _isSelected ? selectedColor : normalColor;
             }
 
             // Update selection border
             if (selectionBorder != null)
             {
-                selectionBorder.gameObject.SetActive(_currentData.IsSelected);
+                selectionBorder.gameObject.SetActive(_isSelected);
             }
 
             // Update checkmark
             if (selectionCheckmark != null)
             {
-                selectionCheckmark.SetActive(_currentData.IsSelected);
+                selectionCheckmark.SetActive(_isSelected);
             }
         }
 
         protected override void OnItemClicked()
         {
             base.OnItemClicked();
+            
+            // Toggle selection state
+            _isSelected = !_isSelected;
+            UpdateSelectionVisual();
             
             // Add click animation
             if (clickButton != null)
