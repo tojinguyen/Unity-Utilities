@@ -34,7 +34,7 @@ namespace TirexGame.Utils.Data
             {
                 if (_isInitialized)
                 {
-                    Log("DataManager already initialized");
+                    Log("DataManager already initialized - skipping duplicate initialization");
                     return;
                 }
 
@@ -46,7 +46,7 @@ namespace TirexGame.Utils.Data
                 }
                 
                 _isInitialized = true;
-                Log("DataManager initialized");
+                Log($"[DataManager] Successfully initialized at {DateTime.Now:HH:mm:ss.fff} - Priority execution enabled");
             }
         }
         
@@ -325,7 +325,8 @@ namespace TirexGame.Utils.Data
         {
             if (!_isInitialized)
             {
-                throw new InvalidOperationException("DataManager must be initialized before use. Call DataManager.Initialize() first.");
+                Debug.LogWarning("[DataManager] Auto-initializing DataManager because it wasn't explicitly initialized. For better control, call DataManager.Initialize() manually.");
+                Initialize();
             }
         }
         
