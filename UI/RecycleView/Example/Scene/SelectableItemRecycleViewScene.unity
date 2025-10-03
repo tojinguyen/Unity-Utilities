@@ -547,12 +547,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   itemTypeMappings:
   - TypeId: 0
-    Prefab: {fileID: 5907353471733447767, guid: 103838e1950467a42858868a5fdbd2d7, type: 3}
+    Prefab: {fileID: 1980009403865438664, guid: 582699a6c4bb32747969a5c062585aa9, type: 3}
   - TypeId: 1
-    Prefab: {fileID: 6095638913217057381, guid: f5dd32b05a6f4034b80de61d55a4e6bb, type: 3}
+    Prefab: {fileID: 4212372718748831925, guid: ed30e66334e549d4785e72e7466b7156, type: 3}
   viewBuffer: 2
   layoutMode: 0
-  itemPadding: 0
+  itemPadding: 11.93
   scrollRect: {fileID: 1595256830}
 --- !u!1 &1961108306
 GameObject:
@@ -564,7 +564,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1961108307}
   - component: {fileID: 1961108308}
-  - component: {fileID: 1961108309}
   m_Layer: 0
   m_Name: ExampleController
   m_TagString: Untagged
@@ -596,29 +595,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1961108306}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c574d074fb7b1bd49a0074c67133f212, type: 3}
+  m_Script: {fileID: 11500000, guid: 5c6bc7486c6014f44a8ceb723fffa7c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   recycleView: {fileID: 1595256833}
-  dataCount: 1000
   sampleSprite: {fileID: 21300000, guid: f939f5829ff6b3b4d95fcd00eaf4ba6b, type: 3}
-  itemPadding: 0
---- !u!114 &1961108309
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1961108306}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52ad778e2b1156643a986296eb16c073, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  recycleView: {fileID: 1595256833}
-  testDataSize: 100000
-  runTestOnStart: 1
-  logPerformanceMetrics: 1
 --- !u!1 &2006762970
 GameObject:
   m_ObjectHideFlags: 0

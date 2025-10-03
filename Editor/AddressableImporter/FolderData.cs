@@ -15,12 +15,12 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         [SerializeField] private bool groupSubfoldersSeparately;
         [SerializeField] private string[] excludedFileExtensions;
         [SerializeField] private bool isEnabled;
-        [SerializeField] private string excludedFolder;
+        [SerializeField] private string excludedSubfolder;
 
-        public string ExcludedFolder
+        public string ExcludedSubfolder
         {
-            get => excludedFolder;
-            set => excludedFolder = value;
+            get => excludedSubfolder;
+            set => excludedSubfolder = value;
         }
 
         public string FolderPath
@@ -81,7 +81,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             groupSubfoldersSeparately = false;
             excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
-            excludedFolder = "None";
+            excludedSubfolder = "None";
         }
 
         public FolderData(string path, string group = "Default")
@@ -94,7 +94,7 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             groupSubfoldersSeparately = false;
             excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
-            excludedFolder = "None";
+            excludedSubfolder = "None";
         }
     }
 }

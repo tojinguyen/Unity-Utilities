@@ -581,12 +581,9 @@ namespace TirexGame.Utils.Data.Editor
             {
                 EditorApplication.delayCall += () =>
                 {
-                    var window = EditorWindow.GetWindow<DataValidationWindow>(false, "Data Validation", false);
-                    if (window != null)
-                    {
-                        // Auto-validate in background
-                        Debug.Log("Data files changed, running auto-validation...");
-                    }
+                    // var window = EditorWindow.GetWindow<DataValidationWindow>(false, "Data Validation", false);
+                    // Auto-validate in background
+                    Debug.Log("Data files changed, running auto-validation...");
                 };
             }
         }

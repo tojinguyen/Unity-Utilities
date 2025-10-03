@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace TirexGame.Utils.UI
 {
@@ -8,12 +9,37 @@ namespace TirexGame.Utils.UI
     /// </summary>
     public abstract class RecycleViewItem : MonoBehaviour
     {
+        [Header("Click Settings")]
+        [Tooltip("Optional Button component for click handling. If not assigned, one will be created automatically.")]
+        [SerializeField] protected Button clickButton;
+        
         public RecycleView ParentRecycleView { get; internal set; }
         public int CurrentDataIndex { get; internal set; }
 
         public virtual void Initialize(RecycleView parent)
         {
             ParentRecycleView = parent;
+            SetupClickHandler();
+        }
+        
+        private void SetupClickHandler()
+        {
+            // Use assigned button if available, otherwise try to get or create one
+            if (clickButton == null)
+            {
+                clickButton = GetComponent<Button>();
+                if (clickButton == null)
+                {
+                    clickButton = gameObject.AddComponent<Button>();
+                    // Set button to have no graphic so it's invisible but still clickable
+                    clickButton.targetGraphic = null;
+                }
+            }
+            
+            // Remove existing listeners to avoid duplicates
+            clickButton.onClick.RemoveAllListeners();
+            // Add click listener
+            clickButton.onClick.AddListener(NotifyItemClicked);
         }
 
         /// <summary>
@@ -24,7 +50,16 @@ namespace TirexGame.Utils.UI
 
         public void NotifyItemClicked()
         {
+            OnItemClicked();
             ParentRecycleView.OnItemClicked?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Override this method to handle item click events.
+        /// </summary>
+        protected virtual void OnItemClicked()
+        {
+            // Default implementation does nothing
         }
     }
 
