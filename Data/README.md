@@ -199,6 +199,19 @@ public class PlayerData : IDataModel<PlayerData>, IValidatable
 
 ### Bước 2: Khởi tạo DataManager
 
+**⚡ Auto-Initialization (Khuyến khích)**: DataManager được tự động khởi tạo khi runtime bắt đầu với cấu hình mặc định. Bạn không cần làm gì thêm!
+
+**🔧 Manual Setup**: Nếu muốn tùy chỉnh cấu hình, sử dụng component `DataManagerInitializer` hoặc khởi tạo thủ công.
+
+#### Option A: Sử dụng DataManagerInitializer Component (Đơn giản)
+
+1. Tạo một GameObject trong Scene đầu tiên của game
+2. Attach component `DataManagerInitializer`
+3. Cấu hình settings trong Inspector
+4. Component sẽ tự động khởi tạo DataManager với `DefaultExecutionOrder(-1000)` để chạy trước tất cả script khác
+
+#### Option B: Khởi tạo thủ công (Kiểm soát tốt hơn)
+
 Tạo một GameObject với script khởi tạo trong Scene đầu tiên của game (ví dụ: MainMenu, Startup Scene).
 
 ```csharp
@@ -206,6 +219,7 @@ Tạo một GameObject với script khởi tạo trong Scene đầu tiên của 
 using UnityEngine;
 using TirexGame.Utils.Data;
 
+[DefaultExecutionOrder(-500)] // Đảm bảo chạy sớm, nhưng sau DataManagerInitializer
 public class GameInitializer : MonoBehaviour
 {
     [Header("Data Manager Settings")]
@@ -216,7 +230,7 @@ public class GameInitializer : MonoBehaviour
 
     private void Awake()
     {
-        // Cấu hình DataManager
+        // Cấu hình DataManager (sẽ skip nếu đã được auto-initialize)
         var config = new DataManagerConfig
         {
             EnableLogging = true,

@@ -7,6 +7,7 @@ namespace TirexGame.Utils.Data
     /// Unity component helper to automatically initialize DataManager.
     /// Add this component to a GameObject in your scene to auto-initialize DataManager.
     /// </summary>
+    [DefaultExecutionOrder(-1000)]
     public class DataManagerInitializer : MonoBehaviour
     {
         [Header("Configuration")]
@@ -64,6 +65,26 @@ namespace TirexGame.Utils.Data
         {
             // Optional: Shutdown DataManager when this component is destroyed
             // DataManager.Shutdown();
+        }
+        
+        /// <summary>
+        /// Automatically initialize DataManager at runtime startup
+        /// This ensures DataManager is always initialized even without GameObject
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void AutoInitializeDataManager()
+        {
+            var config = new DataManagerConfig
+            {
+                EnableLogging = true,
+                EnableCaching = true,
+                DefaultCacheExpirationMinutes = 30,
+                EnableAutoSave = true,
+                AutoSaveIntervalSeconds = 300f
+            };
+            
+            DataManager.Initialize(config);
+            Debug.Log("[DataManager] Auto-initialized at runtime startup");
         }
     }
 }
