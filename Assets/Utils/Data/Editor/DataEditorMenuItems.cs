@@ -14,19 +14,13 @@ namespace TirexGame.Utils.Data.Editor
             DataManagerWindow.ShowWindow();
         }
         
-        [MenuItem(MENU_ROOT + "Data Validation Window", priority = 2)]
-        public static void OpenDataValidation()
-        {
-            DataValidationWindow.ShowWindow();
-        }
-        
-        [MenuItem(MENU_ROOT + "Data Creation Wizard", priority = 3)]
+        [MenuItem(MENU_ROOT + "Data Creation Wizard", priority = 2)]
         public static void OpenDataCreationWizard()
         {
             DataCreationWizard.CreateWizard();
         }
         
-        [MenuItem(MENU_ROOT + "Open Data Folder", priority = 11)]
+        [MenuItem(MENU_ROOT + "Open Data Folder", priority = 10)]
         public static void OpenDataFolder()
         {
             string dataPath = Application.persistentDataPath;
@@ -41,7 +35,7 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        [MenuItem(MENU_ROOT + "Clear All Data", priority = 12)]
+        [MenuItem(MENU_ROOT + "Clear All Data", priority = 11)]
         public static void ClearAllData()
         {
             if (EditorUtility.DisplayDialog("Clear All Data", 
