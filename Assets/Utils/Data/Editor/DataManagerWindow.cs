@@ -33,6 +33,13 @@ namespace TirexGame.Utils.Data.Editor
         private DataManagerConfig _config;
         private string _dataPath;
         
+        // Auto-refresh functionality
+        private FileSystemWatcher _fileWatcher;
+        private bool _needsRefresh = false;
+        private double _lastRefreshTime = 0;
+        private const double REFRESH_INTERVAL = 1.0; // Refresh every 1 second if needed
+        private bool _autoRefreshEnabled = true;
+        
         public static void ShowWindow()
         {
             var window = GetWindow<DataManagerWindow>("Data Manager");
@@ -45,10 +52,30 @@ namespace TirexGame.Utils.Data.Editor
             _config = new DataManagerConfig();
             _dataPath = Application.persistentDataPath;
             RefreshDataTypes();
+            SetupFileWatcher();
+            EditorApplication.update += OnEditorUpdate;
+        }
+        
+        private void OnDisable()
+        {
+            CleanupFileWatcher();
+            EditorApplication.update -= OnEditorUpdate;
+        }
+        
+        private void OnFocus()
+        {
+            // Auto-refresh when window gains focus
+            if (_autoRefreshEnabled)
+            {
+                _needsRefresh = true;
+            }
         }
         
         private void OnGUI()
         {
+            // Handle auto-refresh
+            HandleAutoRefresh();
+            
             EditorGUILayout.BeginVertical();
             
             // Header
@@ -89,13 +116,35 @@ namespace TirexGame.Utils.Data.Editor
             
             GUILayout.FlexibleSpace();
             
-            if (GUILayout.Button("Refresh", EditorStyles.toolbarButton))
+            // Auto-refresh toggle
+            var newAutoRefresh = GUILayout.Toggle(_autoRefreshEnabled, "Auto-Refresh", EditorStyles.toolbarButton);
+            if (newAutoRefresh != _autoRefreshEnabled)
             {
-                RefreshDataTypes();
-                RefreshDataKeys();
+                _autoRefreshEnabled = newAutoRefresh;
+                if (_autoRefreshEnabled)
+                {
+                    SetupFileWatcher();
+                }
+                else
+                {
+                    CleanupFileWatcher();
+                }
+            }
+            
+            // Manual refresh button
+            if (GUILayout.Button("Refresh (F5)", EditorStyles.toolbarButton))
+            {
+                ForceRefresh();
             }
             
             EditorGUILayout.EndHorizontal();
+            
+            // Handle F5 key for refresh
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.F5)
+            {
+                ForceRefresh();
+                Event.current.Use();
+            }
         }
         
         private void DrawDataBrowserTab()
@@ -625,6 +674,96 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-
+        #region Auto-Refresh Functionality
+        
+        private void OnEditorUpdate()
+        {
+            if (_needsRefresh && EditorApplication.timeSinceStartup - _lastRefreshTime > REFRESH_INTERVAL)
+            {
+                _needsRefresh = false;
+                _lastRefreshTime = EditorApplication.timeSinceStartup;
+                RefreshDataKeys();
+                if (_selectedDataKey != null && _selectedDataInstance != null)
+                {
+                    LoadSelectedData(); // Reload current data to show updates
+                }
+                Repaint();
+            }
+        }
+        
+        private void HandleAutoRefresh()
+        {
+            // This method is called from OnGUI to handle any refresh logic
+            // Currently handled by OnEditorUpdate, but kept for future extensions
+        }
+        
+        private void SetupFileWatcher()
+        {
+            CleanupFileWatcher(); // Clean up any existing watcher
+            
+            if (!_autoRefreshEnabled || !Directory.Exists(_dataPath))
+                return;
+                
+            try
+            {
+                _fileWatcher = new FileSystemWatcher(_dataPath, "*.dat");
+                _fileWatcher.IncludeSubdirectories = true;
+                _fileWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.CreationTime;
+                
+                _fileWatcher.Changed += OnFileChanged;
+                _fileWatcher.Created += OnFileChanged;
+                _fileWatcher.Deleted += OnFileChanged;
+                _fileWatcher.Renamed += OnFileRenamed;
+                
+                _fileWatcher.EnableRaisingEvents = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"Failed to setup file watcher: {ex.Message}");
+            }
+        }
+        
+        private void CleanupFileWatcher()
+        {
+            if (_fileWatcher != null)
+            {
+                _fileWatcher.EnableRaisingEvents = false;
+                _fileWatcher.Changed -= OnFileChanged;
+                _fileWatcher.Created -= OnFileChanged;
+                _fileWatcher.Deleted -= OnFileChanged;
+                _fileWatcher.Renamed -= OnFileRenamed;
+                _fileWatcher.Dispose();
+                _fileWatcher = null;
+            }
+        }
+        
+        private void OnFileChanged(object sender, FileSystemEventArgs e)
+        {
+            if (e.FullPath.EndsWith(".dat"))
+            {
+                _needsRefresh = true;
+            }
+        }
+        
+        private void OnFileRenamed(object sender, RenamedEventArgs e)
+        {
+            if (e.FullPath.EndsWith(".dat") || e.OldFullPath.EndsWith(".dat"))
+            {
+                _needsRefresh = true;
+            }
+        }
+        
+        private void ForceRefresh()
+        {
+            RefreshDataTypes();
+            RefreshDataKeys();
+            if (_selectedDataKey != null && _selectedDataInstance != null)
+            {
+                LoadSelectedData(); // Reload current data
+            }
+            Repaint();
+        }
+        
+        #endregion
     }
 }
