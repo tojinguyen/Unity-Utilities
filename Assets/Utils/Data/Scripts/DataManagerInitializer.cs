@@ -12,7 +12,7 @@ namespace TirexGame.Utils.Data
     {
         [Header("Configuration")]
         [SerializeField] private bool enableLogging = true;
-        [SerializeField] private bool enableCaching = true;
+        [SerializeField] private bool enableCaching = false;
         [SerializeField] private int defaultCacheExpirationMinutes = 30;
         [SerializeField] private bool enableAutoSave = true;
         [SerializeField] private float autoSaveIntervalSeconds = 300f;
