@@ -293,15 +293,6 @@ namespace TirexGame.Utils.Data.Editor
                     EditorUtility.DisplayDialog("Cache Cleared", "All cached data has been cleared!", "OK");
                 }
             }
-            
-            EditorGUILayout.Space();
-            
-            EditorGUILayout.LabelField("Validation Tools", EditorStyles.boldLabel);
-            
-            if (GUILayout.Button("Validate All Data", GUILayout.Height(30)))
-            {
-                ValidateAllData();
-            }
         }
         
         private void RefreshDataTypes()
@@ -634,38 +625,6 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        private void ValidateAllData()
-        {
-            var validationResults = new List<string>();
-            
-            foreach (var dataType in _dataModelTypes)
-            {
-                string dataTypeFolder = Path.Combine(_dataPath, dataType.Name);
-                if (Directory.Exists(dataTypeFolder))
-                {
-                    var files = Directory.GetFiles(dataTypeFolder, "*.dat");
-                    
-                    foreach (var file in files)
-                    {
-                        try
-                        {
-                            var json = File.ReadAllText(file);
-                            JsonConvert.DeserializeObject(json, dataType);
-                            validationResults.Add($"✓ {dataType.Name}/{Path.GetFileNameWithoutExtension(file)}");
-                        }
-                        catch (Exception ex)
-                        {
-                            validationResults.Add($"✗ {dataType.Name}/{Path.GetFileNameWithoutExtension(file)}: {ex.Message}");
-                        }
-                    }
-                }
-            }
-            
-            string message = validationResults.Count > 0 
-                ? string.Join("\n", validationResults) 
-                : "No data found to validate.";
-            
-            EditorUtility.DisplayDialog("Validation Results", message, "OK");
-        }
+
     }
 }
