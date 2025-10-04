@@ -224,37 +224,7 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public static void LogStatus()
         {
-            if (!_isInitialized)
-            {
-                // Always log critical issues regardless of logging config
-                ConsoleLogger.Log("[EventSystem] ❌ EventSystem is not initialized");
-                return;
-            }
-            
-            if (_eventCenter == null)
-            {
-                // Always log critical issues regardless of logging config
-                ConsoleLogger.Log("[EventSystem] ❌ EventCenter is null");
-                return;
-            }
-            
-            // Check if logging is enabled in the EventCenter configuration
-            if (!_eventCenter.IsLoggingEnabled)
-            {
-                // Silently return if logging is disabled
-                return;
-            }
-            
-            var stats = _eventCenter.GetStats();
-            ConsoleLogger.Log($"[EventSystem] ✅ Status Report:");
-            ConsoleLogger.Log($"[EventSystem] • Initialized: {_isInitialized}");
-            ConsoleLogger.Log($"[EventSystem] • Active Subscriptions: {stats.ActiveSubscriptions}");
-            ConsoleLogger.Log($"[EventSystem] • Queued Events: {stats.QueuedEvents}");
-            ConsoleLogger.Log($"[EventSystem] • Events Processed This Frame: {stats.EventsProcessedThisFrame}");
-            ConsoleLogger.Log($"[EventSystem] • Peak Events Per Frame: {stats.PeakEventsPerFrame}");
-            ConsoleLogger.Log($"[EventSystem] • Pooled Events: {stats.PooledEvents}");
-            ConsoleLogger.Log($"[EventSystem] • Average Processing Time: {stats.AverageProcessingTime:F2}ms");
-            ConsoleLogger.Log($"[EventSystem] • Memory Usage: {stats.MemoryUsage} bytes");
+            // Logging disabled
         }
         
         /// <summary>

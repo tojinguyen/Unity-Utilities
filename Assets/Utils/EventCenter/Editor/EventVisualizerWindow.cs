@@ -135,7 +135,6 @@ namespace EventCenter.EditorTools
 
         private void OnEnable()
         {
-            Debug.Log("[EventVisualizerWindow] OnEnable called");
             wantsMouseMove = true;
             _config = EventVisualizerConfig.LoadOrCreate();
             if (_config != null)
@@ -144,16 +143,12 @@ namespace EventCenter.EditorTools
                 _pixelsPerSecond = Mathf.Max(_config.defaultZoom, 20f);
             }
             
-            Debug.Log("[EventVisualizerWindow] Subscribing to EventCapture callbacks");
             EventCapture.OnDataChanged += Repaint;
             EventCapture.OnAppended += OnEventAppended;
-            Debug.Log("[EventVisualizerWindow] EventCapture callbacks subscribed");
             
             _viewStartTime = 0;
             _viewEndTime = 10;
             EditorApplication.update += OnEditorUpdate;
-            
-            Debug.Log($"[EventVisualizerWindow] OnEnable completed. Recording: {EventCapture.IsRecording}, Paused: {EventCapture.IsPaused}");
         }
 
         private void OnDisable()
@@ -1078,15 +1073,12 @@ namespace EventCenter.EditorTools
 
         private void OnEventAppended(EventRecord rec)
         {
-            Debug.Log($"[EventVisualizerWindow] OnEventAppended called - Event: {rec?.name}");
-            
             // Watch highlight (future: panel pinning). For now, repaint is enough.
             // Breakpoint: pause when name contains pattern
             if (_breakOnMatch && !string.IsNullOrEmpty(_breakpointPattern))
             {
                 if (!string.IsNullOrEmpty(rec.name) && rec.name.IndexOf(_breakpointPattern, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    Debug.Log($"[EventVisualizerWindow] Breakpoint hit for event: {rec.name}");
                     EditorApplication.isPaused = true;
                     _selected = rec;
                 }

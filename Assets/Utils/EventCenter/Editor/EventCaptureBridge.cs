@@ -14,13 +14,10 @@ namespace EventCenter.EditorTools
         public static void Publish(string eventName, object payload, UnityEngine.Object source,
             string category, List<object> listeners)
         {
-            Debug.Log($"[EventCaptureBridge] Publish called - Event: {eventName}, Category: {category}, Source: {source}");
-            
             // Convert listeners to proper format
             var listenerRecords = new List<ListenerRecord>();
             if (listeners != null)
             {
-                Debug.Log($"[EventCaptureBridge] Converting {listeners.Count} listeners");
                 foreach (var listener in listeners)
                 {
                     if (listener != null)
@@ -60,12 +57,9 @@ namespace EventCenter.EditorTools
                                 durationMs = duration,
                                 exception = exception
                             });
-                            
-                            Debug.Log($"[EventCaptureBridge] Converted listener: {name} on {sourceInfo.typeName}");
                         }
                         catch (Exception ex)
                         {
-                            Debug.LogWarning($"[EventCaptureBridge] Failed to convert listener: {ex.Message}");
                             // Fallback for failed conversion
                             listenerRecords.Add(new ListenerRecord
                             {
@@ -84,9 +78,7 @@ namespace EventCenter.EditorTools
                 }
             }
             
-            Debug.Log($"[EventCaptureBridge] Calling EventCapture.OnPublish with {listenerRecords.Count} listener records");
             EventCapture.OnPublish(eventName, payload, source, category, listenerRecords);
-            Debug.Log($"[EventCaptureBridge] EventCapture.OnPublish completed");
         }
     }
 }

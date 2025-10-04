@@ -12,6 +12,7 @@ namespace TirexGame.Utils.EventCenter.Examples
         [Header("Test Settings")]
         [SerializeField] private bool testInAwake = false;
         [SerializeField] private bool testInStart = true;
+        [SerializeField] private bool enableVerboseLogging = false;
         
         // Test event
         public struct TestEvent
@@ -42,38 +43,38 @@ namespace TirexGame.Utils.EventCenter.Examples
         
         private void TestEventSystem(string phase)
         {
-            Debug.Log($"[EventSystemTest] Testing EventSystem in {phase}...");
+            Log($"[EventSystemTest] Testing EventSystem in {phase}...");
             
             // Check if EventCenterService is available
             if (!EventCenterService.IsAvailable)
             {
-                Debug.LogError($"[EventSystemTest] ❌ EventCenterService not available in {phase}");
+                LogError($"[EventSystemTest] ❌ EventCenterService not available in {phase}");
                 return;
             }
             
             // Check if EventSystem is initialized
-            Debug.Log($"[EventSystemTest] EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+            Log($"[EventSystemTest] EventSystem.IsInitialized: {EventSystem.IsInitialized}");
             
             try
             {
                 // Try to subscribe to an event
                 this.SubscribeWithCleanup<TestEvent>(OnTestEvent);
-                Debug.Log($"[EventSystemTest] ✅ Successfully subscribed in {phase}");
+                Log($"[EventSystemTest] ✅ Successfully subscribed in {phase}");
                 
                 // Try to publish an event
                 EventSystem.Publish(new TestEvent($"Test from {phase}"));
-                Debug.Log($"[EventSystemTest] ✅ Successfully published event in {phase}");
+                Log($"[EventSystemTest] ✅ Successfully published event in {phase}");
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[EventSystemTest] ❌ Failed to use EventSystem in {phase}: {ex.Message}");
-                Debug.LogError($"[EventSystemTest] Exception: {ex}");
+                LogError($"[EventSystemTest] ❌ Failed to use EventSystem in {phase}: {ex.Message}");
+                LogError($"[EventSystemTest] Exception: {ex}");
             }
         }
         
         private void OnTestEvent(TestEvent evt)
         {
-            Debug.Log($"[EventSystemTest] Received TestEvent: {evt.Message}");
+            Log($"[EventSystemTest] Received TestEvent: {evt.Message}");
         }
         
         /// <summary>
@@ -91,43 +92,57 @@ namespace TirexGame.Utils.EventCenter.Examples
         [ContextMenu("Check EventSystem Status")]
         public void CheckEventSystemStatus()
         {
-            Debug.Log("=== EventSystem Status ===");
-            Debug.Log($"EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
-            Debug.Log($"EventSystem.IsInitialized: {EventSystem.IsInitialized}");
+            Log("=== EventSystem Status ===");
+            Log($"EventCenterService.IsAvailable: {EventCenterService.IsAvailable}");
+            Log($"EventSystem.IsInitialized: {EventSystem.IsInitialized}");
             
             var eventCenter = FindFirstObjectByType<EventCenter>();
             if (eventCenter != null)
             {
-                Debug.Log($"✅ EventCenter found: {eventCenter.name}");
+                Log($"✅ EventCenter found: {eventCenter.name}");
                 
                 // Check if it's auto-created
                 if (eventCenter.name.Contains("Auto Created"))
                 {
-                    Debug.Log("🚀 This EventCenter was auto-created - Zero configuration working!");
+                    Log("🚀 This EventCenter was auto-created - Zero configuration working!");
                 }
                 
                 // Check if it's DontDestroyOnLoad
                 if (eventCenter.gameObject.scene.name == "DontDestroyOnLoad")
                 {
-                    Debug.Log("🔒 EventCenter is persistent across scenes (DontDestroyOnLoad)");
+                    Log("🔒 EventCenter is persistent across scenes (DontDestroyOnLoad)");
                 }
             }
             else
             {
-                Debug.Log("❌ No EventCenter found in scene - This should not happen with auto-creation!");
+                Log("❌ No EventCenter found in scene - This should not happen with auto-creation!");
             }
             
             var eventCenterSetup = FindFirstObjectByType<EventCenterSetup>();
             if (eventCenterSetup != null)
             {
-                Debug.Log($"✅ EventCenterSetup found: {eventCenterSetup.name}");
+                Log($"✅ EventCenterSetup found: {eventCenterSetup.name}");
             }
             else
             {
-                Debug.Log("ℹ️ No EventCenterSetup found - using auto-created EventCenter");
+                Log("ℹ️ No EventCenterSetup found - using auto-created EventCenter");
             }
             
-            Debug.Log("=== Test Complete ===");
+            Log("=== Test Complete ===");
+        }
+        
+        private void Log(string message)
+        {
+            if (enableVerboseLogging)
+            {
+                Debug.Log(message);
+            }
+        }
+        
+        private void LogError(string message)
+        {
+            // Always log errors
+            Debug.LogError(message);
         }
     }
 }

@@ -73,8 +73,10 @@ namespace TirexGame.Utils.EventCenter
                     _defaultInstance = Resources.Load<EventCenterConfig>(DEFAULT_CONFIG_PATH);
                     if (_defaultInstance == null)
                     {
-                        Debug.LogWarning("[EventCenterConfig] Default config not found in package, creating runtime default");
                         _defaultInstance = CreateRuntimeDefault();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                        Debug.LogWarning("[EventCenterConfig] Default config not found in package, creating runtime default");
+#endif
                     }
                 }
                 return _defaultInstance;
@@ -90,7 +92,6 @@ namespace TirexGame.Utils.EventCenter
             _instance = Resources.Load<EventCenterConfig>(CUSTOM_CONFIG_PATH);
             if (_instance != null)
             {
-                Debug.Log("[EventCenterConfig] Using custom configuration from project Resources folder");
                 return;
             }
             
@@ -98,13 +99,14 @@ namespace TirexGame.Utils.EventCenter
             _instance = Resources.Load<EventCenterConfig>(DEFAULT_CONFIG_PATH);
             if (_instance != null)
             {
-                Debug.Log("[EventCenterConfig] Using default configuration from package");
                 return;
             }
             
             // 3. Create runtime default as fallback
-            Debug.LogWarning("[EventCenterConfig] No config found, using runtime default. Consider creating a custom config.");
             _instance = CreateRuntimeDefault();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[EventCenterConfig] No config found, using runtime default. Consider creating a custom config.");
+#endif
         }
         
         /// <summary>
@@ -136,7 +138,6 @@ namespace TirexGame.Utils.EventCenter
         {
             _instance = null;
             _defaultInstance = null;
-            Debug.Log("[EventCenterConfig] Configuration cache refreshed");
         }
         
         #endregion

@@ -35,7 +35,6 @@ namespace TirexGame.Utils.EventCenter
                         if (eventCenterSetup != null)
                         {
                             // EventCenterSetup should handle creation
-                            ConsoleLogger.Log("[EventCenterService] EventCenterSetup found, waiting for EventCenter creation...");
                         }
                         else
                         {
@@ -43,12 +42,11 @@ namespace TirexGame.Utils.EventCenter
                             var config = EventCenterConfig.Instance;
                             if (config.autoCreateEventCenter)
                             {
-                                ConsoleLogger.Log("[EventCenterService] Auto-creating EventCenter using configuration...");
                                 CreateAndSetCurrent(config.autoCreatedName, config.dontDestroyOnLoad);
                             }
                             else
                             {
-                                ConsoleLogger.LogWarning("[EventCenterService] EventCenter not found and auto-creation is disabled in config");
+                                // Auto-creation is disabled
                             }
                         }
                     }
@@ -72,17 +70,7 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="eventCenter">EventCenter instance to use</param>
         public static void SetCurrent(IEventCenter eventCenter)
         {
-            if (_current != null && _current != eventCenter)
-            {
-                ConsoleLogger.Log("[EventCenterService] Replacing current EventCenter instance");
-            }
-            
             _current = eventCenter;
-            
-            if (eventCenter != null)
-            {
-                ConsoleLogger.Log("[EventCenterService] EventCenter service is now available");
-            }
         }
         
         /// <summary>
@@ -91,7 +79,6 @@ namespace TirexGame.Utils.EventCenter
         public static void ClearCurrent()
         {
             _current = null;
-            ConsoleLogger.Log("[EventCenterService] EventCenter service cleared");
         }
         
         /// <summary>
@@ -293,8 +280,6 @@ namespace TirexGame.Utils.EventCenter
         {
             if (!IsAvailable)
             {
-                ConsoleLogger.LogWarning($"[EventCenterService] Cannot perform {operation} - EventCenter service not available. " +
-                               "Make sure to set up EventCenter in your scene or call EventCenterService.CreateAndSetCurrent()");
                 return false;
             }
             return true;

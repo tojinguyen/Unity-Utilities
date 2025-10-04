@@ -40,7 +40,6 @@ namespace TirexGame.Utils.EventCenter
                 {
                     component.GetCancellationTokenOnDestroy().Register(() => 
                     {
-                        ConsoleLogger.Log($"[EventSystemExtensions] Cleaning up subscription for {typeof(T).Name}");
                         subscription?.Dispose();
                     });
                 }
