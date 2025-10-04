@@ -26,22 +26,7 @@ namespace TirexGame.Utils.Data.Editor
             DataCreationWizard.CreateWizard();
         }
         
-        [MenuItem(MENU_ROOT + "Initialize Data Manager", priority = 11)]
-        public static void InitializeDataManager()
-        {
-            try
-            {
-                DataManager.Initialize();
-                EditorUtility.DisplayDialog("Success", "Data Manager initialized successfully!", "OK");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"Failed to initialize Data Manager: {ex.Message}");
-                EditorUtility.DisplayDialog("Error", $"Failed to initialize Data Manager: {ex.Message}", "OK");
-            }
-        }
-        
-        [MenuItem(MENU_ROOT + "Open Data Folder", priority = 12)]
+        [MenuItem(MENU_ROOT + "Open Data Folder", priority = 11)]
         public static void OpenDataFolder()
         {
             string dataPath = Application.persistentDataPath;
@@ -56,7 +41,7 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        [MenuItem(MENU_ROOT + "Clear All Data", priority = 13)]
+        [MenuItem(MENU_ROOT + "Clear All Data", priority = 12)]
         public static void ClearAllData()
         {
             if (EditorUtility.DisplayDialog("Clear All Data", 
@@ -85,58 +70,16 @@ namespace TirexGame.Utils.Data.Editor
             }
         }
         
-        [MenuItem(MENU_ROOT + "Documentation", priority = 21)]
+        [MenuItem(MENU_ROOT + "Documentation", priority = 20)]
         public static void OpenDocumentation()
         {
             Application.OpenURL("https://github.com/tojinguyen/Unity-Utilities/blob/main/Assets/Utils/Data/README.md");
         }
         
-        [MenuItem(MENU_ROOT + "Report Issue", priority = 22)]
+        [MenuItem(MENU_ROOT + "Report Issue", priority = 21)]
         public static void ReportIssue()
         {
             Application.OpenURL("https://github.com/tojinguyen/Unity-Utilities/issues");
-        }
-        
-        // Context menu items for assets
-        [MenuItem("Assets/TirexGame Data/Validate Selected Data", priority = 1000)]
-        public static void ValidateSelectedData()
-        {
-            var selectedAssets = Selection.GetFiltered<TextAsset>(SelectionMode.Assets);
-            
-            if (selectedAssets.Length == 0)
-            {
-                EditorUtility.DisplayDialog("No Selection", "Please select data files to validate.", "OK");
-                return;
-            }
-            
-            int validCount = 0;
-            int invalidCount = 0;
-            
-            foreach (var asset in selectedAssets)
-            {
-                try
-                {
-                    // Try to parse as JSON
-                    var json = asset.text;
-                    Newtonsoft.Json.JsonConvert.DeserializeObject(json);
-                    validCount++;
-                }
-                catch
-                {
-                    invalidCount++;
-                    Debug.LogError($"Invalid JSON in {asset.name}");
-                }
-            }
-            
-            EditorUtility.DisplayDialog("Validation Complete", 
-                $"Validated {selectedAssets.Length} files.\nValid: {validCount}\nInvalid: {invalidCount}", 
-                "OK");
-        }
-        
-        [MenuItem("Assets/TirexGame Data/Validate Selected Data", validate = true)]
-        public static bool ValidateSelectedDataValidation()
-        {
-            return Selection.GetFiltered<TextAsset>(SelectionMode.Assets).Length > 0;
         }
         
         // Preferences
