@@ -369,12 +369,18 @@ namespace TirexGame.Utils.Data.Editor
         
         private void RefreshDataKeys()
         {
-            _dataKeys.Clear();
-            _selectedDataKey = null;
-            _selectedDataInstance = null;
-            _dataLoaded = false;
+            // Preserve current selection
+            string previousSelectedKey = _selectedDataKey;
             
-            if (_selectedDataType == null) return;
+            _dataKeys.Clear();
+            
+            if (_selectedDataType == null)
+            {
+                _selectedDataKey = null;
+                _selectedDataInstance = null;
+                _dataLoaded = false;
+                return;
+            }
             
             try
             {
@@ -391,10 +397,32 @@ namespace TirexGame.Utils.Data.Editor
                     var files = Directory.GetFiles(dataTypeFolder, "*.dat");
                     _dataKeys = files.Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
                 }
+                
+                // Restore selection if the key still exists
+                if (!string.IsNullOrEmpty(previousSelectedKey) && _dataKeys.Contains(previousSelectedKey))
+                {
+                    _selectedDataKey = previousSelectedKey;
+                    // Keep the current data instance and loaded state if it's the same key
+                    // The data might have been updated, so we'll reload it
+                    if (_selectedDataInstance != null)
+                    {
+                        LoadSelectedData();
+                    }
+                }
+                else
+                {
+                    // No valid previous selection or key no longer exists
+                    _selectedDataKey = null;
+                    _selectedDataInstance = null;
+                    _dataLoaded = false;
+                }
             }
             catch (Exception ex)
             {
                 Debug.LogError($"Failed to refresh data keys: {ex.Message}");
+                _selectedDataKey = null;
+                _selectedDataInstance = null;
+                _dataLoaded = false;
             }
         }
         
@@ -444,6 +472,7 @@ namespace TirexGame.Utils.Data.Editor
                 if (success)
                 {
                     EditorUtility.DisplayDialog("Success", "Data saved successfully!", "OK");
+                    // No need to refresh keys - the data is already updated and selection should be preserved
                 }
                 else
                 {
@@ -508,8 +537,14 @@ namespace TirexGame.Utils.Data.Editor
                 
                 if (success)
                 {
+                    string createdKey = _newDataKey;
                     _newDataKey = "";
                     RefreshDataKeys();
+                    
+                    // Auto-select the newly created data
+                    _selectedDataKey = createdKey;
+                    LoadSelectedData();
+                    
                     EditorUtility.DisplayDialog("Success", "New data created successfully!", "OK");
                 }
                 else
@@ -682,11 +717,9 @@ namespace TirexGame.Utils.Data.Editor
             {
                 _needsRefresh = false;
                 _lastRefreshTime = EditorApplication.timeSinceStartup;
+                
+                // Smart refresh that preserves selection
                 RefreshDataKeys();
-                if (_selectedDataKey != null && _selectedDataInstance != null)
-                {
-                    LoadSelectedData(); // Reload current data to show updates
-                }
                 Repaint();
             }
         }
