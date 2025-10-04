@@ -384,11 +384,7 @@ namespace TirexGame.Utils.Data.Editor
             
             try
             {
-                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
-                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
-                
-                var getAllKeysMethod = repositoryType.GetMethod("GetAllKeysAsync");
-                var task = getAllKeysMethod.Invoke(repository, null);
+                var repository = GetRepository(_selectedDataType);
                 
                 // For simplicity in editor, we'll scan the directory directly
                 string dataTypeFolder = Path.Combine(_dataPath, _selectedDataType.Name);
@@ -432,16 +428,15 @@ namespace TirexGame.Utils.Data.Editor
             
             try
             {
-                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
-                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
+                Debug.Log($"[DataManagerWindow] Loading data for key '{_selectedDataKey}' of type '{_selectedDataType.Name}'");
                 
-                // Use the repository's synchronous Load method to properly handle encryption/compression
-                var loadMethod = repositoryType.GetMethod("Load");
-                _selectedDataInstance = loadMethod.Invoke(repository, new object[] { _selectedDataKey });
+                // Use integrated DataManager loading
+                _selectedDataInstance = LoadDataWithDataManager(_selectedDataType, _selectedDataKey);
                 
                 if (_selectedDataInstance != null)
                 {
                     _dataLoaded = true;
+                    Debug.Log($"[DataManagerWindow] Successfully loaded data for key '{_selectedDataKey}'");
                 }
                 else
                 {
@@ -473,22 +468,15 @@ namespace TirexGame.Utils.Data.Editor
                 var currentJson = JsonConvert.SerializeObject(_selectedDataInstance, Formatting.Indented);
                 Debug.Log($"[DataManagerWindow] Data to save:\n{currentJson}");
                 
-                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
-                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
-                
-                Debug.Log($"[DataManagerWindow] Repository created with path: {_dataPath}");
-                
-                // Use the repository's synchronous Save method to properly handle encryption/compression
-                var saveMethod = repositoryType.GetMethod("Save");
-                bool success = (bool)saveMethod.Invoke(repository, new object[] { _selectedDataKey, _selectedDataInstance });
+                // Use integrated DataManager saving
+                bool success = SaveDataWithDataManager(_selectedDataType, _selectedDataKey, _selectedDataInstance);
                 
                 if (success)
                 {
                     Debug.Log($"[DataManagerWindow] Data saved successfully for key '{_selectedDataKey}'");
                     
                     // Verify the save by loading the data back
-                    var loadMethod = repositoryType.GetMethod("Load");
-                    var verifyData = loadMethod.Invoke(repository, new object[] { _selectedDataKey });
+                    var verifyData = LoadDataWithDataManager(_selectedDataType, _selectedDataKey);
                     
                     if (verifyData != null)
                     {
@@ -831,6 +819,100 @@ namespace TirexGame.Utils.Data.Editor
                 LoadSelectedData(); // Reload current data
             }
             Repaint();
+        }
+        
+        #endregion
+        
+        #region Repository Integration
+        
+        /// <summary>
+        /// Get repository from DataManager if available, otherwise create default FileDataRepository
+        /// This ensures editor and runtime use the same data source
+        /// </summary>
+        private object GetRepository(Type dataType)
+        {
+            try
+            {
+                // Try to get repository from runtime DataManager first
+                var runtimeRepo = DataManager.GetRepository(dataType);
+                if (runtimeRepo != null)
+                {
+                    Debug.Log($"[DataManagerWindow] Using runtime repository for {dataType.Name}");
+                    return runtimeRepo;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DataManagerWindow] Failed to get runtime repository for {dataType.Name}: {ex.Message}");
+            }
+            
+            // Fallback: create FileDataRepository as before
+            Debug.Log($"[DataManagerWindow] Creating fallback FileDataRepository for {dataType.Name}");
+            var repositoryType = typeof(FileDataRepository<>).MakeGenericType(dataType);
+            return Activator.CreateInstance(repositoryType, _dataPath, true, true);
+        }
+        
+        /// <summary>
+        /// Load data using runtime DataManager if possible, fallback to direct repository access
+        /// </summary>
+        private object LoadDataWithDataManager(Type dataType, string key)
+        {
+            try
+            {
+                // Try using DataManager's GetData method for consistency
+                var getDataMethod = typeof(DataManager).GetMethod("GetData", new Type[] { typeof(string) });
+                if (getDataMethod != null)
+                {
+                    var genericMethod = getDataMethod.MakeGenericMethod(dataType);
+                    var result = genericMethod.Invoke(null, new object[] { key });
+                    if (result != null)
+                    {
+                        Debug.Log($"[DataManagerWindow] Loaded data via DataManager.GetData for key '{key}'");
+                        return result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DataManagerWindow] Failed to load via DataManager for key '{key}': {ex.Message}");
+            }
+            
+            // Fallback to direct repository access
+            var repository = GetRepository(dataType);
+            var loadMethod = repository.GetType().GetMethod("Load");
+            return loadMethod?.Invoke(repository, new object[] { key });
+        }
+        
+        /// <summary>
+        /// Save data using runtime DataManager if possible, fallback to direct repository access
+        /// </summary>
+        private bool SaveDataWithDataManager(Type dataType, string key, object data)
+        {
+            try
+            {
+                // Try using DataManager's SaveData method for consistency
+                var saveDataMethod = typeof(DataManager).GetMethod("SaveData", new Type[] { typeof(object), typeof(string) });
+                if (saveDataMethod != null)
+                {
+                    var genericMethod = saveDataMethod.MakeGenericMethod(dataType);
+                    var saveResult = genericMethod.Invoke(null, new object[] { data, key });
+                    if (saveResult is bool success && success)
+                    {
+                        Debug.Log($"[DataManagerWindow] Saved data via DataManager.SaveData for key '{key}'");
+                        return true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DataManagerWindow] Failed to save via DataManager for key '{key}': {ex.Message}");
+            }
+            
+            // Fallback to direct repository access
+            var repository = GetRepository(dataType);
+            var saveMethod = repository.GetType().GetMethod("Save");
+            var result = saveMethod?.Invoke(repository, new object[] { key, data });
+            return result is bool && (bool)result;
         }
         
         #endregion

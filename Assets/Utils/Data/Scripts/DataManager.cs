@@ -58,6 +58,36 @@ namespace TirexGame.Utils.Data
             Log($"Repository registered for type: {type.Name}");
         }
         
+        /// <summary>
+        /// Get the registered repository for a specific type (for editor use)
+        /// </summary>
+        public static IDataRepository GetRepository(Type type)
+        {
+            EnsureInitialized();
+            
+            if (_repositories.TryGetValue(type, out var repo))
+            {
+                return repo;
+            }
+            
+            // If no repository is registered, create default FileDataRepository
+            var repositoryType = typeof(FileDataRepository<>).MakeGenericType(type);
+            var defaultRepo = Activator.CreateInstance(repositoryType, UnityEngine.Application.persistentDataPath, true, true);
+            _repositories[type] = (IDataRepository)defaultRepo;
+            
+            Log($"Created default FileDataRepository for type: {type.Name}");
+            return (IDataRepository)defaultRepo;
+        }
+        
+        /// <summary>
+        /// Get all registered data types (for editor use)
+        /// </summary>
+        public static IEnumerable<Type> GetRegisteredDataTypes()
+        {
+            EnsureInitialized();
+            return _repositories.Keys;
+        }
+        
         public static async UniTask<T> GetDataAsync<T>(string key = null) where T : class, IDataModel<T>, new()
         {
             EnsureInitialized();
