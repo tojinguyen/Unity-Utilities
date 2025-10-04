@@ -458,12 +458,25 @@ namespace TirexGame.Utils.Data.Editor
         
         private void SaveSelectedData()
         {
-            if (_selectedDataInstance == null || string.IsNullOrEmpty(_selectedDataKey)) return;
+            if (_selectedDataInstance == null || string.IsNullOrEmpty(_selectedDataKey)) 
+            {
+                Debug.LogWarning("[DataManagerWindow] Cannot save: No data instance or key selected");
+                EditorUtility.DisplayDialog("Warning", "No data selected to save!", "OK");
+                return;
+            }
             
             try
             {
+                Debug.Log($"[DataManagerWindow] Attempting to save data for key '{_selectedDataKey}' of type '{_selectedDataType.Name}'");
+                
+                // Log current data state before saving
+                var currentJson = JsonConvert.SerializeObject(_selectedDataInstance, Formatting.Indented);
+                Debug.Log($"[DataManagerWindow] Data to save:\n{currentJson}");
+                
                 var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
                 var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
+                
+                Debug.Log($"[DataManagerWindow] Repository created with path: {_dataPath}");
                 
                 // Use the repository's synchronous Save method to properly handle encryption/compression
                 var saveMethod = repositoryType.GetMethod("Save");
@@ -471,17 +484,33 @@ namespace TirexGame.Utils.Data.Editor
                 
                 if (success)
                 {
-                    EditorUtility.DisplayDialog("Success", "Data saved successfully!", "OK");
-                    // No need to refresh keys - the data is already updated and selection should be preserved
+                    Debug.Log($"[DataManagerWindow] Data saved successfully for key '{_selectedDataKey}'");
+                    
+                    // Verify the save by loading the data back
+                    var loadMethod = repositoryType.GetMethod("Load");
+                    var verifyData = loadMethod.Invoke(repository, new object[] { _selectedDataKey });
+                    
+                    if (verifyData != null)
+                    {
+                        var verifyJson = JsonConvert.SerializeObject(verifyData, Formatting.Indented);
+                        Debug.Log($"[DataManagerWindow] Verification successful. Saved data:\n{verifyJson}");
+                        EditorUtility.DisplayDialog("Success", $"Data saved and verified successfully for key '{_selectedDataKey}'!", "OK");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[DataManagerWindow] Verification failed: Could not load back saved data for key '{_selectedDataKey}'");
+                        EditorUtility.DisplayDialog("Warning", "Data saved but verification failed. Please check manually.", "OK");
+                    }
                 }
                 else
                 {
+                    Debug.LogError($"[DataManagerWindow] Save operation returned false for key '{_selectedDataKey}'");
                     EditorUtility.DisplayDialog("Error", "Failed to save data", "OK");
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to save data: {ex.Message}");
+                Debug.LogError($"[DataManagerWindow] Failed to save data for key '{_selectedDataKey}': {ex.Message}\nStackTrace: {ex.StackTrace}");
                 EditorUtility.DisplayDialog("Error", $"Failed to save data: {ex.Message}", "OK");
             }
         }
@@ -579,6 +608,13 @@ namespace TirexGame.Utils.Data.Editor
             {
                 DrawFieldEditor(property.Name, property.PropertyType, property.GetValue(_selectedDataInstance),
                     value => property.SetValue(_selectedDataInstance, value));
+            }
+            
+            bool hasChanges = EditorGUI.EndChangeCheck();
+            
+            if (hasChanges)
+            {
+                Debug.Log($"[DataManagerWindow] Data modified for key '{_selectedDataKey}'");
             }
         }
         

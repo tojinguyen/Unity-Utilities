@@ -34,8 +34,7 @@ namespace TirexGame.Utils.Data
             {
                 if (_isInitialized)
                 {
-                    Log("DataManager already initialized - skipping duplicate initialization");
-                    return;
+                    return; // Silent return - no log spam
                 }
 
                 _config = config ?? new DataManagerConfig();
