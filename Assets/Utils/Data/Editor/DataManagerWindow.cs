@@ -280,6 +280,13 @@ namespace TirexGame.Utils.Data.Editor
             EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
             EditorGUILayout.Space();
             
+            EditorGUILayout.LabelField("Data Browser Configuration", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Example data models from package are automatically filtered out to prevent conflicts with your project's data models.", 
+                MessageType.Info);
+            
+            EditorGUILayout.Space();
+            
             EditorGUILayout.LabelField("Data Manager Configuration", EditorStyles.boldLabel);
             
             _config.EnableLogging = EditorGUILayout.Toggle("Enable Logging", _config.EnableLogging);
@@ -356,6 +363,7 @@ namespace TirexGame.Utils.Data.Editor
                     var types = assembly.GetTypes()
                         .Where(t => t.GetInterfaces()
                             .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDataModel<>)))
+                        .Where(t => !IsExampleDataType(t))
                         .ToList();
                     
                     _dataModelTypes.AddRange(types);
@@ -365,6 +373,16 @@ namespace TirexGame.Utils.Data.Editor
                     // Ignore assemblies that can't be loaded
                 }
             }
+        }
+        
+        /// <summary>
+        /// Determines if a type is an example data type that should be excluded from production usage
+        /// </summary>
+        private bool IsExampleDataType(Type type)
+        {
+            // Simple filter: exclude any type with "TirexExample" prefix or in Examples namespace
+            return type.Name.StartsWith("TirexExample", StringComparison.OrdinalIgnoreCase) ||
+                   (type.Namespace != null && type.Namespace.Contains("Examples"));
         }
         
         private void RefreshDataKeys()

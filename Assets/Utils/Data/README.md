@@ -754,6 +754,100 @@ public class CustomSyncRepository<T> : IDataRepositorySync<T> where T : class, I
 *   **`DataCacheManager.cs`**: Quản lý bộ nhớ đệm (cache).
 *   **`DataEventManager.cs`**: Quản lý và phát các sự kiện liên quan đến dữ liệu.
 
+## 🎛️ Data Manager Window
+
+Package cung cấp một Visual Editor Tool để quản lý và debug dữ liệu game một cách trực quan.
+
+### Mở Data Manager Window
+
+Có nhiều cách để mở Data Manager Window:
+
+1. **Menu Bar**: `TirexGame → Data → Data Manager`
+2. **Window Menu**: `Window → TirexGame → Data Manager`  
+3. **Context Menu**: Click chuột phải trong Project window → `TirexGame → Data Manager`
+
+### Tính Năng Chính
+
+#### 📊 Data Browser Tab
+- **Hiển thị tất cả Data Models**: Liệt kê các class implement `IDataModel<T>`
+- **Browse Data Keys**: Xem tất cả keys đã save cho từng data model
+- **Preview Data**: Xem nội dung của data một cách trực quan
+- **Real-time Refresh**: Auto-refresh khi có thay đổi file (có thể tắt/bật)
+
+#### ✏️ Data Editor Tab  
+- **Create New Data**: Tạo data mới với default values
+- **Edit Existing Data**: Chỉnh sửa dữ liệu đã có
+- **Delete Data**: Xóa dữ liệu không cần thiết
+- **Validation Check**: Hiển thị lỗi validation real-time
+
+#### ⚙️ Settings Tab
+- **Data Manager Config**: Cấu hình caching, auto-save, logging...
+- **Path Settings**: Tùy chỉnh đường dẫn lưu trữ dữ liệu
+
+#### 🔧 Tools Tab
+- **Bulk Operations**: Import/Export/Clear multiple data files
+- **Performance Analysis**: Thống kê usage và performance
+- **Cache Management**: Clear cache, view cache statistics
+
+### 🎯 Example Data Filtering (Tự Động)
+
+Khi import package vào project của bạn, Data Manager Window sẽ **tự động ẩn tất cả Example Data** từ package để tránh conflict với data models của project. **Không cần cấu hình gì thêm!**
+
+#### Cách hoạt động:
+
+```csharp
+// ❌ Data này từ package examples sẽ BỊ ẨN HOÀN TOÀN
+// Tất cả class có prefix "TirexExample" sẽ bị filter
+public class TirexExamplePlayerData : IDataModel<TirexExamplePlayerData> { ... }
+
+// ✅ Data này từ project của bạn sẽ được hiển thị
+public class PlayerData : IDataModel<PlayerData> { ... }
+public class UserProfile : IDataModel<UserProfile> { ... }
+```
+
+#### Logic Filtering Đơn Giản:
+
+Package sử dụng **naming convention filtering**:
+
+```csharp
+private bool IsExampleDataType(Type type)
+{
+    // Chỉ filter các class có tên bắt đầu với "TirexExample"
+    return type.Name.StartsWith("TirexExample", StringComparison.OrdinalIgnoreCase);
+}
+```
+
+**🔒 Lưu ý**: 
+- Filtering này là **bắt buộc và không thể tắt** 
+- Chỉ ẩn classes có prefix "TirexExample" từ package
+- Data models của bạn sẽ **luôn hiển thị** bình thường
+
+#### Best Practices:
+
+```csharp
+// ✅ Khuyến nghị: Đặt data models trong namespace riêng
+namespace MyGame.Data
+{
+    public class PlayerData : IDataModel<PlayerData> { ... }
+}
+
+// ✅ Hoặc ít nhất tránh namespace có chứa "Example"
+public class PlayerData : IDataModel<PlayerData> { ... }
+```
+
+### Keyboard Shortcuts
+
+- **F5**: Manual refresh data
+- **Ctrl+N**: Create new data (trong Data Editor tab)
+- **Delete**: Xóa data đang chọn
+- **Ctrl+S**: Save changes
+
+### Performance Tips
+
+- **Auto-refresh**: Tắt auto-refresh khi làm việc với large datasets
+- **Cache**: Enable caching để improve performance
+- **Filtering**: Sử dụng filtering để chỉ hiển thị data cần thiết
+
 ## 🔧 Tùy Chỉnh
 
 *   **Tạo Repository mới**: Bạn có thể dễ dàng tạo Repository riêng (ví dụ: `CloudDataRepository`, `DatabaseRepository`) bằng cách implement `IDataRepository<T>`.
