@@ -367,14 +367,18 @@ namespace TirexGame.Utils.Data.Editor
                 var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
                 var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
                 
-                // For editor simplicity, we'll load synchronously by reading the file directly
-                string filePath = Path.Combine(_dataPath, _selectedDataType.Name, $"{_selectedDataKey}.dat");
-                if (File.Exists(filePath))
+                // Use the repository's synchronous Load method to properly handle encryption/compression
+                var loadMethod = repositoryType.GetMethod("Load");
+                _selectedDataInstance = loadMethod.Invoke(repository, new object[] { _selectedDataKey });
+                
+                if (_selectedDataInstance != null)
                 {
-                    // This is a simplified version - in production you'd use the repository's LoadAsync method
-                    var json = File.ReadAllText(filePath);
-                    _selectedDataInstance = JsonConvert.DeserializeObject(json, _selectedDataType);
                     _dataLoaded = true;
+                }
+                else
+                {
+                    Debug.LogWarning($"No data found for key '{_selectedDataKey}'");
+                    EditorUtility.DisplayDialog("Warning", $"No data found for key '{_selectedDataKey}'", "OK");
                 }
             }
             catch (Exception ex)
@@ -390,17 +394,21 @@ namespace TirexGame.Utils.Data.Editor
             
             try
             {
-                string directoryPath = Path.Combine(_dataPath, _selectedDataType.Name);
-                if (!Directory.Exists(directoryPath))
+                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
+                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
+                
+                // Use the repository's synchronous Save method to properly handle encryption/compression
+                var saveMethod = repositoryType.GetMethod("Save");
+                bool success = (bool)saveMethod.Invoke(repository, new object[] { _selectedDataKey, _selectedDataInstance });
+                
+                if (success)
                 {
-                    Directory.CreateDirectory(directoryPath);
+                    EditorUtility.DisplayDialog("Success", "Data saved successfully!", "OK");
                 }
-                
-                string filePath = Path.Combine(directoryPath, $"{_selectedDataKey}.dat");
-                var json = JsonConvert.SerializeObject(_selectedDataInstance, Formatting.Indented);
-                File.WriteAllText(filePath, json);
-                
-                EditorUtility.DisplayDialog("Success", "Data saved successfully!", "OK");
+                else
+                {
+                    EditorUtility.DisplayDialog("Error", "Failed to save data", "OK");
+                }
             }
             catch (Exception ex)
             {
@@ -415,12 +423,21 @@ namespace TirexGame.Utils.Data.Editor
             
             try
             {
-                string filePath = Path.Combine(_dataPath, _selectedDataType.Name, $"{_selectedDataKey}.dat");
-                if (File.Exists(filePath))
+                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
+                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
+                
+                // Use the repository's synchronous Delete method
+                var deleteMethod = repositoryType.GetMethod("Delete");
+                bool success = (bool)deleteMethod.Invoke(repository, new object[] { _selectedDataKey });
+                
+                if (success)
                 {
-                    File.Delete(filePath);
                     RefreshDataKeys();
                     EditorUtility.DisplayDialog("Success", "Data deleted successfully!", "OK");
+                }
+                else
+                {
+                    EditorUtility.DisplayDialog("Warning", "Data file not found or already deleted", "OK");
                 }
             }
             catch (Exception ex)
@@ -442,19 +459,23 @@ namespace TirexGame.Utils.Data.Editor
                 var setDefaultMethod = _selectedDataType.GetMethod("SetDefaultData");
                 setDefaultMethod?.Invoke(newInstance, null);
                 
-                string directoryPath = Path.Combine(_dataPath, _selectedDataType.Name);
-                if (!Directory.Exists(directoryPath))
+                var repositoryType = typeof(FileDataRepository<>).MakeGenericType(_selectedDataType);
+                var repository = Activator.CreateInstance(repositoryType, _dataPath, true, true);
+                
+                // Use the repository's synchronous Save method
+                var saveMethod = repositoryType.GetMethod("Save");
+                bool success = (bool)saveMethod.Invoke(repository, new object[] { _newDataKey, newInstance });
+                
+                if (success)
                 {
-                    Directory.CreateDirectory(directoryPath);
+                    _newDataKey = "";
+                    RefreshDataKeys();
+                    EditorUtility.DisplayDialog("Success", "New data created successfully!", "OK");
                 }
-                
-                string filePath = Path.Combine(directoryPath, $"{_newDataKey}.dat");
-                var json = JsonConvert.SerializeObject(newInstance, Formatting.Indented);
-                File.WriteAllText(filePath, json);
-                
-                _newDataKey = "";
-                RefreshDataKeys();
-                EditorUtility.DisplayDialog("Success", "New data created successfully!", "OK");
+                else
+                {
+                    EditorUtility.DisplayDialog("Error", "Failed to create new data", "OK");
+                }
             }
             catch (Exception ex)
             {
