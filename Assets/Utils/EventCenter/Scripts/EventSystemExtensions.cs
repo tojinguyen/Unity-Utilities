@@ -20,49 +20,39 @@ namespace TirexGame.Utils.EventCenter
         public static void SubscribeWithCleanup<T>(this MonoBehaviour component, Action<T> callback) 
             where T : struct
         {
-            Debug.Log($"[EventSystemExtensions] SubscribeWithCleanup called for type {typeof(T).Name}");
-            
             if (component == null)
             {
-                Debug.LogError("[EventSystem] Component is null, cannot subscribe with cleanup");
+                ConsoleLogger.LogError("[EventSystem] Component is null, cannot subscribe with cleanup");
                 return;
             }
 
             if (callback == null)
             {
-                Debug.LogError("[EventSystem] Callback is null, cannot subscribe");
+                ConsoleLogger.LogError("[EventSystem] Callback is null, cannot subscribe");
                 return;
             }
 
             try
             {
-                Debug.Log($"[EventSystemExtensions] Attempting to subscribe to {typeof(T).Name}...");
-                
-                // Subscribe to the event and store the subscription
                 var subscription = EventSystem.Subscribe<T>(callback);
                 
                 if (subscription != null)
                 {
-                    Debug.Log($"[EventSystemExtensions] ✅ Successfully subscribed to {typeof(T).Name}");
-                    
-                    // Register for auto-cleanup using CancellationTokenOnDestroy
                     component.GetCancellationTokenOnDestroy().Register(() => 
                     {
-                        Debug.Log($"[EventSystemExtensions] Cleaning up subscription for {typeof(T).Name}");
+                        ConsoleLogger.Log($"[EventSystemExtensions] Cleaning up subscription for {typeof(T).Name}");
                         subscription?.Dispose();
                     });
-                    
-                    Debug.Log($"[EventSystemExtensions] ✅ Auto-cleanup registered for {typeof(T).Name}");
                 }
                 else
                 {
-                    Debug.LogError($"[EventSystemExtensions] ❌ Subscription returned null for {typeof(T).Name}");
+                    ConsoleLogger.LogError($"[EventSystemExtensions] ❌ Subscription returned null for {typeof(T).Name}");
                 }
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[EventSystemExtensions] ❌ Exception in SubscribeWithCleanup for {typeof(T).Name}: {ex.Message}");
-                Debug.LogError($"[EventSystemExtensions] Stack trace: {ex.StackTrace}");
+                ConsoleLogger.LogError($"[EventSystemExtensions] ❌ Exception in SubscribeWithCleanup for {typeof(T).Name}: {ex.Message}");
+                ConsoleLogger.LogError($"[EventSystemExtensions] Stack trace: {ex.StackTrace}");
             }
         }
 
@@ -75,7 +65,7 @@ namespace TirexGame.Utils.EventCenter
         {
             if (component == null || callback == null || condition == null)
             {
-                Debug.LogError("[EventSystem] Invalid parameters for SubscribeWhenWithCleanup");
+                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeWhenWithCleanup");
                 return;
             }
 
@@ -96,7 +86,7 @@ namespace TirexGame.Utils.EventCenter
         {
             if (component == null || callback == null)
             {
-                Debug.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
+                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
                 return;
             }
 
@@ -119,7 +109,7 @@ namespace TirexGame.Utils.EventCenter
         {
             if (component == null || callback == null || condition == null)
             {
-                Debug.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
+                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
                 return;
             }
 

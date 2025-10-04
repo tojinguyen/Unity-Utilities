@@ -227,14 +227,14 @@ namespace TirexGame.Utils.EventCenter
             if (!_isInitialized)
             {
                 // Always log critical issues regardless of logging config
-                Debug.Log("[EventSystem] ❌ EventSystem is not initialized");
+                ConsoleLogger.Log("[EventSystem] ❌ EventSystem is not initialized");
                 return;
             }
             
             if (_eventCenter == null)
             {
                 // Always log critical issues regardless of logging config
-                Debug.Log("[EventSystem] ❌ EventCenter is null");
+                ConsoleLogger.Log("[EventSystem] ❌ EventCenter is null");
                 return;
             }
             
@@ -246,15 +246,15 @@ namespace TirexGame.Utils.EventCenter
             }
             
             var stats = _eventCenter.GetStats();
-            Debug.Log($"[EventSystem] ✅ Status Report:");
-            Debug.Log($"[EventSystem] • Initialized: {_isInitialized}");
-            Debug.Log($"[EventSystem] • Active Subscriptions: {stats.ActiveSubscriptions}");
-            Debug.Log($"[EventSystem] • Queued Events: {stats.QueuedEvents}");
-            Debug.Log($"[EventSystem] • Events Processed This Frame: {stats.EventsProcessedThisFrame}");
-            Debug.Log($"[EventSystem] • Peak Events Per Frame: {stats.PeakEventsPerFrame}");
-            Debug.Log($"[EventSystem] • Pooled Events: {stats.PooledEvents}");
-            Debug.Log($"[EventSystem] • Average Processing Time: {stats.AverageProcessingTime:F2}ms");
-            Debug.Log($"[EventSystem] • Memory Usage: {stats.MemoryUsage} bytes");
+            ConsoleLogger.Log($"[EventSystem] ✅ Status Report:");
+            ConsoleLogger.Log($"[EventSystem] • Initialized: {_isInitialized}");
+            ConsoleLogger.Log($"[EventSystem] • Active Subscriptions: {stats.ActiveSubscriptions}");
+            ConsoleLogger.Log($"[EventSystem] • Queued Events: {stats.QueuedEvents}");
+            ConsoleLogger.Log($"[EventSystem] • Events Processed This Frame: {stats.EventsProcessedThisFrame}");
+            ConsoleLogger.Log($"[EventSystem] • Peak Events Per Frame: {stats.PeakEventsPerFrame}");
+            ConsoleLogger.Log($"[EventSystem] • Pooled Events: {stats.PooledEvents}");
+            ConsoleLogger.Log($"[EventSystem] • Average Processing Time: {stats.AverageProcessingTime:F2}ms");
+            ConsoleLogger.Log($"[EventSystem] • Memory Usage: {stats.MemoryUsage} bytes");
         }
         
         /// <summary>

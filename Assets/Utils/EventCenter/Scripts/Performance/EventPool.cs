@@ -99,7 +99,7 @@ namespace TirexGame.Utils.EventCenter
             if (GetPoolSize(type) >= maxPoolSize)
             {
                 if (enableWarnings)
-                    Debug.LogWarning($"Pool for {type.Name} has reached max size ({maxPoolSize}). Discarding event.");
+                    ConsoleLogger.LogWarning($"Pool for {type.Name} has reached max size ({maxPoolSize}). Discarding event.");
                 return;
             }
             
@@ -226,7 +226,7 @@ namespace TirexGame.Utils.EventCenter
         private void Log(string message)
         {
             if (enableLogging)
-                Debug.Log($"[EventPool] {message}");
+                ConsoleLogger.Log($"[EventPool] {message}");
         }
         
         #endregion

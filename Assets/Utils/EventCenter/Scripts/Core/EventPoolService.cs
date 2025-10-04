@@ -54,14 +54,14 @@ namespace TirexGame.Utils.EventCenter
         {
             if (_current != null && _current != eventPool)
             {
-                Debug.Log("[EventPoolService] Replacing current EventPool instance");
+                ConsoleLogger.Log("[EventPoolService] Replacing current EventPool instance");
             }
             
             _current = eventPool;
             
             if (eventPool != null)
             {
-                Debug.Log("[EventPoolService] EventPool service is now available");
+                ConsoleLogger.Log("[EventPoolService] EventPool service is now available");
             }
         }
         
@@ -71,7 +71,7 @@ namespace TirexGame.Utils.EventCenter
         public static void ClearCurrent()
         {
             _current = null;
-            Debug.Log("[EventPoolService] EventPool service cleared");
+            ConsoleLogger.Log("[EventPoolService] EventPool service cleared");
         }
         
         /// <summary>

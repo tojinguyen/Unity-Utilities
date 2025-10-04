@@ -21,16 +21,16 @@ namespace TirexGame.Utils.EventCenter
                 if (EventCenterService.IsAvailable)
                 {
                     EventSystem.Initialize();
-                    Debug.Log("[EventSystemInitializer] Static EventSystem auto-initialized");
+                    ConsoleLogger.Log("[EventSystemInitializer] Static EventSystem auto-initialized");
                 }
                 else
                 {
-                    Debug.LogWarning("[EventSystemInitializer] Failed to create or find EventCenter");
+                    ConsoleLogger.LogWarning("[EventSystemInitializer] Failed to create or find EventCenter");
                 }
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"[EventSystemInitializer] Failed to auto-initialize EventSystem: {ex.Message}");
+                ConsoleLogger.LogError($"[EventSystemInitializer] Failed to auto-initialize EventSystem: {ex.Message}");
             }
         }
         
@@ -45,7 +45,7 @@ namespace TirexGame.Utils.EventCenter
             // Check if auto-creation is disabled in config
             if (!config.autoCreateEventCenter)
             {
-                Debug.Log("[EventSystemInitializer] Auto-creation disabled in configuration");
+                ConsoleLogger.Log("[EventSystemInitializer] Auto-creation disabled in configuration");
                 return;
             }
             
@@ -53,7 +53,7 @@ namespace TirexGame.Utils.EventCenter
             var existingEventCenter = UnityEngine.Object.FindFirstObjectByType<EventCenter>();
             if (existingEventCenter != null)
             {
-                Debug.Log("[EventSystemInitializer] EventCenter already exists, using existing one");
+                ConsoleLogger.Log("[EventSystemInitializer] EventCenter already exists, using existing one");
                 return;
             }
             
@@ -61,7 +61,7 @@ namespace TirexGame.Utils.EventCenter
             var existingSetup = UnityEngine.Object.FindFirstObjectByType<EventCenterSetup>();
             if (existingSetup != null)
             {
-                Debug.Log("[EventSystemInitializer] EventCenterSetup found, it will handle EventCenter creation");
+                ConsoleLogger.Log("[EventSystemInitializer] EventCenterSetup found, it will handle EventCenter creation");
                 return;
             }
             
@@ -79,19 +79,19 @@ namespace TirexGame.Utils.EventCenter
             // Create with settings from config
             var eventCenter = EventCenterService.CreateAndSetCurrent(config.autoCreatedName, config.dontDestroyOnLoad);
             
-            Debug.Log($"[EventSystemInitializer] ✅ EventCenter created: '{config.autoCreatedName}'");
-            Debug.Log($"[EventSystemInitializer] ✅ DontDestroyOnLoad: {config.dontDestroyOnLoad}");
-            Debug.Log($"[EventSystemInitializer] ℹ️ Max Events/Frame: {config.maxEventsPerFrame}");
-            Debug.Log($"[EventSystemInitializer] ℹ️ Max Batch Size: {config.maxBatchSize}");
+            ConsoleLogger.Log($"[EventSystemInitializer] ✅ EventCenter created: '{config.autoCreatedName}'");
+            ConsoleLogger.Log($"[EventSystemInitializer] ✅ DontDestroyOnLoad: {config.dontDestroyOnLoad}");
+            ConsoleLogger.Log($"[EventSystemInitializer] ℹ️ Max Events/Frame: {config.maxEventsPerFrame}");
+            ConsoleLogger.Log($"[EventSystemInitializer] ℹ️ Max Batch Size: {config.maxBatchSize}");
             
             if (config.enableLogging)
             {
-                Debug.Log("[EventSystemInitializer] ✅ Debug logging enabled");
+                ConsoleLogger.Log("[EventSystemInitializer] ✅ ConsoleLogger logging enabled");
             }
             
             if (config.enableProfiling)
             {
-                Debug.Log("[EventSystemInitializer] ✅ Performance profiling enabled");
+                ConsoleLogger.Log("[EventSystemInitializer] ✅ Performance profiling enabled");
             }
         }
         
@@ -102,7 +102,7 @@ namespace TirexGame.Utils.EventCenter
             Application.quitting += () =>
             {
                 EventSystem.Shutdown();
-                Debug.Log("[EventSystemInitializer] EventSystem shutdown on application quit");
+                ConsoleLogger.Log("[EventSystemInitializer] EventSystem shutdown on application quit");
             };
         }
     }
@@ -125,7 +125,7 @@ namespace TirexGame.Utils.EventCenter
             if (initializeOnAwake && !EventSystem.IsInitialized)
             {
                 EventSystem.Initialize();
-                Debug.Log("[EventSystemManager] EventSystem initialized in Awake");
+                ConsoleLogger.Log("[EventSystemManager] EventSystem initialized in Awake");
             }
         }
         
@@ -142,7 +142,7 @@ namespace TirexGame.Utils.EventCenter
             if (shutdownOnDestroy)
             {
                 EventSystem.Shutdown();
-                Debug.Log("[EventSystemManager] EventSystem shutdown in OnDestroy");
+                ConsoleLogger.Log("[EventSystemManager] EventSystem shutdown in OnDestroy");
             }
         }
         

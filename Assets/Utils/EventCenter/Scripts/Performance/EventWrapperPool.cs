@@ -169,7 +169,7 @@ namespace TirexGame.Utils.EventCenter
         private static void Log(string message)
         {
             if (_enableLogging)
-                Debug.Log($"[EventWrapperPool<{typeof(T).Name}>] {message}");
+                ConsoleLogger.Log($"[EventWrapperPool<{typeof(T).Name}>] {message}");
         }
         
         #endregion
@@ -218,7 +218,7 @@ namespace TirexGame.Utils.EventCenter
         {
             // Since we're using static generic classes, we can't easily enumerate all types
             // This would need to be implemented differently if needed
-            Debug.Log("[EventWrapperPoolManager] Individual pool clearing required for static generic pools");
+            ConsoleLogger.Log("[EventWrapperPoolManager] Individual pool clearing required for static generic pools");
         }
     }
 }

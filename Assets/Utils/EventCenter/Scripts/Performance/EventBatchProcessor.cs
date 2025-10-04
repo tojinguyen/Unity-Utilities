@@ -58,7 +58,7 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         /// <param name="maxBatchSize">Maximum events per batch</param>
         /// <param name="maxBatchTime">Maximum time to wait before processing batch (seconds)</param>
-        /// <param name="enableLogging">Enable debug logging</param>
+        /// <param name="enableLogging">Enable ConsoleLogger logging</param>
         public EventBatchProcessor(int maxBatchSize = 100, float maxBatchTime = 0.016f, bool enableLogging = false)
         {
             _maxBatchSize = maxBatchSize;
@@ -128,7 +128,7 @@ namespace TirexGame.Utils.EventCenter
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"Error processing batch for {kvp.Key.Name}: {ex.Message}");
+                        ConsoleLogger.LogError($"Error processing batch for {kvp.Key.Name}: {ex.Message}");
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace TirexGame.Utils.EventCenter
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogError($"Error force processing batch for {kvp.Key.Name}: {ex.Message}");
+                        ConsoleLogger.LogError($"Error force processing batch for {kvp.Key.Name}: {ex.Message}");
                     }
                 }
             }
@@ -220,7 +220,7 @@ namespace TirexGame.Utils.EventCenter
         private void Log(string message)
         {
             if (_enableLogging)
-                Debug.Log($"[EventBatchProcessor] {message}");
+                ConsoleLogger.Log($"[EventBatchProcessor] {message}");
         }
         
         #endregion

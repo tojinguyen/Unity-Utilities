@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.IO;
@@ -432,3 +433,4 @@ namespace TirexGame.Utils.EventCenter.Editor
         #endregion
     }
 }
+#endif

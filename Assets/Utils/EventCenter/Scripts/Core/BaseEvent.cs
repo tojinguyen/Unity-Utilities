@@ -150,7 +150,7 @@ namespace TirexGame.Utils.EventCenter
         
         #endregion
         
-        #region Debugging
+        #region ConsoleLoggerging
         
         public override string ToString()
         {

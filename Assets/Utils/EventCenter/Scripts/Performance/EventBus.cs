@@ -135,7 +135,7 @@ namespace TirexGame.Utils.EventCenter
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error in EventBus handler for {eventType.Name}: {ex.Message}");
+                    ConsoleLogger.LogError($"Error in EventBus handler for {eventType.Name}: {ex.Message}");
                 }
                 finally
                 {

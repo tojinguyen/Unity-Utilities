@@ -76,7 +76,7 @@ namespace TirexGame.Utils.EventCenter
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error in event callback: {ex.Message}");
+                ConsoleLogger.LogError($"Error in event callback: {ex.Message}");
                 return false;
             }
         }
@@ -116,7 +116,7 @@ namespace TirexGame.Utils.EventCenter
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Error in legacy event callback: {ex.Message}");
+                ConsoleLogger.LogError($"Error in legacy event callback: {ex.Message}");
                 return false;
             }
         }

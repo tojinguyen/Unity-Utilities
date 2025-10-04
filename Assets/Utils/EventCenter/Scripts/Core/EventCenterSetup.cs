@@ -107,7 +107,7 @@ namespace TirexGame.Utils.EventCenter
         private void Log(string message)
         {
             if (enableLogging)
-                Debug.Log($"[EventCenterSetup] {message}");
+                ConsoleLogger.Log($"[EventCenterSetup] {message}");
         }
         
         #region Public API

@@ -61,7 +61,7 @@ namespace TirexGame.Utils.EventCenter
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error processing deferred operation: {ex.Message}");
+                    ConsoleLogger.LogError($"Error processing deferred operation: {ex.Message}");
                 }
             }
         }
@@ -111,7 +111,7 @@ namespace TirexGame.Utils.EventCenter
         /// <summary>
         /// Create a new EventDispatcher
         /// </summary>
-        /// <param name="enableLogging">Enable debug logging</param>
+        /// <param name="enableLogging">Enable ConsoleLogger logging</param>
         public EventDispatcher(bool enableLogging = false)
         {
             _enableLogging = enableLogging;
@@ -366,7 +366,7 @@ namespace TirexGame.Utils.EventCenter
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
+                    ConsoleLogger.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
                 }
             }
             
@@ -451,7 +451,7 @@ namespace TirexGame.Utils.EventCenter
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
+                    ConsoleLogger.LogError($"Error dispatching event {eventType.Name}: {ex.Message}");
                 }
             }
             

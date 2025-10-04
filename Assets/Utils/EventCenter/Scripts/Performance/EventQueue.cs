@@ -72,7 +72,7 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="initialCapacity">Initial capacity of the queue</param>
         /// <param name="maxCapacity">Maximum capacity before warnings</param>
         /// <param name="maxBatchSize">Maximum events to process in one batch</param>
-        /// <param name="enableLogging">Enable debug logging</param>
+        /// <param name="enableLogging">Enable ConsoleLogger logging</param>
         public EventQueue(int initialCapacity = 256, int maxCapacity = 10000, int maxBatchSize = 1000, bool enableLogging = false)
         {
             _initialCapacity = initialCapacity;
@@ -104,7 +104,7 @@ namespace TirexGame.Utils.EventCenter
             // Check capacity
             if (_events.Count >= _maxCapacity)
             {
-                Debug.LogWarning($"EventQueue has reached maximum capacity ({_maxCapacity}). Consider increasing capacity or processing events more frequently.");
+                ConsoleLogger.LogWarning($"EventQueue has reached maximum capacity ({_maxCapacity}). Consider increasing capacity or processing events more frequently.");
                 return;
             }
             
@@ -194,7 +194,7 @@ namespace TirexGame.Utils.EventCenter
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"Error processing event {eventData.GetType().Name}: {ex.Message}");
+                    ConsoleLogger.LogError($"Error processing event {eventData.GetType().Name}: {ex.Message}");
                 }
             }
             
@@ -324,7 +324,7 @@ namespace TirexGame.Utils.EventCenter
         private void Log(string message)
         {
             if (_enableLogging)
-                Debug.Log($"[EventQueue] {message}");
+                ConsoleLogger.Log($"[EventQueue] {message}");
         }
         
         #endregion
