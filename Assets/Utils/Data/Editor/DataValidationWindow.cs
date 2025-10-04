@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Text;
 using TirexGame.Utils.Data;
 
 namespace TirexGame.Utils.Data.Editor
@@ -14,6 +15,8 @@ namespace TirexGame.Utils.Data.Editor
         private List<ValidationResult> _validationResults = new List<ValidationResult>();
         private bool _showOnlyErrors = false;
         private bool _autoValidateOnSave = true;
+        private bool _useEncryption = true;
+        private bool _useCompression = true;
         private string _dataPath;
         
         [System.Serializable]
@@ -113,6 +116,26 @@ namespace TirexGame.Utils.Data.Editor
             
             _showOnlyErrors = EditorGUILayout.Toggle("Show Only Errors", _showOnlyErrors);
             _autoValidateOnSave = EditorGUILayout.Toggle("Auto Validate on Save", _autoValidateOnSave);
+            
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("File Format Settings", EditorStyles.boldLabel);
+            
+            EditorGUILayout.BeginHorizontal();
+            _useEncryption = EditorGUILayout.Toggle("Use Encryption", _useEncryption);
+            _useCompression = EditorGUILayout.Toggle("Use Compression", _useCompression);
+            if (GUILayout.Button("Auto Detect", GUILayout.Width(80)))
+            {
+                AutoDetectFileFormat();
+            }
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.HelpBox(
+                "Configure these settings to match your FileDataRepository settings:\n" +
+                "• Use Encryption: Enable if your data files are encrypted\n" +
+                "• Use Compression: Enable if your data files are compressed\n" +
+                "• Auto Detect: Automatically detect format from existing files\n" +
+                "• If validation fails, try different combinations",
+                MessageType.Info);
         }
         
         private void DrawActionButtons()
@@ -296,21 +319,60 @@ namespace TirexGame.Utils.Data.Editor
                     _validationResults.Add(new ValidationResult(dataType.Name, key, false, "File does not exist", filePath));
                     return;
                 }
-                
-                var json = File.ReadAllText(filePath);
+
+                // Read and decode file content like runtime does
+                string json;
+                try
+                {
+                    var fileBytes = File.ReadAllBytes(filePath);
+                    
+                    // Decode based on user settings: File Bytes -> Decrypt -> Decompress -> JSON String
+                    var dataBytes = _useEncryption ? DataEncryptor.Decrypt(fileBytes) : fileBytes;
+                    
+                    if (_useCompression)
+                    {
+                        var decompressedResult = DataCompressor.DecompressBytes(dataBytes);
+                        if (!decompressedResult.Success)
+                        {
+                            _validationResults.Add(new ValidationResult(dataType.Name, key, false, 
+                                $"Decompression failed: {decompressedResult.Error}", filePath));
+                            return;
+                        }
+                        json = Encoding.UTF8.GetString(decompressedResult.Data);
+                    }
+                    else
+                    {
+                        json = Encoding.UTF8.GetString(dataBytes);
+                    }
+                }
+                catch (Exception decodeEx)
+                {
+                    // If decoding fails, try reading as plain text (fallback)
+                    try
+                    {
+                        json = File.ReadAllText(filePath, Encoding.UTF8);
+                        Debug.LogWarning($"File {filePath} could not be decoded with current settings (encryption: {_useEncryption}, compression: {_useCompression}), reading as plain text");
+                    }
+                    catch (Exception readEx)
+                    {
+                        _validationResults.Add(new ValidationResult(dataType.Name, key, false, 
+                            $"Failed to read/decode file: {decodeEx.Message} | {readEx.Message}", filePath));
+                        return;
+                    }
+                }
                 
                 // Validate JSON format
                 if (string.IsNullOrWhiteSpace(json))
                 {
-                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, "File is empty", filePath));
+                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, "File content is empty after decoding", filePath));
                     return;
                 }
-                
-                // Try to deserialize
+
+                // Try to deserialize using Newtonsoft.Json (same as runtime)
                 object dataInstance;
                 try
                 {
-                    dataInstance = JsonUtility.FromJson(json, dataType);
+                    dataInstance = Newtonsoft.Json.JsonConvert.DeserializeObject(json, dataType);
                     if (dataInstance == null)
                     {
                         _validationResults.Add(new ValidationResult(dataType.Name, key, false, "Failed to deserialize - null result", filePath));
@@ -319,7 +381,7 @@ namespace TirexGame.Utils.Data.Editor
                 }
                 catch (Exception jsonEx)
                 {
-                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, $"JSON Error: {jsonEx.Message}", filePath));
+                    _validationResults.Add(new ValidationResult(dataType.Name, key, false, $"JSON parse error: {jsonEx.Message}", filePath));
                     return;
                 }
                 
@@ -554,6 +616,8 @@ namespace TirexGame.Utils.Data.Editor
         {
             _showOnlyErrors = EditorPrefs.GetBool("DataValidation.ShowOnlyErrors", false);
             _autoValidateOnSave = EditorPrefs.GetBool("DataValidation.AutoValidateOnSave", true);
+            _useEncryption = EditorPrefs.GetBool("DataValidation.UseEncryption", true);
+            _useCompression = EditorPrefs.GetBool("DataValidation.UseCompression", true);
             _dataPath = EditorPrefs.GetString("DataValidation.DataPath", Application.persistentDataPath);
         }
         
@@ -561,7 +625,120 @@ namespace TirexGame.Utils.Data.Editor
         {
             EditorPrefs.SetBool("DataValidation.ShowOnlyErrors", _showOnlyErrors);
             EditorPrefs.SetBool("DataValidation.AutoValidateOnSave", _autoValidateOnSave);
+            EditorPrefs.SetBool("DataValidation.UseEncryption", _useEncryption);
+            EditorPrefs.SetBool("DataValidation.UseCompression", _useCompression);
             EditorPrefs.SetString("DataValidation.DataPath", _dataPath);
+        }
+        
+        private void AutoDetectFileFormat()
+        {
+            try
+            {
+                // Find the first .dat file to test
+                var datFiles = Directory.GetFiles(_dataPath, "*.dat", SearchOption.AllDirectories);
+                if (datFiles.Length == 0)
+                {
+                    EditorUtility.DisplayDialog("Auto Detect", "No .dat files found in the data path.", "OK");
+                    return;
+                }
+                
+                var testFile = datFiles[0];
+                var fileBytes = File.ReadAllBytes(testFile);
+                
+                // Test different combinations
+                bool detectedEncryption = false;
+                bool detectedCompression = false;
+                
+                // Test 1: No encryption, no compression (plain JSON)
+                try
+                {
+                    var jsonText = Encoding.UTF8.GetString(fileBytes);
+                    Newtonsoft.Json.JsonConvert.DeserializeObject(jsonText);
+                    // Success - file is plain JSON
+                    detectedEncryption = false;
+                    detectedCompression = false;
+                    Debug.Log("Detected format: Plain JSON (no encryption, no compression)");
+                }
+                catch
+                {
+                    // Test 2: Encryption only
+                    try
+                    {
+                        var decryptedBytes = DataEncryptor.Decrypt(fileBytes);
+                        var jsonText = Encoding.UTF8.GetString(decryptedBytes);
+                        Newtonsoft.Json.JsonConvert.DeserializeObject(jsonText);
+                        // Success - encrypted but not compressed
+                        detectedEncryption = true;
+                        detectedCompression = false;
+                        Debug.Log("Detected format: Encrypted JSON (encryption: yes, compression: no)");
+                    }
+                    catch
+                    {
+                        // Test 3: Encryption + Compression
+                        try
+                        {
+                            var decryptedBytes = DataEncryptor.Decrypt(fileBytes);
+                            var decompressedResult = DataCompressor.DecompressBytes(decryptedBytes);
+                            if (decompressedResult.Success)
+                            {
+                                var jsonText = Encoding.UTF8.GetString(decompressedResult.Data);
+                                Newtonsoft.Json.JsonConvert.DeserializeObject(jsonText);
+                                // Success - encrypted and compressed
+                                detectedEncryption = true;
+                                detectedCompression = true;
+                                Debug.Log("Detected format: Encrypted + Compressed JSON (encryption: yes, compression: yes)");
+                            }
+                            else
+                            {
+                                throw new Exception("Decompression failed");
+                            }
+                        }
+                        catch
+                        {
+                            // Test 4: Compression only (no encryption)
+                            try
+                            {
+                                var decompressedResult = DataCompressor.DecompressBytes(fileBytes);
+                                if (decompressedResult.Success)
+                                {
+                                    var jsonText = Encoding.UTF8.GetString(decompressedResult.Data);
+                                    Newtonsoft.Json.JsonConvert.DeserializeObject(jsonText);
+                                    // Success - compressed but not encrypted
+                                    detectedEncryption = false;
+                                    detectedCompression = true;
+                                    Debug.Log("Detected format: Compressed JSON (encryption: no, compression: yes)");
+                                }
+                                else
+                                {
+                                    throw new Exception("Could not detect file format");
+                                }
+                            }
+                            catch
+                            {
+                                EditorUtility.DisplayDialog("Auto Detect Failed", 
+                                    "Could not automatically detect the file format. Please set manually.", "OK");
+                                return;
+                            }
+                        }
+                    }
+                }
+                
+                // Apply detected settings
+                _useEncryption = detectedEncryption;
+                _useCompression = detectedCompression;
+                
+                EditorUtility.DisplayDialog("Auto Detect Complete", 
+                    $"File format detected successfully!\n\n" +
+                    $"Encryption: {(detectedEncryption ? "Yes" : "No")}\n" +
+                    $"Compression: {(detectedCompression ? "Yes" : "No")}\n\n" +
+                    $"Settings have been updated automatically.", "OK");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"Auto detect failed: {ex.Message}");
+                EditorUtility.DisplayDialog("Auto Detect Failed", 
+                    $"Failed to auto-detect file format: {ex.Message}", "OK");
+            }
         }
     }
     
