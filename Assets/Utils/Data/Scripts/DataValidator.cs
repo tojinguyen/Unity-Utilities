@@ -34,5 +34,32 @@ namespace TirexGame.Utils.Data
 
             return UniTask.FromResult(result);
         }
+        
+        /// <summary>
+        /// Synchronously validates an object. Use for lightweight operations only.
+        /// </summary>
+        public DataValidationResult Validate<T>(T obj) where T : class
+        {
+            var result = new DataValidationResult();
+
+            if (obj == null)
+            {
+                result.IsValid = false;
+                result.Errors.Add("Object cannot be null");
+                return result;
+            }
+
+            if (obj is IValidatable validatableObj)
+            {
+                result.IsValid = validatableObj.Validate(out var errors);
+                result.Errors = errors;
+            }
+            else
+            {
+                result.IsValid = true;
+            }
+
+            return result;
+        }
     }
 }

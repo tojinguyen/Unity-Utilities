@@ -361,5 +361,139 @@ namespace TirexGame.Utils.Data
 
             return $"{len:0.##} {sizes[order]}";
         }
+        
+        // Synchronous compression methods for lightweight operations
+        
+        /// <summary>
+        /// Synchronously compresses byte data. Use for lightweight operations only.
+        /// </summary>
+        public static CompressionResult CompressBytes(
+            byte[] data,
+            CompressionAlgorithm algorithm = CompressionAlgorithm.GZip,
+            CompressionLevel level = CompressionLevel.Optimal)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return new CompressionResult
+                {
+                    Success = false,
+                    Error = "Input data is null or empty"
+                };
+            }
+
+            var startTime = DateTime.UtcNow;
+            var stats = new CompressionStats
+            {
+                OriginalSize = data.Length
+            };
+
+            try
+            {
+                byte[] compressedData;
+
+                using (var output = new MemoryStream())
+                {
+                    Stream compressionStream = algorithm switch
+                    {
+                        CompressionAlgorithm.GZip => new GZipStream(output, GetCompressionLevel(level)),
+                        CompressionAlgorithm.Deflate => new DeflateStream(output, GetCompressionLevel(level)),
+                        CompressionAlgorithm.Brotli => new BrotliStream(output, GetCompressionLevel(level)),
+                        _ => throw new ArgumentException($"Unsupported algorithm: {algorithm}")
+                    };
+
+                    using (compressionStream)
+                    {
+                        compressionStream.Write(data, 0, data.Length);
+                    }
+
+                    compressedData = output.ToArray();
+                }
+
+                stats.CompressedSize = compressedData.Length;
+                stats.CompressionTime = DateTime.UtcNow - startTime;
+
+                return new CompressionResult
+                {
+                    Data = compressedData,
+                    Stats = stats,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CompressionResult
+                {
+                    Stats = stats,
+                    Success = false,
+                    Error = $"Compression failed: {ex.Message}"
+                };
+            }
+        }
+        
+        /// <summary>
+        /// Synchronously decompresses byte data. Use for lightweight operations only.
+        /// </summary>
+        public static DecompressionResult DecompressBytes(
+            byte[] compressedData,
+            CompressionAlgorithm algorithm = CompressionAlgorithm.GZip)
+        {
+            if (compressedData == null || compressedData.Length == 0)
+            {
+                return new DecompressionResult
+                {
+                    Success = false,
+                    Error = "Input data is null or empty"
+                };
+            }
+
+            var startTime = DateTime.UtcNow;
+            var stats = new CompressionStats
+            {
+                CompressedSize = compressedData.Length
+            };
+
+            try
+            {
+                byte[] decompressedData;
+
+                using (var input = new MemoryStream(compressedData))
+                using (var output = new MemoryStream())
+                {
+                    Stream decompressionStream = algorithm switch
+                    {
+                        CompressionAlgorithm.GZip => new GZipStream(input, CompressionMode.Decompress),
+                        CompressionAlgorithm.Deflate => new DeflateStream(input, CompressionMode.Decompress),
+                        CompressionAlgorithm.Brotli => new BrotliStream(input, CompressionMode.Decompress),
+                        _ => throw new ArgumentException($"Unsupported algorithm: {algorithm}")
+                    };
+
+                    using (decompressionStream)
+                    {
+                        decompressionStream.CopyTo(output);
+                    }
+
+                    decompressedData = output.ToArray();
+                }
+
+                stats.OriginalSize = decompressedData.Length;
+                stats.DecompressionTime = DateTime.UtcNow - startTime;
+
+                return new DecompressionResult
+                {
+                    Data = decompressedData,
+                    Stats = stats,
+                    Success = true
+                };
+            }
+            catch (Exception ex)
+            {
+                return new DecompressionResult
+                {
+                    Stats = stats,
+                    Success = false,
+                    Error = $"Decompression failed: {ex.Message}"
+                };
+            }
+        }
     }
 }

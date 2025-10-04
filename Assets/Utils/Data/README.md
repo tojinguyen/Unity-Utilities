@@ -9,6 +9,7 @@ Một giải pháp quản lý dữ liệu toàn diện, hiệu suất cao và d�
 - **🏗️ Kiến trúc linh hoạt**: Hỗ trợ multiple repositories và data models
 - **🛡️ An toàn**: Thread-safe operations và data validation
 - **📱 Đa nền tảng**: Hoạt động trên tất cả platforms Unity hỗ trợ
+- **⚡ Dual API**: Cả async/await và synchronous operations
 
 ## ✨ Tính Năng Nổi Bật
 
@@ -16,11 +17,15 @@ Một giải pháp quản lý dữ liệu toàn diện, hiệu suất cao và d�
 - **`DataManager`**: Static singleton pattern với thread-safe operations
 - **Khởi tạo linh hoạt**: Hỗ trợ cấu hình tùy chỉnh và lazy initialization
 - **Multi-repository**: Quản lý nhiều loại dữ liệu với các strategies lưu trữ khác nhau
+- **Dual API Support**: 
+  - **Async API**: Sử dụng UniTask cho operations phức tạp và I/O intensive
+  - **Sync API**: Cho các tác vụ nhẹ, không cần async/await overhead
 
 ### 💾 Hệ thống Repository Linh hoạt
 - **`FileDataRepository`**: Lưu trữ bền vững với encryption và compression
 - **`MemoryDataRepository`**: Lưu trữ tạm thời cho testing và session data
 - **Interface-based**: Dễ dàng mở rộng với custom repositories (Cloud, Database...)
+- **Sync Support**: Tất cả repositories đều hỗ trợ cả sync và async operations
 
 ### 🔐 Bảo mật & Tối ưu hóa
 - **Mã hóa AES 256-bit**: 
@@ -31,20 +36,24 @@ Một giải pháp quản lý dữ liệu toàn diện, hiệu suất cao và d�
   - Hỗ trợ GZip, Deflate, Brotli compression
   - Automatic compression detection
   - Entropy analysis để tối ưu hiệu suất
+  - **Sync compression**: Phiên bản synchronous cho lightweight operations
 
 ### ⚡ Hiệu suất Cao
 - **Zero Reflection**: Interface-based validation system
-- **Async/Await**: UniTask integration cho smooth gameplay
+- **Dual Processing**: 
+  - **Async/Await**: UniTask integration cho smooth gameplay
+  - **Synchronous**: Direct processing cho tác vụ nhẹ
 - **Smart Caching**:
   - LRU (Least Recently Used) eviction
   - Memory usage monitoring
   - Configurable expiration times
-- **Thread Pool**: File I/O operations chạy trên background threads
+- **Thread Pool**: File I/O operations chạy trên background threads (async mode)
 
 ### ✅ Data Validation & Integrity
 - **Type-safe validation**: `IValidatable` interface cho custom validation rules
 - **Data corruption recovery**: Automatic fallback to default data
 - **Detailed error reporting**: Comprehensive error messages và logging
+- **Sync validation**: Immediate validation cho real-time feedback
 
 ### 🎯 Event System
 - **Observer Pattern**: Subscribe/Unsubscribe to data events
@@ -493,6 +502,242 @@ public class DataEventHandler : MonoBehaviour
             DataManager.OnDataError -= OnDataError;
         }
     }
+}
+```
+
+## ⚡ Synchronous API - Cho Tác Vụ Nhẹ
+
+**Từ phiên bản mới**, package hỗ trợ **Synchronous API** cho các tác vụ nhẹ mà không cần overhead của async/await. API này phù hợp cho:
+
+- Lưu/tải dữ liệu nhẹ (< 1MB)
+- Operations trong game loop
+- Quick access cho cached data
+- Testing và debugging
+
+### 🔄 So Sánh Async vs Sync
+
+| **Tính năng** | **Async API** | **Sync API** |
+|-------------|-------------|-------------|
+| **Performance** | Tối ưu cho I/O heavy | Tối ưu cho lightweight operations |
+| **Thread Safety** | Thread pool + await | Main thread execution |
+| **Best For** | Large files, complex operations | Small data, quick access |
+| **Error Handling** | Full async exception handling | Direct exception handling |
+| **Memory Usage** | Slightly higher (async state machine) | Lower memory footprint |
+
+### 📖 Sync API Usage Examples
+
+#### Basic Load/Save Operations
+
+```csharp
+using TirexGame.Utils.Data;
+using UnityEngine;
+
+public class SyncDataExample : MonoBehaviour
+{
+    private PlayerData _playerData;
+
+    private void Start()
+    {
+        // Initialize với MemoryRepository cho sync operations nhanh
+        DataManager.Initialize();
+        DataManager.RegisterRepository(new MemoryDataRepository<PlayerData>());
+        
+        // Load data đồng bộ - không cần await!
+        LoadPlayerDataSync();
+    }
+
+    /// <summary>
+    /// Load dữ liệu đồng bộ - phù hợp cho tác vụ nhẹ
+    /// </summary>
+    private void LoadPlayerDataSync()
+    {
+        try
+        {
+            // Sử dụng sync API - không cần await hoặc UniTask!
+            _playerData = DataManager.GetData<PlayerData>();
+            
+            Debug.Log($"✅ Sync loaded: {_playerData.PlayerName}, Level: {_playerData.Level}");
+            UpdateUI();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"❌ Sync load failed: {ex.Message}");
+            _playerData = new PlayerData();
+            _playerData.SetDefaultData();
+        }
+    }
+
+    /// <summary>
+    /// Save dữ liệu đồng bộ - lý tưởng cho game loop
+    /// </summary>
+    private void SavePlayerDataSync()
+    {
+        try
+        {
+            // Immediate save operation
+            bool success = DataManager.SaveData(_playerData);
+            
+            if (success)
+            {
+                Debug.Log($"💾 Sync saved successfully!");
+            }
+            else
+            {
+                Debug.LogError("❌ Sync save failed!");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"❌ Sync save error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Quick data operations trong Update loop
+    /// </summary>
+    private void Update()
+    {
+        // Example: Quick save when player moves (lightweight)
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            _playerData.LastLogin = System.DateTime.Now;
+            DataManager.SaveData(_playerData); // Instant save
+        }
+        
+        // Example: Quick check if data exists
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            bool exists = DataManager.Exists<PlayerData>();
+            Debug.Log($"Data exists: {exists}");
+        }
+        
+        // Example: Get all available keys
+        if (Input.GetKeyDown(KeyCode.K))
+        {
+            var keys = DataManager.GetAllKeys<PlayerData>();
+            Debug.Log($"Available keys: [{string.Join(", ", keys)}]");
+        }
+    }
+    
+    private void UpdateUI()
+    {
+        // Update UI immediately after sync load
+        // No need for async/await pattern
+    }
+}
+```
+
+#### Complete Sync API Reference
+
+```csharp
+// 1. Load Data Synchronously
+T data = DataManager.GetData<T>(key);
+
+// 2. Save Data Synchronously  
+bool success = DataManager.SaveData<T>(data, key);
+
+// 3. Delete Data Synchronously
+bool deleted = DataManager.DeleteData<T>(key);
+
+// 4. Check Existence Synchronously
+bool exists = DataManager.Exists<T>(key);
+
+// 5. Get All Keys Synchronously
+IEnumerable<string> keys = DataManager.GetAllKeys<T>();
+```
+
+### ⚠️ Sync API Best Practices
+
+#### ✅ Khi nên sử dụng Sync API:
+- **Settings/Preferences**: Lưu các cài đặt game (volume, graphics, controls)
+- **Quick save states**: Lưu checkpoint nhỏ trong game loop
+- **UI state management**: Lưu trạng thái UI, selected items
+- **Cache access**: Truy cập dữ liệu đã được cache
+- **Testing**: Unit tests và debugging
+
+#### ❌ Khi KHÔNG nên sử dụng Sync API:
+- **Large files**: Files > 1MB (dùng async)
+- **Network operations**: Luôn dùng async cho network I/O
+- **Complex processing**: Encryption/compression heavy data
+- **Mobile performance**: Trên mobile, prefer async để tránh ANR
+
+#### Performance Optimization
+
+```csharp
+public class PerformanceOptimizedSync : MonoBehaviour
+{
+    private void OptimizedDataOperations()
+    {
+        // ✅ Good: Use MemoryRepository for sync operations
+        DataManager.RegisterRepository(new MemoryDataRepository<PlayerData>());
+        
+        // ✅ Good: Batch operations where possible
+        var data1 = DataManager.GetData<PlayerData>("player1");
+        var data2 = DataManager.GetData<PlayerData>("player2");
+        var data3 = DataManager.GetData<PlayerData>("player3");
+        
+        // Process all data...
+        
+        // Save all at once
+        DataManager.SaveData(data1, "player1");
+        DataManager.SaveData(data2, "player2"); 
+        DataManager.SaveData(data3, "player3");
+        
+        // ❌ Bad: Don't use FileRepository with encryption for frequent sync ops
+        // var fileRepo = new FileDataRepository<PlayerData>(useEncryption: true);
+        // This will block main thread during encryption
+    }
+    
+    [ContextMenu("Performance Test")]
+    private void PerformanceTest()
+    {
+        // Test sync vs async performance
+        const int iterations = 1000;
+        
+        // Sync test
+        var syncStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        for (int i = 0; i < iterations; i++)
+        {
+            var data = new PlayerData { PlayerName = $"Player{i}" };
+            DataManager.SaveData(data, $"sync_test_{i}");
+            var loaded = DataManager.GetData<PlayerData>($"sync_test_{i}");
+        }
+        syncStopwatch.Stop();
+        
+        Debug.Log($"Sync: {syncStopwatch.ElapsedMilliseconds}ms for {iterations} operations");
+        Debug.Log($"Sync: {(float)syncStopwatch.ElapsedMilliseconds / iterations:F2}ms per operation");
+    }
+}
+```
+
+### 🏗️ Sync API Architecture
+
+Sync API được implement ở các levels:
+
+1. **DataManager**: Sync methods như `GetData<T>()`, `SaveData<T>()`
+2. **DataRepository**: `IDataRepositorySync<T>` interface
+3. **Supporting Classes**: 
+   - `DataValidator.Validate()` - sync validation
+   - `DataCompressor.CompressBytes()` - sync compression
+   - Cache access - always synchronous
+
+```csharp
+// Repository level sync implementation
+public class CustomSyncRepository<T> : IDataRepositorySync<T> where T : class, IDataModel<T>
+{
+    public T Load(string key)
+    {
+        // Your sync load implementation
+        return data;
+    }
+    
+    public bool Save(string key, T data)
+    {
+        // Your sync save implementation
+        return true;
+    }
+    
+    // Implement other sync methods...
 }
 ```
 ```

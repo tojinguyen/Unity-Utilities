@@ -248,6 +248,217 @@ namespace TirexGame.Utils.Data
             return Array.Empty<string>();
         }
 
+        // Synchronous API Methods for lightweight operations
+        
+        /// <summary>
+        /// Synchronously gets data for the specified type and key.
+        /// This method blocks the current thread and should only be used for lightweight operations.
+        /// </summary>
+        public static T GetData<T>(string key = null) where T : class, IDataModel<T>, new()
+        {
+            EnsureInitialized();
+            
+            var type = typeof(T);
+            key ??= type.Name;
+            
+            try
+            {
+                // Check cache first
+                if (_config.EnableCaching && _cacheManager.TryGetCached<T>(key, out var cachedData))
+                {
+                    Log($"Data retrieved from cache: {key}");
+                    return cachedData;
+                }
+                
+                // Get from repository
+                if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepositorySync<T> syncRepo)
+                {
+                    var data = syncRepo.Load(key);
+                    
+                    if (data != null)
+                    {
+                        // Validate data synchronously
+                        var validationResult = _validator.Validate(data);
+                        if (!validationResult.IsValid)
+                        {
+                            LogError($"Data validation failed for {key}: {string.Join(", ", validationResult.Errors)}");
+                            // Return default data if saved data is corrupted
+                            var defaultDataOnFail = new T();
+                            defaultDataOnFail.SetDefaultData();
+                            return defaultDataOnFail;
+                        }
+                        
+                        // Cache data
+                        if (_config.EnableCaching)
+                        {
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_config.DefaultCacheExpirationMinutes));
+                        }
+                        
+                        OnDataLoaded?.Invoke(type, data);
+                        _eventManager.RaiseDataLoaded(type, data, key);
+                        
+                        Log($"Data loaded: {key}");
+                        return data;
+                    }
+                }
+                
+                // Return default if not found
+                Log($"No data found for {key}, creating default.");
+                var defaultData = new T();
+                defaultData.SetDefaultData();
+                return defaultData;
+            }
+            catch (DataAccessException ex)
+            {
+                LogError($"Failed to get data {key}: {ex.Message}");
+                OnDataError?.Invoke(type, ex);
+                // Return default data if load fails to prevent game crash
+                var defaultDataOnError = new T();
+                defaultDataOnError.SetDefaultData();
+                return defaultDataOnError;
+            }
+        }
+        
+        /// <summary>
+        /// Synchronously saves data for the specified type and key.
+        /// This method blocks the current thread and should only be used for lightweight operations.
+        /// </summary>
+        public static bool SaveData<T>(T data, string key = null) where T : class, IDataModel<T>, new()
+        {
+            EnsureInitialized();
+            
+            var type = typeof(T);
+            key ??= type.Name;
+            
+            try
+            {
+                if (data == null)
+                {
+                    LogError($"Cannot save null data for key: {key}");
+                    return false;
+                }
+                
+                // Validate data synchronously
+                var validationResult = _validator.Validate(data);
+                if (!validationResult.IsValid)
+                {
+                    LogError($"Data validation failed for {key}: {string.Join(", ", validationResult.Errors)}");
+                    return false;
+                }
+                
+                // Save through repository
+                if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepositorySync<T> syncRepo)
+                {
+                    var success = syncRepo.Save(key, data);
+                    
+                    if (success)
+                    {
+                        // Update cache
+                        if (_config.EnableCaching)
+                        {
+                            _cacheManager.Cache(key, data, TimeSpan.FromMinutes(_config.DefaultCacheExpirationMinutes));
+                        }
+                        
+                        OnDataSaved?.Invoke(type, data);
+                        _eventManager.RaiseDataSaved(type, data, key);
+                        
+                        Log($"Data saved: {key}");
+                        return true;
+                    }
+                }
+                
+                LogError($"No sync repository found for type: {type.Name}");
+                return false;
+            }
+            catch (DataAccessException ex)
+            {
+                LogError($"Failed to save data {key}: {ex.Message}");
+                OnDataError?.Invoke(type, ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// Synchronously deletes data for the specified type and key.
+        /// This method blocks the current thread and should only be used for lightweight operations.
+        /// </summary>
+        public static bool DeleteData<T>(string key = null) where T : class, IDataModel<T>, new()
+        {
+            EnsureInitialized();
+            
+            var type = typeof(T);
+            key ??= type.Name;
+            
+            try
+            {
+                // Delete from repository
+                if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepositorySync<T> syncRepo)
+                {
+                    var success = syncRepo.Delete(key);
+                    
+                    if (success)
+                    {
+                        // Remove from cache
+                        _cacheManager.RemoveFromCache(key);
+                        
+                        _eventManager.RaiseDataDeleted(type, key);
+                        Log($"Data deleted: {key}");
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            catch (Exception ex)
+            {
+                LogError($"Failed to delete data {key}: {ex.Message}");
+                OnDataError?.Invoke(type, ex);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Synchronously checks if data exists for the specified type and key.
+        /// This method blocks the current thread and should only be used for lightweight operations.
+        /// </summary>
+        public static bool Exists<T>(string key = null) where T : class, IDataModel<T>, new()
+        {
+            EnsureInitialized();
+            
+            var type = typeof(T);
+            key ??= type.Name;
+            
+            if (_config.EnableCaching && _cacheManager.ContainsKey(key))
+            {
+                return true;
+            }
+            
+            if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepositorySync<T> syncRepo)
+            {
+                return syncRepo.Exists(key);
+            }
+            
+            return false;
+        }
+
+        /// <summary>
+        /// Synchronously gets all keys for the specified type.
+        /// This method blocks the current thread and should only be used for lightweight operations.
+        /// </summary>
+        public static IEnumerable<string> GetAllKeys<T>() where T : class, IDataModel<T>, new()
+        {
+            EnsureInitialized();
+            
+            var type = typeof(T);
+            
+            if (_repositories.TryGetValue(type, out var repo) && repo is IDataRepositorySync<T> syncRepo)
+            {
+                return syncRepo.GetAllKeys();
+            }
+            
+            return Array.Empty<string>();
+        }
+
         public static void ClearCache(string key = null)
         {
             EnsureInitialized();
