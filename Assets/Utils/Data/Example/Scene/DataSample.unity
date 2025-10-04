@@ -3403,7 +3403,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: TirexGame.Utilities::TirexGame.Utils.Data.DataManagerInitializer
   enableLogging: 0
-  enableCaching: 1
+  enableCaching: 0
   defaultCacheExpirationMinutes: 30
   enableAutoSave: 1
   autoSaveIntervalSeconds: 300

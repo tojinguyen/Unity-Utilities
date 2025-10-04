@@ -61,12 +61,6 @@ namespace TirexGame.Utils.Data
             }
         }
         
-        private void OnDestroy()
-        {
-            // Optional: Shutdown DataManager when this component is destroyed
-            // DataManager.Shutdown();
-        }
-        
         /// <summary>
         /// Automatically initialize DataManager at runtime startup
         /// This ensures DataManager is always initialized even without GameObject
