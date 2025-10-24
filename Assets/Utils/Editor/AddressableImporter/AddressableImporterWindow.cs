@@ -298,6 +298,11 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             }
         }
 
+        /// <summary>
+        /// Loads or creates the AddressableImporterConfig.
+        /// Config is stored in Assets/Settings/ to ensure it persists per-project
+        /// and is included in version control while avoiding conflicts in common Editor folders.
+        /// </summary>
         private void LoadOrCreateConfig()
         {
             string[] guids = AssetDatabase.FindAssets("t:AddressableImporterConfig");
@@ -311,17 +316,13 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             {
                 config = CreateInstance<AddressableImporterConfig>();
 
-                // Define a robust path in the host project and ensure folders exist
-                if (!AssetDatabase.IsValidFolder("Assets/Editor"))
+                // Create config in Assets/Settings/ folder to avoid conflicts with common Editor folders
+                if (!AssetDatabase.IsValidFolder("Assets/Settings"))
                 {
-                    AssetDatabase.CreateFolder("Assets", "Editor");
-                }
-                if (!AssetDatabase.IsValidFolder("Assets/Editor/AddressableImporter"))
-                {
-                    AssetDatabase.CreateFolder("Assets/Editor", "AddressableImporter");
+                    AssetDatabase.CreateFolder("Assets", "Settings");
                 }
 
-                string configPath = "Assets/Editor/AddressableImporter/AddressableImporterConfig.asset";
+                string configPath = "Assets/Settings/AddressableImporterConfig.asset";
                 AssetDatabase.CreateAsset(config, configPath);
                 AssetDatabase.SaveAssets();
                 Debug.Log($"Created new AddressableImporterConfig at {configPath}");
