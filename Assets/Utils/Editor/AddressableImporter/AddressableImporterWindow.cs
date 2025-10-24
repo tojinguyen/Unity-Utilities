@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,7 +14,6 @@ namespace TirexGame.Utils.Editor.AddressableImporter
     {
         private AddressableImporterConfig config;
         private Vector2 scrollPosition;
-        private bool showAdvancedSettings = false;
         private int m_IndexToRemove = -1;
         private string m_SearchQuery = "";
 
@@ -517,3 +517,4 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         }
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 
 namespace TirexGame.Utils.Editor.AddressableImporter
@@ -26,3 +27,4 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         PrefixedFileName
     }
 }
+#endif

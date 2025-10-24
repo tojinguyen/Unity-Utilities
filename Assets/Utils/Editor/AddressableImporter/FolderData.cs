@@ -1,5 +1,5 @@
+#if UNITY_EDITOR
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace TirexGame.Utils.Editor.AddressableImporter
@@ -98,3 +98,4 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         }
     }
 }
+#endif
