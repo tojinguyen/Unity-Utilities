@@ -6,6 +6,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
+using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
 
 namespace TirexGame.Utils.Editor.AddressableImporter
@@ -407,6 +408,12 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             if (group == null)
             {
                 group = settings.CreateGroup(groupName, false, false, false, null);
+                SetupGroupSchemas(group, folderConfig);
+            }
+            else
+            {
+                // Update existing group schemas with new configuration
+                SetupGroupSchemas(group, folderConfig);
             }
 
             int processedCount = 0;
@@ -515,6 +522,53 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 .Distinct()
                 .OrderBy(ext => ext)
                 .ToArray();
+        }
+
+        private void SetupGroupSchemas(AddressableAssetGroup group, FolderData folderConfig)
+        {
+            // Add BundledAssetGroupSchema
+            var bundledSchema = group.GetSchema<BundledAssetGroupSchema>();
+            if (bundledSchema == null)
+            {
+                bundledSchema = group.AddSchema<BundledAssetGroupSchema>();
+                if (config.LogImportResults)
+                {
+                    Debug.Log($"Added BundledAssetGroupSchema to group: {group.Name}");
+                }
+            }
+
+            // Configure BundledAssetGroupSchema
+            bundledSchema.IncludeInBuild = folderConfig.IncludeInBuild;
+            bundledSchema.BundleMode = folderConfig.BundleMode;
+            bundledSchema.Compression = folderConfig.CompressionType;
+            bundledSchema.BuildPath.SetVariableByName(group.Settings, folderConfig.BuildPath);
+            bundledSchema.LoadPath.SetVariableByName(group.Settings, folderConfig.LoadPath);
+
+            // Add ContentUpdateGroupSchema
+            var contentUpdateSchema = group.GetSchema<ContentUpdateGroupSchema>();
+            if (contentUpdateSchema == null)
+            {
+                contentUpdateSchema = group.AddSchema<ContentUpdateGroupSchema>();
+                if (config.LogImportResults)
+                {
+                    Debug.Log($"Added ContentUpdateGroupSchema to group: {group.Name}");
+                }
+            }
+
+            // Configure ContentUpdateGroupSchema
+            contentUpdateSchema.StaticContent = folderConfig.StaticContent;
+
+            // Mark the group as dirty to save changes
+            EditorUtility.SetDirty(group);
+            
+            if (config.LogImportResults)
+            {
+                Debug.Log($"Schema configuration applied to group '{group.Name}': " +
+                         $"BundleMode={folderConfig.BundleMode}, " +
+                         $"Compression={folderConfig.CompressionType}, " +
+                         $"IncludeInBuild={folderConfig.IncludeInBuild}, " +
+                         $"StaticContent={folderConfig.StaticContent}");
+            }
         }
     }
 }

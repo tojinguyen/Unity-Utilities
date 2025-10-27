@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: UI
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: UI
+  m_GUID: 70fd0b12b39e5b042b554dff6cdba709
+  m_SerializeEntries:
+  - m_GUID: 0693ac6781515b54397450cf314d6321
+    m_Address: README
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0ee6f3d72404ef249804b74ff1799864
+    m_Address: Background
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2104d89dc2a62324f84bce3de838870d
+    m_Address: PopEnter
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2485ddbb31dd13f41abc787aa49094a8
+    m_Address: TooltipDefault
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2fdaa92554ea74641ba44b7347cb21c8
+    m_Address: gift
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 37b3f4bd7923a6840951b8129da36c91
+    m_Address: PushExit
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3b484a2e43c1a8c47a95a1588496c2b8
+    m_Address: ScreenDefault
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3d0a21e2fcb0c5741800f2352abdc012
+    m_Address: AlertDefault
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4779857c1a38b0e469c50b9f761cc9f3
+    m_Address: ToastDefault
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4ab8f2764458c8346a0d60b3d8fab280
+    m_Address: AlertBlockOverlay
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5196a226039a98448a23e0c4f725ab9e
+    m_Address: MainScreen
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5775c7536d953764791e5ac612d2e854
+    m_Address: PopExit
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5f0f3d4a627031f41b1f15a3a926ecfe
+    m_Address: UINavigator
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 68d503bb2619d17449a50e2d10a2e5de
+    m_Address: PushEnter
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 6a325a10b7c18c84090b935a9a787f2e
+    m_Address: ModalDefault
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 7c9de972d0822b44f9e4ec79cc3cecff
+    m_Address: TooltipBlockOverlay
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 89757ccc3ef41fc4e8d127ef314db20d
+    m_Address: ModalBlockOverlay
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b3db4494d0197e24697d136d9b8180eb
+    m_Address: ToastHide
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: dca87d8ad6e96e448a9f0c7dfe37de54
+    m_Address: Item
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f9dcf4e21b148ec41956f514aab72592
+    m_Address: ToastShow
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: 239e3ed1384414042bb77fb50f6e65d0, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 6fb7b66770e64b3458d38e7992de4784, type: 2}
+    - {fileID: 11400000, guid: ceffae5b7e6082843b544c24a6c0ea5b, type: 2}

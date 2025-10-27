@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
 using System;
 using UnityEngine;
+using UnityEngine.AddressableAssets.ResourceLocators;
+using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 
 namespace TirexGame.Utils.Editor.AddressableImporter
 {
@@ -16,6 +18,14 @@ namespace TirexGame.Utils.Editor.AddressableImporter
         [SerializeField] private string[] excludedFileExtensions;
         [SerializeField] private bool isEnabled;
         [SerializeField] private string excludedSubfolder;
+        
+        // Schema Configuration
+        [SerializeField] private BundledAssetGroupSchema.BundlePackingMode bundleMode = BundledAssetGroupSchema.BundlePackingMode.PackSeparately;
+        [SerializeField] private BundledAssetGroupSchema.BundleCompressionMode compressionType = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
+        [SerializeField] private string buildPath = "[UnityEngine.AddressableAssets.Addressables.BuildPath]/[BuildTarget]";
+        [SerializeField] private string loadPath = "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/[BuildTarget]";
+        [SerializeField] private bool includeInBuild = true;
+        [SerializeField] private bool staticContent = false;
 
         public string ExcludedSubfolder
         {
@@ -71,6 +81,43 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             set => isEnabled = value;
         }
 
+        // Schema Properties
+        public BundledAssetGroupSchema.BundlePackingMode BundleMode
+        {
+            get => bundleMode;
+            set => bundleMode = value;
+        }
+
+        public BundledAssetGroupSchema.BundleCompressionMode CompressionType
+        {
+            get => compressionType;
+            set => compressionType = value;
+        }
+
+        public string BuildPath
+        {
+            get => buildPath;
+            set => buildPath = value;
+        }
+
+        public string LoadPath
+        {
+            get => loadPath;
+            set => loadPath = value;
+        }
+
+        public bool IncludeInBuild
+        {
+            get => includeInBuild;
+            set => includeInBuild = value;
+        }
+
+        public bool StaticContent
+        {
+            get => staticContent;
+            set => staticContent = value;
+        }
+
         public FolderData()
         {
             folderPath = "";
@@ -82,6 +129,14 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
             excludedSubfolder = "None";
+            
+            // Schema defaults
+            bundleMode = BundledAssetGroupSchema.BundlePackingMode.PackSeparately;
+            compressionType = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
+            buildPath = "[UnityEngine.AddressableAssets.Addressables.BuildPath]/[BuildTarget]";
+            loadPath = "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/[BuildTarget]";
+            includeInBuild = true;
+            staticContent = false;
         }
 
         public FolderData(string path, string group = "Default")
@@ -95,6 +150,14 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             excludedFileExtensions = new[] { ".cs", ".js", ".dll" };
             isEnabled = true;
             excludedSubfolder = "None";
+            
+            // Schema defaults
+            bundleMode = BundledAssetGroupSchema.BundlePackingMode.PackSeparately;
+            compressionType = BundledAssetGroupSchema.BundleCompressionMode.LZ4;
+            buildPath = "[UnityEngine.AddressableAssets.Addressables.BuildPath]/[BuildTarget]";
+            loadPath = "{UnityEngine.AddressableAssets.Addressables.RuntimePath}/[BuildTarget]";
+            includeInBuild = true;
+            staticContent = false;
         }
     }
 }
