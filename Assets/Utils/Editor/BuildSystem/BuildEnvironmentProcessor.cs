@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace TirexGame.Utils.Editor.BuildSystem
 {
@@ -62,10 +63,18 @@ namespace TirexGame.Utils.Editor.BuildSystem
         {
             var currentDefines = config.GetCurrentDefines();
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(report.summary.platform);
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
             
             // Get existing defines to preserve non-environment specific ones
-            var existingDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            string existingDefines;
+            
+            // Use appropriate API based on Unity version
+#if UNITY_2021_2_OR_NEWER
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
+            existingDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+#else
+            existingDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(buildTargetGroup);
+#endif
+            
             var existingDefinesList = existingDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
             
             // Remove old environment defines
@@ -81,7 +90,12 @@ namespace TirexGame.Utils.Editor.BuildSystem
             var newDefines = filteredDefines.Concat(currentDefines).Distinct().ToList();
             var newDefinesString = string.Join(";", newDefines);
             
+            // Apply defines using appropriate API
+#if UNITY_2021_2_OR_NEWER
             PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newDefinesString);
+#else
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(buildTargetGroup, newDefinesString);
+#endif
             
             Debug.Log($"[BuildEnvironmentProcessor] Applied {config.SelectedEnvironment} environment defines for build: {string.Join(", ", currentDefines)}");
         }

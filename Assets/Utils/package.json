@@ -3,6 +3,8 @@
   "displayName": "Unity Utils",
   "description": "Unity Utilities",
   "version": "1.6.3",
+  "unity": "2020.3",
+  "unityRelease": "0f1",
   "license": "MIT",
   "repository": {
     "type": "git",

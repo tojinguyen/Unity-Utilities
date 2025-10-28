@@ -856,6 +856,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
+    Android: DEVELOPMENT;DEBUG_MODE;ENABLE_LOGS
     Standalone: AUTO_APPLY_SPRITE_SETTINGS;UNITY_PURCHASING;FIREBASE_TOOL
   additionalCompilerArguments: {}
   platformArchitecture: {}
