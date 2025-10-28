@@ -160,20 +160,12 @@ namespace TirexGame.Utils.Ads.Editor
             var adManagerGO = new GameObject("AdManager");
             var adManager = adManagerGO.AddComponent<AdManager>();
             
-            // Try to find the config asset
+            // Try to find the config asset and notify the user
             string[] guids = AssetDatabase.FindAssets("t:AdMobConfig");
             if (guids.Length > 0)
             {
                 string configPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                var config = AssetDatabase.LoadAssetAtPath<AdMobConfig>(configPath);
-                
-                // Use reflection to set the config field
-                var configField = typeof(AdManager).GetField("config", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (configField != null)
-                {
-                    configField.SetValue(adManager, config);
-                }
+                ConsoleLogger.Log($"Found an AdMobConfig at {configPath}. Please assign it to the AdManager in the inspector.");
             }
             
             // Mark as dirty for saving
@@ -183,7 +175,7 @@ namespace TirexGame.Utils.Ads.Editor
             Selection.activeGameObject = adManagerGO;
             
             EditorUtility.DisplayDialog("Success", 
-                "AdManager added to scene successfully!\n\nDon't forget to assign the AdMobConfig in the inspector.", 
+                "AdManager added to scene successfully!\n\nPlease find and assign the AdMobConfig in the inspector.", 
                 "OK");
         }
     }

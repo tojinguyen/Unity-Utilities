@@ -25,7 +25,7 @@ namespace TirexGame.Utils.Ads.Examples
             }
             catch (Exception e)
             {
-                Debug.LogError("Error initializing ads: " + e.Message);
+                ConsoleLogger.LogError("Error initializing ads: " + e.Message);
             }
         }
         
@@ -88,7 +88,7 @@ namespace TirexGame.Utils.Ads.Examples
                 var loaded = await AdService.LoadRewardedAsync();
                 if (!loaded)
                 {
-                    Debug.Log("No rewarded ad available");
+                    ConsoleLogger.Log("No rewarded ad available");
                     return;
                 }
             }

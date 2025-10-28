@@ -121,60 +121,46 @@ namespace TirexGame.Utils.Ads
         
         #region Events
         
-        /// <summary>
-        /// Subscribe to ad events
-        /// </summary>
-        public static void SubscribeToEvents(
-            Action onInitialized = null,
-            Action<AdType> onAdLoaded = null,
-            Action<AdType, string> onAdFailedToLoad = null,
-            Action<AdType> onAdShown = null,
-            Action<AdType> onAdClosed = null,
-            Action<AdType, string> onAdFailedToShow = null,
-            Action<AdReward> onRewardEarned = null)
+        public static event Action OnInitialized
         {
-            if (onInitialized != null)
-                AdManager.OnInitialized += onInitialized;
-            if (onAdLoaded != null)
-                AdManager.OnAdLoaded += onAdLoaded;
-            if (onAdFailedToLoad != null)
-                AdManager.OnAdFailedToLoad += onAdFailedToLoad;
-            if (onAdShown != null)
-                AdManager.OnAdShown += onAdShown;
-            if (onAdClosed != null)
-                AdManager.OnAdClosed += onAdClosed;
-            if (onAdFailedToShow != null)
-                AdManager.OnAdFailedToShow += onAdFailedToShow;
-            if (onRewardEarned != null)
-                AdManager.OnRewardEarned += onRewardEarned;
+            add => AdManager.OnInitialized += value;
+            remove => AdManager.OnInitialized -= value;
         }
         
-        /// <summary>
-        /// Unsubscribe from ad events
-        /// </summary>
-        public static void UnsubscribeFromEvents(
-            Action onInitialized = null,
-            Action<AdType> onAdLoaded = null,
-            Action<AdType, string> onAdFailedToLoad = null,
-            Action<AdType> onAdShown = null,
-            Action<AdType> onAdClosed = null,
-            Action<AdType, string> onAdFailedToShow = null,
-            Action<AdReward> onRewardEarned = null)
+        public static event Action<AdType> OnAdLoaded
         {
-            if (onInitialized != null)
-                AdManager.OnInitialized -= onInitialized;
-            if (onAdLoaded != null)
-                AdManager.OnAdLoaded -= onAdLoaded;
-            if (onAdFailedToLoad != null)
-                AdManager.OnAdFailedToLoad -= onAdFailedToLoad;
-            if (onAdShown != null)
-                AdManager.OnAdShown -= onAdShown;
-            if (onAdClosed != null)
-                AdManager.OnAdClosed -= onAdClosed;
-            if (onAdFailedToShow != null)
-                AdManager.OnAdFailedToShow -= onAdFailedToShow;
-            if (onRewardEarned != null)
-                AdManager.OnRewardEarned -= onRewardEarned;
+            add => AdManager.OnAdLoaded += value;
+            remove => AdManager.OnAdLoaded -= value;
+        }
+        
+        public static event Action<AdType, string> OnAdFailedToLoad
+        {
+            add => AdManager.OnAdFailedToLoad += value;
+            remove => AdManager.OnAdFailedToLoad -= value;
+        }
+        
+        public static event Action<AdType> OnAdShown
+        {
+            add => AdManager.OnAdShown += value;
+            remove => AdManager.OnAdShown -= value;
+        }
+        
+        public static event Action<AdType> OnAdClosed
+        {
+            add => AdManager.OnAdClosed += value;
+            remove => AdManager.OnAdClosed -= value;
+        }
+        
+        public static event Action<AdType, string> OnAdFailedToShow
+        {
+            add => AdManager.OnAdFailedToShow += value;
+            remove => AdManager.OnAdFailedToShow -= value;
+        }
+        
+        public static event Action<AdReward> OnRewardEarned
+        {
+            add => AdManager.OnRewardEarned += value;
+            remove => AdManager.OnRewardEarned -= value;
         }
         
         #endregion

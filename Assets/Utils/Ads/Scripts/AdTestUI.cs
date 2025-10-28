@@ -53,28 +53,24 @@ namespace TirexGame.Utils.Ads
         
         private void SubscribeToAdEvents()
         {
-            AdService.SubscribeToEvents(
-                onInitialized: OnAdSystemInitialized,
-                onAdLoaded: OnAdLoaded,
-                onAdFailedToLoad: OnAdFailedToLoad,
-                onAdShown: OnAdShown,
-                onAdClosed: OnAdClosed,
-                onAdFailedToShow: OnAdFailedToShow,
-                onRewardEarned: OnRewardEarned
-            );
+            AdService.OnInitialized += OnAdSystemInitialized;
+            AdService.OnAdLoaded += OnAdLoaded;
+            AdService.OnAdFailedToLoad += OnAdFailedToLoad;
+            AdService.OnAdShown += OnAdShown;
+            AdService.OnAdClosed += OnAdClosed;
+            AdService.OnAdFailedToShow += OnAdFailedToShow;
+            AdService.OnRewardEarned += OnRewardEarned;
         }
         
         private void UnsubscribeFromAdEvents()
         {
-            AdService.UnsubscribeFromEvents(
-                onInitialized: OnAdSystemInitialized,
-                onAdLoaded: OnAdLoaded,
-                onAdFailedToLoad: OnAdFailedToLoad,
-                onAdShown: OnAdShown,
-                onAdClosed: OnAdClosed,
-                onAdFailedToShow: OnAdFailedToShow,
-                onRewardEarned: OnRewardEarned
-            );
+            AdService.OnInitialized -= OnAdSystemInitialized;
+            AdService.OnAdLoaded -= OnAdLoaded;
+            AdService.OnAdFailedToLoad -= OnAdFailedToLoad;
+            AdService.OnAdShown -= OnAdShown;
+            AdService.OnAdClosed -= OnAdClosed;
+            AdService.OnAdFailedToShow -= OnAdFailedToShow;
+            AdService.OnRewardEarned -= OnRewardEarned;
         }
         
         #region Button Actions
@@ -189,7 +185,7 @@ namespace TirexGame.Utils.Ads
                 statusText.text = $"[{System.DateTime.Now:HH:mm:ss}] {message}";
             }
             
-            Debug.Log($"[AdTestUI] {message}");
+            ConsoleLogger.Log($"[AdTestUI] {message}");
         }
     }
 }

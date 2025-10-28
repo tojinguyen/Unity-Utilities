@@ -32,6 +32,7 @@ namespace TirexGame.Utils.Ads
         private UniTaskCompletionSource<bool> _interstitialShowTcs;
         private UniTaskCompletionSource<bool> _rewardedLoadTcs;
         private UniTaskCompletionSource<AdResult> _rewardedShowTcs;
+        private AdReward? _lastEarnedReward;
 #endif
         
         #region Properties
@@ -91,7 +92,7 @@ namespace TirexGame.Utils.Ads
                 
             if (!config)
             {
-                Debug.LogError("[AdManager] AdMobConfig is not assigned!");
+                ConsoleLogger.LogError("[AdManager] AdMobConfig is not assigned!");
                 return;
             }
             
@@ -268,7 +269,7 @@ namespace TirexGame.Utils.Ads
 #if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!IsInterstitialReady())
             {
-                Debug.LogWarning("[AdManager] Interstitial ad is not ready");
+                ConsoleLogger.LogWarning("[AdManager] Interstitial ad is not ready");
                 return false;
             }
             
@@ -367,15 +368,18 @@ namespace TirexGame.Utils.Ads
 #if UNITY_ANDROID || UNITY_IOS || UNITY_EDITOR
             if (!IsRewardedReady())
             {
-                Debug.LogWarning("[AdManager] Rewarded ad is not ready");
+                ConsoleLogger.LogWarning("[AdManager] Rewarded ad is not ready");
                 return new AdResult(false, errorMessage: "Rewarded ad is not ready");
             }
             
             _rewardedShowTcs = new UniTaskCompletionSource<AdResult>();
+            _lastEarnedReward = null; // Reset before showing
+            
             _rewardedAd.Show((Reward reward) =>
             {
                 Log($"Rewarded ad completed. Reward: {reward.Type} x{reward.Amount}");
                 var adReward = new AdReward(reward.Type, reward.Amount);
+                _lastEarnedReward = adReward; // Store the reward
                 OnRewardEarned?.Invoke(adReward);
             });
             
@@ -454,11 +458,19 @@ namespace TirexGame.Utils.Ads
             {
                 Log("Rewarded ad closed");
                 OnAdClosed?.Invoke(AdType.Rewarded);
-                
+
+                if (_lastEarnedReward.HasValue)
+                {
+                    _rewardedShowTcs?.TrySetResult(new AdResult(true, _lastEarnedReward.Value));
+                }
+                else
+                {
+                    _rewardedShowTcs?.TrySetResult(new AdResult(false, errorMessage: "Ad closed by user"));
+                }
+
                 // Clean up and preload next ad
                 _rewardedAd.Destroy();
                 _rewardedAd = null;
-                _rewardedShowTcs?.TrySetResult(new AdResult(true));
                 
                 LoadRewardedAsync().Forget();
             };
@@ -515,7 +527,7 @@ namespace TirexGame.Utils.Ads
         {
             if (config && config.EnableLogging)
             {
-                Debug.Log($"[AdManager] {message}");
+                ConsoleLogger.Log($"[AdManager] {message}");
             }
         }
         
@@ -523,7 +535,7 @@ namespace TirexGame.Utils.Ads
         {
             if (config && config.EnableLogging)
             {
-                Debug.LogError($"[AdManager] {message}");
+                ConsoleLogger.LogError($"[AdManager] {message}");
             }
         }
         
