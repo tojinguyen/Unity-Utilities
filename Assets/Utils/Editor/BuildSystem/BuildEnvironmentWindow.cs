@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace TirexGame.Utils.Editor.BuildSystem
 {
@@ -294,6 +295,43 @@ namespace TirexGame.Utils.Editor.BuildSystem
             
             EditorGUILayout.Space(5);
             
+            EditorGUILayout.BeginHorizontal();
+            
+            if (GUILayout.Button("Import from Player Settings", GUILayout.Height(25)))
+            {
+                ImportDefinesFromPlayerSettings();
+            }
+            
+            if (GUILayout.Button("Show Current Player Settings", GUILayout.Height(25)))
+            {
+                ShowCurrentPlayerSettings();
+            }
+            
+            EditorGUILayout.EndHorizontal();
+            
+            EditorGUILayout.Space(5);
+            
+            // Show current Player Settings info in a helpbox
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var currentPlayerDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            var playerDefinesList = string.IsNullOrWhiteSpace(currentPlayerDefines) ? 
+                new List<string>() : 
+                currentPlayerDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).Select(d => d.Trim()).ToList();
+            
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField($"Player Settings ({EditorUserBuildSettings.selectedBuildTargetGroup})", EditorStyles.boldLabel);
+            if (playerDefinesList.Count > 0)
+            {
+                EditorGUILayout.LabelField($"Current defines ({playerDefinesList.Count}): {string.Join(", ", playerDefinesList)}", EditorStyles.wordWrappedMiniLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("No defines currently set in Player Settings", EditorStyles.centeredGreyMiniLabel);
+            }
+            EditorGUILayout.EndVertical();
+            
+            EditorGUILayout.Space(5);
+            
             showAdvancedSettings = EditorGUILayout.Foldout(showAdvancedSettings, "Advanced", true);
             if (showAdvancedSettings)
             {
@@ -474,6 +512,198 @@ namespace TirexGame.Utils.Editor.BuildSystem
         private void ConvertFromOriginalConfig()
         {
             EditorUtility.DisplayDialog("Feature Removed", "Convert from original config feature has been removed as this is now the main version.", "OK");
+        }
+        
+        private void ImportDefinesFromPlayerSettings()
+        {
+            if (currentConfig == null)
+            {
+                EditorUtility.DisplayDialog("Error", "No config selected. Please create or select a configuration first.", "OK");
+                return;
+            }
+            
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var currentDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            
+            if (string.IsNullOrWhiteSpace(currentDefines))
+            {
+                EditorUtility.DisplayDialog("No Defines Found", "No scripting define symbols found in Player Settings for the current build target.", "OK");
+                return;
+            }
+            
+            var definesList = currentDefines.Split(';')
+                .Where(d => !string.IsNullOrWhiteSpace(d))
+                .Select(d => d.Trim())
+                .ToList();
+            
+            if (definesList.Count == 0)
+            {
+                EditorUtility.DisplayDialog("No Defines Found", "No valid scripting define symbols found in Player Settings.", "OK");
+                return;
+            }
+            
+            // Show import dialog with extended options
+            var result = EditorUtility.DisplayDialogComplex(
+                "Import Scripting Defines",
+                $"Found {definesList.Count} define(s) in Player Settings for {EditorUserBuildSettings.selectedBuildTargetGroup}:\n\n" +
+                string.Join(", ", definesList) + "\n\n" +
+                "Choose import destination:",
+                "Development",
+                "All Environments", 
+                "Cancel"
+            );
+            
+            if (result == 1) // Import to All Environments
+            {
+                ImportToAllEnvironments(definesList);
+                return;
+            }
+            else if (result == 2 || result == -1) // Cancel or closed dialog
+            {
+                // Show additional options
+                var advancedResult = EditorUtility.DisplayDialogComplex(
+                    "More Import Options",
+                    "Choose specific environment:",
+                    "Staging",
+                    "Production",
+                    "Cancel"
+                );
+                
+                if (advancedResult == 2 || advancedResult == -1) // Cancel
+                {
+                    return;
+                }
+                
+                result = advancedResult == 0 ? 1 : 2; // Map to Staging(1) or Production(2)
+            }
+            
+            List<string> targetDefinesList = null;
+            string environmentName = "";
+            
+            switch (result)
+            {
+                case 0: // Development
+                    targetDefinesList = currentConfig.DevelopmentDefines;
+                    environmentName = "Development";
+                    break;
+                case 1: // Staging
+                    targetDefinesList = currentConfig.StagingDefines;
+                    environmentName = "Staging";
+                    break;
+                case 2: // Production
+                    targetDefinesList = currentConfig.ProductionDefines;
+                    environmentName = "Production";
+                    break;
+                default:
+                    return; // User cancelled
+            }
+            
+            // Add unique defines to target environment
+            int addedCount = 0;
+            foreach (var define in definesList)
+            {
+                if (!targetDefinesList.Contains(define))
+                {
+                    targetDefinesList.Add(define);
+                    addedCount++;
+                }
+            }
+            
+            if (addedCount > 0)
+            {
+                EditorUtility.SetDirty(currentConfig);
+                EditorUtility.DisplayDialog(
+                    "Import Complete",
+                    $"Successfully imported {addedCount} new define(s) to {environmentName} environment.\n\n" +
+                    $"Skipped {definesList.Count - addedCount} duplicate(s).",
+                    "OK"
+                );
+                Debug.Log($"Imported {addedCount} scripting defines from Player Settings to {environmentName} environment");
+            }
+            else
+            {
+                EditorUtility.DisplayDialog(
+                    "Import Complete",
+                    $"All defines from Player Settings already exist in {environmentName} environment.",
+                    "OK"
+                );
+            }
+        }
+        
+        private void ShowCurrentPlayerSettings()
+        {
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var currentDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            
+            string message;
+            if (string.IsNullOrWhiteSpace(currentDefines))
+            {
+                message = $"No scripting define symbols are currently set for {EditorUserBuildSettings.selectedBuildTargetGroup}.";
+            }
+            else
+            {
+                var definesList = currentDefines.Split(';')
+                    .Where(d => !string.IsNullOrWhiteSpace(d))
+                    .Select(d => d.Trim())
+                    .ToList();
+                
+                message = $"Current scripting define symbols for {EditorUserBuildSettings.selectedBuildTargetGroup}:\n\n" +
+                         $"Count: {definesList.Count}\n\n" +
+                         string.Join("\n", definesList.Select(d => $"• {d}"));
+            }
+            
+            EditorUtility.DisplayDialog("Current Player Settings", message, "OK");
+        }
+        
+        private void ImportToAllEnvironments(List<string> definesList)
+        {
+            if (currentConfig == null || definesList == null || definesList.Count == 0)
+                return;
+            
+            int totalAdded = 0;
+            var report = new List<string>();
+            
+            // Import to Development
+            int devAdded = AddUniqueDifinesToList(definesList, currentConfig.DevelopmentDefines);
+            totalAdded += devAdded;
+            report.Add($"Development: {devAdded} new");
+            
+            // Import to Staging
+            int stagingAdded = AddUniqueDifinesToList(definesList, currentConfig.StagingDefines);
+            totalAdded += stagingAdded;
+            report.Add($"Staging: {stagingAdded} new");
+            
+            // Import to Production
+            int prodAdded = AddUniqueDifinesToList(definesList, currentConfig.ProductionDefines);
+            totalAdded += prodAdded;
+            report.Add($"Production: {prodAdded} new");
+            
+            if (totalAdded > 0)
+            {
+                EditorUtility.SetDirty(currentConfig);
+            }
+            
+            EditorUtility.DisplayDialog(
+                "Import to All Environments Complete",
+                $"Import Summary:\n\n" + string.Join("\n", report) + $"\n\nTotal new defines added: {totalAdded}",
+                "OK"
+            );
+            
+            Debug.Log($"Imported defines to all environments. Total new defines: {totalAdded}");
+        }
+        
+        private int AddUniqueDifinesToList(List<string> sourceDifines, List<string> targetDifines)
+        {
+            int addedCount = 0;
+            foreach (var define in sourceDifines)
+            {
+                if (!targetDifines.Contains(define))
+                {
+                    targetDifines.Add(define);
+                    addedCount++;
+                }
+            }
+            return addedCount;
         }
         
         #endregion
