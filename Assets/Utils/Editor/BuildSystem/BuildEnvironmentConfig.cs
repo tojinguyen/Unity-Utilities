@@ -159,6 +159,26 @@ namespace TirexGame.Utils.Editor.BuildSystem
             GetCurrentDefines().Remove(define);
         }
         
+        /// <summary>
+        /// Copy data from another BuildEnvironmentConfig
+        /// </summary>
+        /// <param name="source">Source config to copy from</param>
+        public void CopyFrom(BuildEnvironmentConfig source)
+        {
+            selectedEnvironment = source.SelectedEnvironment;
+            autoApplyOnBuild = source.AutoApplyOnBuild;
+            showBuildDialog = source.ShowBuildDialog;
+            
+            developmentDefines.Clear();
+            developmentDefines.AddRange(source.DevelopmentDefines);
+            
+            stagingDefines.Clear();
+            stagingDefines.AddRange(source.StagingDefines);
+            
+            productionDefines.Clear();
+            productionDefines.AddRange(source.ProductionDefines);
+        }
+        
         #endregion
         
         #region Unity Events

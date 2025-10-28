@@ -9,12 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6575674ad601f2e4e850535333e977d7, type: 3}
+  m_Script: {fileID: 11500000, guid: 7a4b8c2e5f9d3e1a6b8c4d7e2f5a9b3c, type: 3}
   m_Name: BuildEnvironmentConfig
   m_EditorClassIdentifier: TirexGame.Utils.Editor::TirexGame.Utils.Editor.BuildSystem.BuildEnvironmentConfig
   selectedEnvironment: 0
-  developmentDefines: []
-  stagingDefines: []
-  productionDefines: []
+  developmentDefines:
+  - DEVELOPMENT
+  - DEBUG_MODE
+  - ENABLE_LOGS
+  stagingDefines:
+  - STAGING
+  - ENABLE_LOGS
+  productionDefines:
+  - PRODUCTION
+  - RELEASE
   autoApplyOnBuild: 1
   showBuildDialog: 1

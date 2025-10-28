@@ -16,7 +16,7 @@ namespace TirexGame.Utils.Editor.BuildSystem
         private Vector2 scrollPosition;
         private bool showAdvancedSettings = false;
         
-        private const string DEFAULT_CONFIG_PATH = "Assets/Utils/Editor/BuildSystem/Resources";
+        private const string DEFAULT_CONFIG_PATH = "Assets/Editor/BuildSystem/Resources";
         private const string DEFAULT_CONFIG_NAME = "BuildEnvironmentConfig.asset";
         private const string CONFIG_SEARCH_FILTER = "t:BuildEnvironmentConfig";
         
@@ -98,24 +98,34 @@ namespace TirexGame.Utils.Editor.BuildSystem
         
         private void DrawHeader()
         {
-            EditorGUILayout.LabelField("Build Environment Manager", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Manage scripting defines for different build environments", EditorStyles.helpBox);
+            var titleStyle = new GUIStyle(EditorStyles.largeLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 18,
+                fontStyle = FontStyle.Bold
+            };
+            
+            EditorGUILayout.LabelField("Build Environment Manager (Standalone)", titleStyle);
+            EditorGUILayout.LabelField("Manage scripting defines for different build environments", EditorStyles.centeredGreyMiniLabel);
         }
         
         private void DrawConfigSelection()
         {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Configuration", EditorStyles.boldLabel);
+            
             EditorGUILayout.BeginHorizontal();
             
-            EditorGUILayout.LabelField("Config Asset:", GUILayout.Width(100));
+            var newConfig = (BuildEnvironmentConfig)EditorGUILayout.ObjectField(
+                "Config Asset", 
+                currentConfig, 
+                typeof(BuildEnvironmentConfig), 
+                false
+            );
             
-            var newConfig = (BuildEnvironmentConfig)EditorGUILayout.ObjectField(currentConfig, typeof(BuildEnvironmentConfig), false);
             if (newConfig != currentConfig)
             {
                 currentConfig = newConfig;
-                if (currentConfig != null)
-                {
-                    EditorUtility.SetDirty(currentConfig);
-                }
             }
             
             if (GUILayout.Button("Create New", GUILayout.Width(80)))
@@ -124,44 +134,63 @@ namespace TirexGame.Utils.Editor.BuildSystem
             }
             
             EditorGUILayout.EndHorizontal();
+            
+            if (currentConfig != null)
+            {
+                EditorGUILayout.LabelField("Path: " + AssetDatabase.GetAssetPath(currentConfig), EditorStyles.miniLabel);
+            }
+            
+            EditorGUILayout.EndVertical();
         }
         
         private void DrawCurrentEnvironment()
         {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Current Environment", EditorStyles.boldLabel);
             
-            var newEnvironment = (BuildEnvironment)EditorGUILayout.EnumPopup("Selected Environment", currentConfig.SelectedEnvironment);
+            var newEnvironment = (TirexGame.Utils.Editor.BuildSystem.BuildEnvironment)EditorGUILayout.EnumPopup("Selected Environment", currentConfig.SelectedEnvironment);
             if (newEnvironment != currentConfig.SelectedEnvironment)
             {
                 currentConfig.SelectedEnvironment = newEnvironment;
                 EditorUtility.SetDirty(currentConfig);
             }
             
-            // Show current defines count
+            EditorGUILayout.LabelField($"Active Defines ({currentConfig.GetCurrentDefines().Count}):", EditorStyles.boldLabel);
             var currentDefines = currentConfig.GetCurrentDefines();
-            EditorGUILayout.LabelField($"Active Defines: {currentDefines.Count}", EditorStyles.helpBox);
+            if (currentDefines.Count > 0)
+            {
+                var definesText = string.Join(", ", currentDefines);
+                EditorGUILayout.LabelField(definesText, EditorStyles.wordWrappedLabel);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("No defines set for current environment", EditorStyles.centeredGreyMiniLabel);
+            }
+            
+            EditorGUILayout.EndVertical();
         }
         
         private void DrawEnvironmentDefines()
         {
-            EditorGUILayout.LabelField("Environment Defines", EditorStyles.boldLabel);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Environment Scripting Defines", EditorStyles.boldLabel);
             
             // Development
-            DrawDefinesList("Development", currentConfig.DevelopmentDefines, currentConfig.SelectedEnvironment == BuildEnvironment.Development);
+            DrawDefinesList("Development", currentConfig.DevelopmentDefines, currentConfig.SelectedEnvironment == TirexGame.Utils.Editor.BuildSystem.BuildEnvironment.Development);
             EditorGUILayout.Space(5);
             
             // Staging
-            DrawDefinesList("Staging", currentConfig.StagingDefines, currentConfig.SelectedEnvironment == BuildEnvironment.Staging);
+            DrawDefinesList("Staging", currentConfig.StagingDefines, currentConfig.SelectedEnvironment == TirexGame.Utils.Editor.BuildSystem.BuildEnvironment.Staging);
             EditorGUILayout.Space(5);
             
             // Production
-            DrawDefinesList("Production", currentConfig.ProductionDefines, currentConfig.SelectedEnvironment == BuildEnvironment.Production);
+            DrawDefinesList("Production", currentConfig.ProductionDefines, currentConfig.SelectedEnvironment == TirexGame.Utils.Editor.BuildSystem.BuildEnvironment.Production);
+            
+            EditorGUILayout.EndVertical();
         }
         
         private void DrawDefinesList(string environmentName, System.Collections.Generic.List<string> defines, bool isActive)
         {
-            var backgroundColor = isActive ? new Color(0.3f, 0.7f, 0.3f, 0.2f) : Color.clear;
-            
             if (isActive)
             {
                 var originalColor = GUI.backgroundColor;
@@ -199,7 +228,7 @@ namespace TirexGame.Utils.Editor.BuildSystem
                     EditorUtility.SetDirty(currentConfig);
                 }
                 
-                if (GUILayout.Button("-", GUILayout.Width(25)))
+                if (GUILayout.Button("×", GUILayout.Width(25)))
                 {
                     indexToRemove = i;
                 }
@@ -207,7 +236,7 @@ namespace TirexGame.Utils.Editor.BuildSystem
                 EditorGUILayout.EndHorizontal();
             }
             
-            // Remove item after the loop to avoid GUI state issues
+            // Remove item if requested
             if (indexToRemove >= 0)
             {
                 defines.RemoveAt(indexToRemove);
@@ -219,32 +248,29 @@ namespace TirexGame.Utils.Editor.BuildSystem
         
         private void DrawBuildSettings()
         {
-            showAdvancedSettings = EditorGUILayout.Foldout(showAdvancedSettings, "Build Settings", true);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Build Settings", EditorStyles.boldLabel);
             
-            if (showAdvancedSettings)
+            var newAutoApply = EditorGUILayout.Toggle("Auto Apply on Build", currentConfig.AutoApplyOnBuild);
+            if (newAutoApply != currentConfig.AutoApplyOnBuild)
             {
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                
-                var newAutoApply = EditorGUILayout.Toggle("Auto Apply On Build", currentConfig.AutoApplyOnBuild);
-                if (newAutoApply != currentConfig.AutoApplyOnBuild)
-                {
-                    currentConfig.AutoApplyOnBuild = newAutoApply;
-                    EditorUtility.SetDirty(currentConfig);
-                }
-                
-                var newShowDialog = EditorGUILayout.Toggle("Show Build Dialog", currentConfig.ShowBuildDialog);
-                if (newShowDialog != currentConfig.ShowBuildDialog)
-                {
-                    currentConfig.ShowBuildDialog = newShowDialog;
-                    EditorUtility.SetDirty(currentConfig);
-                }
-                
-                EditorGUILayout.EndVertical();
+                currentConfig.AutoApplyOnBuild = newAutoApply;
+                EditorUtility.SetDirty(currentConfig);
             }
+            
+            var newShowDialog = EditorGUILayout.Toggle("Show Build Dialog", currentConfig.ShowBuildDialog);
+            if (newShowDialog != currentConfig.ShowBuildDialog)
+            {
+                currentConfig.ShowBuildDialog = newShowDialog;
+                EditorUtility.SetDirty(currentConfig);
+            }
+            
+            EditorGUILayout.EndVertical();
         }
         
         private void DrawActions()
         {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.LabelField("Actions", EditorStyles.boldLabel);
             
             EditorGUILayout.BeginHorizontal();
@@ -256,7 +282,9 @@ namespace TirexGame.Utils.Editor.BuildSystem
             
             if (GUILayout.Button("Clear All Defines"))
             {
-                if (EditorUtility.DisplayDialog("Clear Defines", "Clear all scripting defines for current platform?", "Clear", "Cancel"))
+                if (EditorUtility.DisplayDialog("Clear All Defines", 
+                    "This will remove all scripting defines from the current build target. Continue?", 
+                    "Yes", "Cancel"))
                 {
                     ClearAllDefines();
                 }
@@ -266,33 +294,37 @@ namespace TirexGame.Utils.Editor.BuildSystem
             
             EditorGUILayout.Space(5);
             
-            EditorGUILayout.BeginHorizontal();
-            
-            if (GUILayout.Button("Export Config"))
+            showAdvancedSettings = EditorGUILayout.Foldout(showAdvancedSettings, "Advanced", true);
+            if (showAdvancedSettings)
             {
-                ExportConfig();
+                EditorGUILayout.BeginHorizontal();
+                
+                if (GUILayout.Button("Export Config"))
+                {
+                    ExportConfig();
+                }
+                
+                if (GUILayout.Button("Import Config"))
+                {
+                    ImportConfig();
+                }
+                
+                EditorGUILayout.EndHorizontal();
             }
             
-            if (GUILayout.Button("Import Config"))
-            {
-                ImportConfig();
-            }
-            
-            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
         }
         
         private void DrawNoConfigFound()
         {
-            EditorGUILayout.Space(50);
-            EditorGUILayout.BeginVertical();
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             
-            EditorGUILayout.LabelField("No Build Environment Config Found", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("No Configuration Found", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Create a new BuildEnvironmentConfigStandalone asset to get started.", EditorStyles.wordWrappedLabel);
+            
             EditorGUILayout.Space(10);
-            EditorGUILayout.LabelField("Create a new configuration to get started:", EditorStyles.helpBox);
             
-            EditorGUILayout.Space(20);
-            
-            if (GUILayout.Button("Create Build Environment Config", GUILayout.Height(30)))
+            if (GUILayout.Button("Create Default Config"))
             {
                 CreateDefaultConfig();
             }
@@ -302,21 +334,24 @@ namespace TirexGame.Utils.Editor.BuildSystem
         
         #endregion
         
-        #region Private Methods
+        #region Config Management
         
         private void LoadExistingConfig()
         {
-            currentConfig = FindExistingConfig();
+            if (currentConfig == null)
+            {
+                currentConfig = FindExistingConfig();
+            }
         }
         
         private static BuildEnvironmentConfig FindExistingConfig()
         {
-            string[] guids = AssetDatabase.FindAssets(CONFIG_SEARCH_FILTER);
+            var guids = AssetDatabase.FindAssets(CONFIG_SEARCH_FILTER);
             
             if (guids.Length > 0)
             {
-                string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-                return AssetDatabase.LoadAssetAtPath<BuildEnvironmentConfig>(assetPath);
+                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                return AssetDatabase.LoadAssetAtPath<BuildEnvironmentConfig>(path);
             }
             
             return null;
@@ -324,79 +359,65 @@ namespace TirexGame.Utils.Editor.BuildSystem
         
         private static void CreateDefaultConfig()
         {
-            // Create directory if it doesn't exist
-            if (!AssetDatabase.IsValidFolder(DEFAULT_CONFIG_PATH))
+            // Ensure directory exists
+            if (!Directory.Exists(DEFAULT_CONFIG_PATH))
             {
-                string[] pathParts = DEFAULT_CONFIG_PATH.Split('/');
-                string currentPath = pathParts[0];
-                
-                for (int i = 1; i < pathParts.Length; i++)
-                {
-                    string nextPath = currentPath + "/" + pathParts[i];
-                    if (!AssetDatabase.IsValidFolder(nextPath))
-                    {
-                        AssetDatabase.CreateFolder(currentPath, pathParts[i]);
-                    }
-                    currentPath = nextPath;
-                }
+                Directory.CreateDirectory(DEFAULT_CONFIG_PATH);
             }
             
             // Create the config asset
             var config = CreateInstance<BuildEnvironmentConfig>();
             
-            string fullPath = Path.Combine(DEFAULT_CONFIG_PATH, DEFAULT_CONFIG_NAME);
+            // Set default values
+            config.SelectedEnvironment = TirexGame.Utils.Editor.BuildSystem.BuildEnvironment.Development;
+            config.DevelopmentDefines.AddRange(new[] { "DEVELOPMENT", "DEBUG_MODE", "ENABLE_LOGS" });
+            config.StagingDefines.AddRange(new[] { "STAGING", "ENABLE_LOGS" });
+            config.ProductionDefines.AddRange(new[] { "PRODUCTION", "RELEASE" });
+            
+            var fullPath = Path.Combine(DEFAULT_CONFIG_PATH, DEFAULT_CONFIG_NAME);
             AssetDatabase.CreateAsset(config, fullPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             
-            // Select the created asset
+            Debug.Log($"Created BuildEnvironmentConfigStandalone at: {fullPath}");
+            
+            // Select and focus the new asset
             Selection.activeObject = config;
             EditorGUIUtility.PingObject(config);
-            
-            Debug.Log($"Created BuildEnvironmentConfig at: {fullPath}");
-            
-            // Update window if open
-            var window = GetWindow<BuildEnvironmentWindow>(false);
-            if (window != null)
-            {
-                window.currentConfig = config;
-                window.Repaint();
-            }
         }
+        
+        #endregion
+        
+        #region Environment Management
         
         private static void ApplyEnvironmentDefines(BuildEnvironmentConfig config)
         {
-            if (config == null) return;
+            if (config == null)
+            {
+                Debug.LogError("Cannot apply environment defines: config is null");
+                return;
+            }
             
+            var currentDefines = config.GetCurrentDefines();
             var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-            var currentDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
-            var currentDefinesList = currentDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
+            
+            // Get existing defines to preserve non-environment specific ones
+            var existingDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            var existingDefinesList = existingDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
             
             // Remove old environment defines
-            var allEnvironments = System.Enum.GetValues(typeof(BuildEnvironment)).Cast<BuildEnvironment>();
-            foreach (var env in allEnvironments)
-            {
-                if (env == config.SelectedEnvironment) continue;
-                
-                var envDefines = config.GetDefinesForEnvironment(env);
-                foreach (var define in envDefines)
-                {
-                    currentDefinesList.Remove(define);
-                }
-            }
+            var allEnvironmentDefines = config.DevelopmentDefines
+                .Concat(config.StagingDefines)
+                .Concat(config.ProductionDefines)
+                .Distinct()
+                .ToList();
             
-            // Add new environment defines
-            var newDefines = config.GetCurrentDefines();
-            foreach (var define in newDefines)
-            {
-                if (!string.IsNullOrWhiteSpace(define) && !currentDefinesList.Contains(define))
-                {
-                    currentDefinesList.Add(define);
-                }
-            }
+            var filteredDefines = existingDefinesList.Where(d => !allEnvironmentDefines.Contains(d)).ToList();
             
-            // Apply the updated defines
-            string newDefinesString = string.Join(";", currentDefinesList);
+            // Add current environment defines
+            var newDefines = filteredDefines.Concat(currentDefines).Distinct().ToList();
+            var newDefinesString = string.Join(";", newDefines);
+            
             PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newDefinesString);
             
             Debug.Log($"Applied {config.SelectedEnvironment} environment defines: {string.Join(", ", newDefines)}");
@@ -420,7 +441,7 @@ namespace TirexGame.Utils.Editor.BuildSystem
             if (currentConfig == null) return;
             
             string json = JsonUtility.ToJson(currentConfig, true);
-            string path = EditorUtility.SaveFilePanel("Export Build Environment Config", "", "BuildEnvironmentConfig.json", "json");
+            string path = EditorUtility.SaveFilePanel("Export Build Environment Config", "", "BuildEnvironmentConfigStandalone.json", "json");
             
             if (!string.IsNullOrEmpty(path))
             {
@@ -448,6 +469,11 @@ namespace TirexGame.Utils.Editor.BuildSystem
                     EditorUtility.DisplayDialog("Import Error", $"Failed to import config:\n{ex.Message}", "OK");
                 }
             }
+        }
+        
+        private void ConvertFromOriginalConfig()
+        {
+            EditorUtility.DisplayDialog("Feature Removed", "Convert from original config feature has been removed as this is now the main version.", "OK");
         }
         
         #endregion

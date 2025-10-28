@@ -14,61 +14,61 @@ public enum ColorLog
 
 public static class ConsoleLogger
 {
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void LogColor(object message, ColorLog color = ColorLog.WHITE)
     {
         string colorStr = GetColorString(color);
-#if ALL_LOG
+#if ENABLE_LOGS
         UnityEngine.Debug.Log($"<color={colorStr}>{message.ToString()}</color>");
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void Log(object message)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         UnityEngine.Debug.Log(message.ToString());
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void LogError(object message)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         UnityEngine.Debug.LogError(message.ToString());
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void LogWarning(object message)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         UnityEngine.Debug.LogWarning(message.ToString());
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void DrawLine(Vector3 start, Vector3 end, ColorLog color = ColorLog.WHITE, float duration = 0)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         var unityColor = GetUnityColor(color);
         Debug.DrawLine(start, end, unityColor, duration);
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void DrawRay(Vector3 origin, Vector3 direction, ColorLog color = ColorLog.WHITE, float duration = 0)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         var unityColor = GetUnityColor(color);
         Debug.DrawRay(origin, direction, unityColor, duration);
 #endif
     }
 
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void DrawBox(Vector3 center, Vector3 size, Quaternion rotation, ColorLog color = ColorLog.WHITE, float duration = 0)
     {
-#if ALL_LOG
+#if ENABLE_LOGS
         var unityColor = GetUnityColor(color);
         var halfSize = size * 0.5f;
 
@@ -104,7 +104,7 @@ public static class ConsoleLogger
     /// <summary>
     /// Vẽ một tia (Ray) trong Scene View.
     /// </summary>
-    [Conditional("ALL_LOG")]
+    [Conditional("ENABLE_LOGS")]
     public static void DrawRay(Vector3 origin, Vector3 direction, Color color, float duration = 1f)
     {
         Debug.DrawRay(origin, direction, color, duration);

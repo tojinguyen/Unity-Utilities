@@ -8,165 +8,82 @@ using System.Linq;
 namespace TirexGame.Utils.Editor.BuildSystem
 {
     /// <summary>
-    /// Build processor that automatically applies scripting defines based on the build environment configuration
+    /// Build processor for build environment management
     /// </summary>
-    public class BuildEnvironmentProcessor : IPreprocessBuildWithReport
+    public class BuildEnvironmentProcessor : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
-        public int callbackOrder => -100; // Execute early in the build process
-        
-        private const string CONFIG_SEARCH_FILTER = "t:BuildEnvironmentConfig";
+        public int callbackOrder => 0;
         
         public void OnPreprocessBuild(BuildReport report)
         {
-            Debug.Log("[BuildEnvironmentProcessor] Starting build preprocessing...");
-            
-            try
+            var config = FindBuildEnvironmentConfig();
+            if (config != null && config.AutoApplyOnBuild)
             {
-                // Find the build environment config
-                var config = FindBuildEnvironmentConfig();
-                if (config == null)
-                {
-                    Debug.LogWarning("[BuildEnvironmentProcessor] No BuildEnvironmentConfig found. Skipping scripting defines setup.");
-                    return;
-                }
-                
-                if (!config.AutoApplyOnBuild)
-                {
-                    Debug.Log("[BuildEnvironmentProcessor] Auto-apply is disabled. Skipping scripting defines setup.");
-                    return;
-                }
-                
-                // Show build dialog if enabled
                 if (config.ShowBuildDialog)
                 {
-                    bool proceed = ShowBuildConfirmationDialog(config);
+                    var proceed = EditorUtility.DisplayDialog(
+                        "Build Environment", 
+                        $"About to build with {config.SelectedEnvironment} environment.\n" +
+                        $"Defines: {string.Join(", ", config.GetCurrentDefines())}\n\n" +
+                        "Continue with build?",
+                        "Yes", "Cancel"
+                    );
+                    
                     if (!proceed)
                     {
-                        Debug.Log("[BuildEnvironmentProcessor] Build cancelled by user.");
                         throw new BuildFailedException("Build cancelled by user.");
                     }
                 }
                 
-                // Apply scripting defines
-                ApplyScriptingDefines(config, report.summary.platform);
-                
-                Debug.Log($"[BuildEnvironmentProcessor] Successfully applied {config.SelectedEnvironment} environment defines for {report.summary.platform}");
-            }
-            catch (BuildFailedException)
-            {
-                throw; // Re-throw build cancellation
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"[BuildEnvironmentProcessor] Error during build preprocessing: {ex.Message}");
-                // Don't fail the build for this, just log the error
+                ApplyEnvironmentDefines(config, report);
             }
         }
         
-        /// <summary>
-        /// Find the first BuildEnvironmentConfig in the project
-        /// </summary>
-        /// <returns>BuildEnvironmentConfig or null if not found</returns>
+        public void OnPostprocessBuild(BuildReport report)
+        {
+            // Optional: Restore previous defines or perform cleanup
+            Debug.Log($"Build completed for {report.summary.platform} with result: {report.summary.result}");
+        }
+        
         private BuildEnvironmentConfig FindBuildEnvironmentConfig()
         {
-            string[] guids = AssetDatabase.FindAssets(CONFIG_SEARCH_FILTER);
+            var guids = AssetDatabase.FindAssets("t:BuildEnvironmentConfig");
             
-            if (guids.Length == 0)
+            if (guids.Length > 0)
             {
-                return null;
+                var path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                return AssetDatabase.LoadAssetAtPath<BuildEnvironmentConfig>(path);
             }
             
-            if (guids.Length > 1)
-            {
-                Debug.LogWarning($"[BuildEnvironmentProcessor] Found {guids.Length} BuildEnvironmentConfig assets. Using the first one found.");
-            }
-            
-            string assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
-            return AssetDatabase.LoadAssetAtPath<BuildEnvironmentConfig>(assetPath);
+            return null;
         }
         
-        /// <summary>
-        /// Show build confirmation dialog
-        /// </summary>
-        /// <param name="config">Build environment config</param>
-        /// <returns>True if user wants to proceed</returns>
-        private bool ShowBuildConfirmationDialog(BuildEnvironmentConfig config)
+        private void ApplyEnvironmentDefines(BuildEnvironmentConfig config, BuildReport report)
         {
-            var defines = config.GetCurrentDefines();
-            string definesText = defines.Count > 0 ? string.Join(", ", defines) : "None";
+            var currentDefines = config.GetCurrentDefines();
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(report.summary.platform);
+            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(buildTargetGroup);
             
-            string message = $"Build Environment: {config.SelectedEnvironment}\n\n" +
-                           $"Scripting Defines:\n{definesText}\n\n" +
-                           "Do you want to proceed with the build?";
-            
-            return EditorUtility.DisplayDialog(
-                "Build Environment Configuration",
-                message,
-                "Build",
-                "Cancel"
-            );
-        }
-        
-        /// <summary>
-        /// Apply scripting defines to the target platform
-        /// </summary>
-        /// <param name="config">Build environment config</param>
-        /// <param name="buildTarget">Target build platform</param>
-        private void ApplyScriptingDefines(BuildEnvironmentConfig config, BuildTarget buildTarget)
-        {
-            var namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(buildTarget));
-            if (namedBuildTarget == null)
-            {
-                Debug.LogWarning($"[BuildEnvironmentProcessor] Unknown build target group for {buildTarget}");
-                return;
-            }
-            
-            // Get current defines
-            var currentDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
-            var currentDefinesList = currentDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
-            
-            // Get new defines from config
-            var newDefines = config.GetCurrentDefines();
+            // Get existing defines to preserve non-environment specific ones
+            var existingDefines = PlayerSettings.GetScriptingDefineSymbols(namedBuildTarget);
+            var existingDefinesList = existingDefines.Split(';').Where(d => !string.IsNullOrWhiteSpace(d)).ToList();
             
             // Remove old environment defines
-            RemoveOldEnvironmentDefines(currentDefinesList, config);
+            var allEnvironmentDefines = config.DevelopmentDefines
+                .Concat(config.StagingDefines)
+                .Concat(config.ProductionDefines)
+                .Distinct()
+                .ToList();
             
-            // Add new environment defines
-            foreach (var define in newDefines)
-            {
-                if (!string.IsNullOrWhiteSpace(define) && !currentDefinesList.Contains(define))
-                {
-                    currentDefinesList.Add(define);
-                }
-            }
+            var filteredDefines = existingDefinesList.Where(d => !allEnvironmentDefines.Contains(d)).ToList();
             
-            // Apply the updated defines
-            string newDefinesString = string.Join(";", currentDefinesList);
+            // Add current environment defines
+            var newDefines = filteredDefines.Concat(currentDefines).Distinct().ToList();
+            var newDefinesString = string.Join(";", newDefines);
+            
             PlayerSettings.SetScriptingDefineSymbols(namedBuildTarget, newDefinesString);
             
-            Debug.Log($"[BuildEnvironmentProcessor] Applied scripting defines for {config.SelectedEnvironment}: {string.Join(", ", newDefines)}");
-        }
-        
-        /// <summary>
-        /// Remove defines from other environments to avoid conflicts
-        /// </summary>
-        /// <param name="currentDefines">Current defines list</param>
-        /// <param name="config">Build environment config</param>
-        private void RemoveOldEnvironmentDefines(System.Collections.Generic.List<string> currentDefines, BuildEnvironmentConfig config)
-        {
-            // Get all defines from other environments
-            var allEnvironments = System.Enum.GetValues(typeof(BuildEnvironment)).Cast<BuildEnvironment>();
-            
-            foreach (var env in allEnvironments)
-            {
-                if (env == config.SelectedEnvironment) continue;
-                
-                var envDefines = config.GetDefinesForEnvironment(env);
-                foreach (var define in envDefines)
-                {
-                    currentDefines.Remove(define);
-                }
-            }
+            Debug.Log($"[BuildEnvironmentProcessor] Applied {config.SelectedEnvironment} environment defines for build: {string.Join(", ", currentDefines)}");
         }
     }
 }

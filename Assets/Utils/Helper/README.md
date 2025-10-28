@@ -6,7 +6,7 @@ This folder contains a collection of helper scripts and utilities to simplify co
 
 ### Console Logger
 
-A static class that provides enhanced logging capabilities. It allows you to log messages to the Unity console with different colors and supports conditional compilation using the `ALL_LOG` scripting define. This is useful for enabling or disabling logs in different builds.
+A static class that provides enhanced logging capabilities. It allows you to log messages to the Unity console with different colors and supports conditional compilation using the `ENABLE_LOGS` scripting define. This is useful for enabling or disabling logs in different builds.
 
 #### How to Use
 
