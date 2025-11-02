@@ -343,11 +343,6 @@ namespace TirexGame.Utils.Editor.AddressableImporter
 
             EditorGUILayout.BeginHorizontal();
 
-            if (GUILayout.Button("Test Auto-Import"))
-            {
-                TestAutoImport();
-            }
-
             if (GUILayout.Button("Force Refresh"))
             {
                 AssetDatabase.Refresh();
@@ -634,59 +629,6 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                          $"Compression={folderConfig.CompressionType}, " +
                          $"IncludeInBuild={folderConfig.IncludeInBuild}, " +
                          $"StaticContent={folderConfig.StaticContent}");
-            }
-        }
-
-        private void TestAutoImport()
-        {
-            if (!config.AutoImportOnAssetChange)
-            {
-                Debug.LogWarning("Auto-import is disabled. Enable it first to test the functionality.");
-                return;
-            }
-
-            var settings = AddressableAssetSettingsDefaultObject.Settings;
-            if (settings == null)
-            {
-                Debug.LogError("Addressable Asset Settings not found. Please set up Addressables first.");
-                return;
-            }
-
-            bool foundConfigurations = false;
-            int totalAssets = 0;
-
-            foreach (var folderConfig in config.FolderConfigurations)
-            {
-                if (!folderConfig.IsEnabled || string.IsNullOrEmpty(folderConfig.FolderPath))
-                    continue;
-
-                foundConfigurations = true;
-
-                if (!Directory.Exists(folderConfig.FolderPath))
-                {
-                    Debug.LogWarning($"Folder path does not exist: {folderConfig.FolderPath}");
-                    continue;
-                }
-
-                var searchOption = folderConfig.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-                var files = Directory.GetFiles(folderConfig.FolderPath, "*.*", searchOption)
-                    .Where(f => !f.EndsWith(".meta"))
-                    .Where(f => !folderConfig.ExcludedFileExtensions.Any(ext => f.EndsWith(ext, System.StringComparison.OrdinalIgnoreCase)));
-
-                int assetCount = files.Count();
-                totalAssets += assetCount;
-
-                Debug.Log($"Configuration '{folderConfig.GroupName}' monitors folder '{folderConfig.FolderPath}' with {assetCount} eligible assets.");
-            }
-
-            if (!foundConfigurations)
-            {
-                Debug.LogWarning("No enabled folder configurations found. Please configure at least one folder to monitor.");
-            }
-            else
-            {
-                Debug.Log($"Auto-import test complete. Found {config.FolderConfigurations.Count(c => c.IsEnabled)} enabled configurations monitoring {totalAssets} total assets. " +
-                         "Try adding/moving/renaming assets in the configured folders to test auto-import functionality.");
             }
         }
     }
