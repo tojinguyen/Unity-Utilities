@@ -58,9 +58,37 @@ namespace TirexGame.Utils.Editor.AddressableImporter
             EditorGUILayout.BeginVertical("box");
             EditorGUILayout.LabelField("Configuration", EditorStyles.boldLabel);
 
+            bool oldAutoImport = config.AutoImportOnAssetChange;
             config.AutoImportOnAssetChange = EditorGUILayout.Toggle("Auto Import on Asset Change", config.AutoImportOnAssetChange);
+            
+            if (oldAutoImport != config.AutoImportOnAssetChange)
+            {
+                EditorUtility.SetDirty(config);
+                if (config.AutoImportOnAssetChange)
+                {
+                    Debug.Log("Auto-import enabled. Assets will be automatically imported when added to configured folders.");
+                }
+                else
+                {
+                    Debug.Log("Auto-import disabled. You'll need to manually import assets using the Import buttons.");
+                }
+            }
+
             config.LogImportResults = EditorGUILayout.Toggle("Log Import Results", config.LogImportResults);
             config.RemoveFromAddressablesOnDelete = EditorGUILayout.Toggle("Remove from Addressables on Delete", config.RemoveFromAddressablesOnDelete);
+
+            // Show status information
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Status", EditorStyles.miniBoldLabel);
+            
+            string statusText = config.AutoImportOnAssetChange ? 
+                "✓ Auto-import is ENABLED - Assets will be imported automatically" : 
+                "✗ Auto-import is DISABLED - Manual import required";
+            
+            GUIStyle statusStyle = new GUIStyle(EditorStyles.helpBox);
+            statusStyle.normal.textColor = config.AutoImportOnAssetChange ? Color.green : Color.yellow;
+            
+            EditorGUILayout.LabelField(statusText, statusStyle);
 
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space();
@@ -123,6 +151,28 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 ? $"Configuration {index + 1}" 
                 : folderData.GroupName;
             EditorGUILayout.LabelField(headerLabel, EditorStyles.boldLabel);
+
+            // Auto-import status indicator
+            if (config.AutoImportOnAssetChange && folderData.IsEnabled)
+            {
+                GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel);
+                statusStyle.normal.textColor = Color.green;
+                EditorGUILayout.LabelField("● Auto-Import", statusStyle, GUILayout.Width(80));
+            }
+            else if (folderData.IsEnabled)
+            {
+                GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel);
+                statusStyle.normal.textColor = Color.yellow;
+                EditorGUILayout.LabelField("○ Manual", statusStyle, GUILayout.Width(80));
+            }
+            else
+            {
+                GUIStyle statusStyle = new GUIStyle(EditorStyles.miniLabel);
+                statusStyle.normal.textColor = Color.gray;
+                EditorGUILayout.LabelField("✗ Disabled", statusStyle, GUILayout.Width(80));
+            }
+
+            GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("Reimport", GUILayout.Width(80)))
             {
@@ -287,6 +337,21 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                 {
                     ClearAllAddressables();
                 }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+
+            if (GUILayout.Button("Test Auto-Import"))
+            {
+                TestAutoImport();
+            }
+
+            if (GUILayout.Button("Force Refresh"))
+            {
+                AssetDatabase.Refresh();
+                Debug.Log("AssetDatabase refreshed. Auto-import should trigger for any pending assets.");
             }
 
             EditorGUILayout.EndHorizontal();
@@ -569,6 +634,59 @@ namespace TirexGame.Utils.Editor.AddressableImporter
                          $"Compression={folderConfig.CompressionType}, " +
                          $"IncludeInBuild={folderConfig.IncludeInBuild}, " +
                          $"StaticContent={folderConfig.StaticContent}");
+            }
+        }
+
+        private void TestAutoImport()
+        {
+            if (!config.AutoImportOnAssetChange)
+            {
+                Debug.LogWarning("Auto-import is disabled. Enable it first to test the functionality.");
+                return;
+            }
+
+            var settings = AddressableAssetSettingsDefaultObject.Settings;
+            if (settings == null)
+            {
+                Debug.LogError("Addressable Asset Settings not found. Please set up Addressables first.");
+                return;
+            }
+
+            bool foundConfigurations = false;
+            int totalAssets = 0;
+
+            foreach (var folderConfig in config.FolderConfigurations)
+            {
+                if (!folderConfig.IsEnabled || string.IsNullOrEmpty(folderConfig.FolderPath))
+                    continue;
+
+                foundConfigurations = true;
+
+                if (!Directory.Exists(folderConfig.FolderPath))
+                {
+                    Debug.LogWarning($"Folder path does not exist: {folderConfig.FolderPath}");
+                    continue;
+                }
+
+                var searchOption = folderConfig.IncludeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+                var files = Directory.GetFiles(folderConfig.FolderPath, "*.*", searchOption)
+                    .Where(f => !f.EndsWith(".meta"))
+                    .Where(f => !folderConfig.ExcludedFileExtensions.Any(ext => f.EndsWith(ext, System.StringComparison.OrdinalIgnoreCase)));
+
+                int assetCount = files.Count();
+                totalAssets += assetCount;
+
+                Debug.Log($"Configuration '{folderConfig.GroupName}' monitors folder '{folderConfig.FolderPath}' with {assetCount} eligible assets.");
+            }
+
+            if (!foundConfigurations)
+            {
+                Debug.LogWarning("No enabled folder configurations found. Please configure at least one folder to monitor.");
+            }
+            else
+            {
+                Debug.Log($"Auto-import test complete. Found {config.FolderConfigurations.Count(c => c.IsEnabled)} enabled configurations monitoring {totalAssets} total assets. " +
+                         "Try adding/moving/renaming assets in the configured folders to test auto-import functionality.");
             }
         }
     }

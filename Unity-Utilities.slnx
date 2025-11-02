@@ -1,0 +1,12 @@
+﻿<Solution>
+  <Project Path="TirexGame.Utilities.csproj" />
+  <Project Path="DOTween.Modules.csproj" />
+  <Project Path="GoogleMobileAds.Editor.csproj" />
+  <Project Path="TirexGame.Utils.Localization.csproj" />
+  <Project Path="TirexGame.Utils.Editor.csproj" />
+  <Project Path="TirexGame.Utils.Data.Editor.csproj" />
+  <Project Path="TirexGame.Utils.Localization.Editor.csproj" />
+  <Project Path="DOTweenPro.EditorScripts.csproj" />
+  <Project Path="DOTweenPro.Scripts.csproj" />
+  <Project Path="TirexGame.Utils.Editor.BuildSystem.csproj" />
+</Solution>

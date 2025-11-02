@@ -15,11 +15,6 @@ MonoBehaviour:
   m_GroupName: UI
   m_GUID: 70fd0b12b39e5b042b554dff6cdba709
   m_SerializeEntries:
-  - m_GUID: 0693ac6781515b54397450cf314d6321
-    m_Address: README
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 0ee6f3d72404ef249804b74ff1799864
     m_Address: Background
     m_ReadOnly: 0
