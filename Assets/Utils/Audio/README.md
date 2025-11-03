@@ -1,11 +1,12 @@
 # Unity Audio System
 
-A powerful, performance-optimized audio system for Unity with static method access instead of Singleton pattern.
+A powerful, performance-optimized audio system for Unity with static method access and **type-safe Generic Enum API**.
 
 ## Features
 
 ### 🎵 Basic Features (Implemented)
 - ✅ **Static AudioManager** - No Singleton pattern, easy static method access
+- ✅ **Generic Enum API** - Type-safe audio playback with compile-time checking
 - ✅ **Volume Control** - Separate BGM/SFX channels with PlayerPrefs persistence
 - ✅ **Loop & One-shot Sound** - BGM loops, SFX one-shot
 - ✅ **AudioSource Pooling** - Efficient object pool for performance
@@ -16,10 +17,39 @@ A powerful, performance-optimized audio system for Unity with static method acce
 - ✅ **Dynamic Crossfade** - Smooth music transitions
 - ✅ **Event System** - Audio events and callbacks
 - ✅ **Performance Optimization** - Memory-efficient pooling
+- ✅ **Backward Compatibility** - String API still works alongside enum API
 
 ## Quick Start
 
-### 1. Initialize AudioManager
+### 1. Define Audio Enums (Recommended - New!)
+
+```csharp
+// Define type-safe audio enums
+public enum BGMTracks
+{
+    MainMenu,
+    Gameplay, 
+    Victory,
+    Defeat
+}
+
+public enum SFXSounds
+{
+    ButtonClick,
+    CoinCollect,
+    PlayerJump,
+    Explosion
+}
+
+public enum UISounds
+{
+    MenuOpen,
+    MenuClose,
+    ButtonHover
+}
+```
+
+### 2. Initialize AudioManager
 
 ```csharp
 void Start()
@@ -37,7 +67,35 @@ void Start()
 }
 ```
 
-### 2. Simple API Usage (Recommended)
+### 3. Generic Enum API Usage (Recommended ⭐)
+
+```csharp
+// Type-safe BGM playback
+await AudioManager.PlayBGM(BGMTracks.MainMenu, volume: 0.8f, crossFade: true);
+await AudioManager.PlayBGM(BGMTracks.Gameplay, volume: 1f, crossFade: true);
+
+// Type-safe SFX playback
+await AudioManager.PlaySFX(SFXSounds.ButtonClick, volume: 1f);
+await AudioManager.PlaySFX(SFXSounds.CoinCollect, volume: 0.8f);
+
+// 3D positioned SFX with enum
+Vector3 position = transform.position;
+await AudioManager.PlaySFXAtPosition(SFXSounds.Explosion, position, volume: 0.9f);
+
+// Generic audio playback
+await AudioManager.PlayAudio(UISounds.MenuOpen, volume: 0.7f);
+
+// Stop specific audio with enum
+await AudioManager.StopAudio(BGMTracks.Gameplay, immediate: false);
+
+// Check audio state with enum
+bool isPlaying = AudioManager.IsAudioPlaying(BGMTracks.MainMenu);
+
+// Get audio clip data with enum
+AudioClipData clipData = AudioManager.GetAudioClip(SFXSounds.ButtonClick);
+```
+
+### 4. Legacy String API Usage (Still Supported)
 
 ```csharp
 // Play background music
@@ -58,7 +116,7 @@ AudioManager.MasterVolume = 0.8f;  // Set master volume
 // Volume gets automatically saved to PlayerPrefs
 ```
 
-### 3. Advanced Usage
+### 5. Advanced Usage
 
 ```csharp
 // 3D positional audio
@@ -83,7 +141,7 @@ bool musicPlaying = AudioManager.IsMusicPlaying;
 string currentMusic = AudioManager.CurrentMusicId;
 ```
 
-### 4. Volume Control
+### 6. Volume Control
 
 ```csharp
 // Master volume (affects all audio)
@@ -100,7 +158,7 @@ float bgmVolume = AudioManager.GetCategoryVolume(AudioType.Music);
 bool sfxMuted = AudioManager.IsCategoryMuted(AudioType.SFX);
 ```
 
-### 5. Events
+### 7. Events
 
 ```csharp
 // Subscribe to events
@@ -119,6 +177,29 @@ AudioManager.OnMasterVolumeChanged += (volume) =>
     Debug.Log($"Master volume changed to: {volume}");
 };
 ```
+
+## 🆕 Generic Enum API Benefits
+
+### ✅ **Type Safety**
+```csharp
+// ❌ String API - Runtime errors possible
+AudioManager.PlaySFX("button_clik", 1f); // Typo! Runtime error
+
+// ✅ Enum API - Compile-time safety
+AudioManager.PlaySFX(SFXSounds.ButtonClick, 1f); // Compiler catches errors
+```
+
+### ✅ **IntelliSense Support**
+IDE automatically suggests available enum values, improving developer experience.
+
+### ✅ **Refactoring Safe**
+Renaming enum values automatically updates all references in the codebase.
+
+### ✅ **Performance**
+Enum to string conversion is efficient and only happens once.
+
+### ✅ **Migration Friendly**
+Both enum and string APIs work together - migrate at your own pace.
 
 ## Legacy AudioService
 
@@ -146,7 +227,29 @@ AudioService.SetMasterVolume(0.8f);
 - **Memory Efficient** - No unnecessary GameObject creation/destruction
 - **PlayerPrefs Integration** - Settings automatically saved
 
-## Migration from Singleton
+## Migration Guides
+
+### From String API to Enum API
+
+```csharp
+// 1. Define your audio enums
+public enum BGMTracks { MainMenu, Gameplay, Victory }
+public enum SFXSounds { ButtonClick, CoinCollect, Explosion }
+
+// 2. Replace string calls with enum calls
+// Before
+await AudioManager.PlayBGM("MainMenuMusic", 0.8f);
+await AudioManager.PlaySFX("ButtonClickSound", 1f);
+
+// After  
+await AudioManager.PlayBGM(BGMTracks.MainMenu, 0.8f);
+await AudioManager.PlaySFX(SFXSounds.ButtonClick, 1f);
+
+// 3. Update AudioDatabase IDs to match enum names
+// Ensure your audio IDs match: "MainMenu", "ButtonClick", etc.
+```
+
+### From Singleton AudioManager
 
 If you were using the old Singleton AudioManager:
 
@@ -167,6 +270,7 @@ AudioManager.SetVolumeBGM(0.8f);
 ## Requirements Met
 
 ✅ **No Singleton** - Uses static methods as requested  
+✅ **Type-Safe API** - Generic enum API with compile-time checking  
 ✅ **Easy API** - Simple `PlayBGM()`, `PlaySFX()`, `StopBGM()` methods  
 ✅ **Volume Control** - Separate BGM/SFX channels with PlayerPrefs  
 ✅ **Loop Support** - Music loops automatically  
@@ -174,12 +278,28 @@ AudioManager.SetVolumeBGM(0.8f);
 ✅ **Fade Support** - Crossfade between music tracks  
 ✅ **3D Audio** - Positional sound support  
 ✅ **Performance** - Optimized for mobile and desktop  
+✅ **IntelliSense** - Full IDE support with enum suggestions  
+✅ **Backward Compatibility** - String API still works alongside enum API  
+
+## Examples & Documentation
+
+- **`AudioEnumExamples.cs`** - Complete usage examples and best practices
+- **`ENUM_API_DOCUMENTATION.md`** - Detailed API documentation
+- **Game Integration Examples** - UI buttons, game events, state management
 
 ## Setup Notes
 
-1. Ensure you have an AudioDatabase ScriptableObject configured
-2. AudioManager will auto-initialize a manager GameObject (persistent across scenes)
-3. All volume settings are automatically saved to PlayerPrefs
-4. The system handles pause/resume automatically for application focus changes
+1. **Define Audio Enums** - Create enum definitions for type-safe audio IDs
+2. **Configure AudioDatabase** - Ensure audio IDs match your enum value names
+3. **AudioManager Initialization** - Auto-initializes a manager GameObject (persistent across scenes)
+4. **Volume Settings** - All volume settings are automatically saved to PlayerPrefs
+5. **Pause/Resume** - The system handles pause/resume automatically for application focus changes
 
-Enjoy your new static audio system! 🎵
+## Quick Start Checklist
+
+1. ✅ Create audio enums (`BGMTracks`, `SFXSounds`, etc.)
+2. ✅ Initialize AudioManager with your AudioDatabase
+3. ✅ Replace string audio calls with type-safe enum calls
+4. ✅ Enjoy compile-time safety and better IntelliSense!
+
+Enjoy your new type-safe static audio system! 🎵

@@ -102,6 +102,100 @@ public static class AudioManager
         return PlayAudioAsync(sfxId, position, volume);
     }
     
+    #endregion
+    
+    #region Generic Enum API
+    
+    /// <summary>
+    /// Play audio using enum for type-safe audio ID
+    /// </summary>
+    /// <typeparam name="T">Enum type representing audio IDs</typeparam>
+    /// <param name="audioId">Audio ID as enum value</param>
+    /// <param name="position">Optional 3D position for spatial audio</param>
+    /// <param name="volumeMultiplier">Volume multiplier (0-1)</param>
+    /// <returns>True if audio started playing successfully</returns>
+    public static UniTask<bool> PlayAudio<T>(T audioId, Vector3? position = null, float volumeMultiplier = 1f) where T : Enum
+    {
+        return PlayAudioAsync(audioId.ToString(), position, volumeMultiplier);
+    }
+    
+    /// <summary>
+    /// Play BGM using enum for type-safe music ID
+    /// </summary>
+    /// <typeparam name="T">Enum type representing music IDs</typeparam>
+    /// <param name="musicId">Music ID as enum value</param>
+    /// <param name="volume">Volume (0-1)</param>
+    /// <param name="crossFade">Whether to cross-fade with current music</param>
+    /// <returns>True if music started playing successfully</returns>
+    public static UniTask<bool> PlayBGM<T>(T musicId, float volume = 1f, bool crossFade = true) where T : Enum
+    {
+        return PlayMusicAsync(musicId.ToString(), volume, crossFade);
+    }
+    
+    /// <summary>
+    /// Play SFX using enum for type-safe SFX ID
+    /// </summary>
+    /// <typeparam name="T">Enum type representing SFX IDs</typeparam>
+    /// <param name="sfxId">SFX ID as enum value</param>
+    /// <param name="volume">Volume (0-1)</param>
+    /// <returns>True if SFX started playing successfully</returns>
+    public static UniTask<bool> PlaySFX<T>(T sfxId, float volume = 1f) where T : Enum
+    {
+        return PlayAudioAsync(sfxId.ToString(), null, volume);
+    }
+    
+    /// <summary>
+    /// Play SFX at 3D position using enum for type-safe SFX ID
+    /// </summary>
+    /// <typeparam name="T">Enum type representing SFX IDs</typeparam>
+    /// <param name="sfxId">SFX ID as enum value</param>
+    /// <param name="position">3D world position</param>
+    /// <param name="volume">Volume (0-1)</param>
+    /// <returns>True if SFX started playing successfully</returns>
+    public static UniTask<bool> PlaySFXAtPosition<T>(T sfxId, Vector3 position, float volume = 1f) where T : Enum
+    {
+        return PlayAudioAsync(sfxId.ToString(), position, volume);
+    }
+    
+    /// <summary>
+    /// Stop all audio of specific type using enum
+    /// </summary>
+    /// <typeparam name="T">Enum type representing audio IDs</typeparam>
+    /// <param name="audioId">Audio ID as enum value</param>
+    /// <param name="immediate">Whether to stop immediately or fade out</param>
+    /// <returns>Task representing the stop operation</returns>
+    public static UniTask StopAudio<T>(T audioId, bool immediate = false) where T : Enum
+    {
+        return StopAudioAsync(audioId.ToString(), immediate);
+    }
+    
+    /// <summary>
+    /// Check if specific audio is currently playing using enum
+    /// </summary>
+    /// <typeparam name="T">Enum type representing audio IDs</typeparam>
+    /// <param name="audioId">Audio ID as enum value</param>
+    /// <returns>True if the audio is currently playing</returns>
+    public static bool IsAudioPlaying<T>(T audioId) where T : Enum
+    {
+        return IsAudioPlaying(audioId.ToString());
+    }
+    
+    /// <summary>
+    /// Get audio clip data using enum
+    /// </summary>
+    /// <typeparam name="T">Enum type representing audio IDs</typeparam>
+    /// <param name="audioId">Audio ID as enum value</param>
+    /// <returns>AudioClipData if found, null otherwise</returns>
+    public static AudioClipData GetAudioClip<T>(T audioId) where T : Enum
+    {
+        if (audioDatabase == null) return null;
+        return audioDatabase.GetAudioClip(audioId.ToString());
+    }
+    
+    #endregion
+    
+    #region Legacy String API for backward compatibility
+    
     /// <summary>
     /// Stop current BGM
     /// </summary>
