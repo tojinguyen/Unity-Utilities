@@ -119,6 +119,14 @@ public static class AudioManager
     }
     
     /// <summary>
+    /// Stop all audio (BGM, SFX, UI, Voice, Ambient)
+    /// </summary>
+    public static UniTask StopAllAudio(bool immediate = false)
+    {
+        return StopAllAudioAsync(null, immediate);
+    }
+    
+    /// <summary>
     /// Set BGM volume (0-1)
     /// </summary>
     public static void SetVolumeBGM(float volume)
