@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "AudioDatabase", menuName = "Audio/Audio Database")]
@@ -185,6 +186,41 @@ public class AudioDatabase : ScriptableObject
     {
         var settings = GetCategorySettings(audioType);
         return settings?.allowDuplicates ?? true;
+    }
+
+    /// <summary>
+    /// Gets all audio clips in the database
+    /// </summary>
+    public List<AudioClipData> GetAllAudioClips()
+    {
+        return new List<AudioClipData>(audioClips);
+    }
+
+    /// <summary>
+    /// Checks if an ID already exists in the database
+    /// </summary>
+    public bool ContainsId(string id)
+    {
+        return audioClips.Any(clip => clip.id == id);
+    }
+
+    /// <summary>
+    /// Generates a unique ID based on a base name
+    /// </summary>
+    public string GenerateUniqueId(string baseName)
+    {
+        if (!ContainsId(baseName))
+            return baseName;
+
+        int counter = 1;
+        string uniqueId;
+        do
+        {
+            uniqueId = $"{baseName}{counter:D2}";
+            counter++;
+        } while (ContainsId(uniqueId) && counter < 100);
+
+        return uniqueId;
     }
 
     private void OnValidate()
