@@ -12,5 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0e28828d65422e346b9ff7f1fa4fd20c, type: 3}
   m_Name: AudioDatabase
   m_EditorClassIdentifier: TirexGame.Utilities::AudioDatabase
-  audioClips: []
+  audioClips:
+  - id: 
+    audioType: 0
+    playMode: 0
+    audioClip: {fileID: 0}
+    audioClipReference:
+      m_AssetGUID: 
+      m_SubObjectName: 
+      m_SubObjectType: 
+      m_SubObjectGUID: 
+      m_EditorAssetChanged: 0
+    volume: 0
+    pitch: 0
+    spatialBlend: 0
+    minRandomDelay: 0
+    maxRandomDelay: 0
+    useFade: 0
+    fadeInDuration: 0
+    fadeOutDuration: 0
+    minDistance: 0
+    maxDistance: 0
+    rolloffMode: 0
   categorySettings: []
