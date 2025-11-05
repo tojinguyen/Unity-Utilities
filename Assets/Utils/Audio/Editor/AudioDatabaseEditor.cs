@@ -91,7 +91,16 @@ public class AudioDatabaseEditor : Editor
             {
                 string fileName = audioClip.name;
                 string baseId = GenerateIdFromFileName(fileName);
-                string uniqueId = database.GenerateUniqueId(baseId);
+                
+                // Check if the current ID is already the expected one from filename
+                if (idProperty.stringValue == baseId)
+                {
+                    // ID is already correct, no need to change
+                    continue;
+                }
+                
+                // Generate unique ID, considering other entries but not this one
+                string uniqueId = GenerateUniqueIdExcludingCurrent(database, baseId, i);
                 idProperty.stringValue = uniqueId;
             }
         }
@@ -101,7 +110,7 @@ public class AudioDatabaseEditor : Editor
     }
 
     /// <summary>
-    /// Auto-assigns IDs only for new entries that have audio clips but no ID
+    /// Auto-assigns IDs for entries that have audio clips but no ID, or when audio clip changes
     /// </summary>
     private void AutoAssignIDsForNewEntries()
     {
@@ -113,14 +122,26 @@ public class AudioDatabaseEditor : Editor
             var audioClipProperty = audioClipData.FindPropertyRelative("audioClip");
             var idProperty = audioClipData.FindPropertyRelative("id");
 
-            // Only assign ID if it's empty and we have an audio clip
-            if (string.IsNullOrEmpty(idProperty.stringValue) && 
-                audioClipProperty.objectReferenceValue is AudioClip audioClip)
+            if (audioClipProperty.objectReferenceValue is AudioClip audioClip)
             {
                 string fileName = audioClip.name;
-                string baseId = GenerateIdFromFileName(fileName);
-                string uniqueId = database.GenerateUniqueId(baseId);
-                idProperty.stringValue = uniqueId;
+                string expectedId = GenerateIdFromFileName(fileName);
+                
+                // Auto-assign ID if:
+                // 1. ID is empty, OR
+                // 2. ID doesn't match the expected ID from current audio clip name
+                if (string.IsNullOrEmpty(idProperty.stringValue) || 
+                    !idProperty.stringValue.StartsWith(expectedId))
+                {
+                    // Check if the expected ID is already correct
+                    if (idProperty.stringValue == expectedId)
+                    {
+                        continue; // Already correct
+                    }
+                    
+                    string uniqueId = GenerateUniqueIdExcludingCurrent(database, expectedId, i);
+                    idProperty.stringValue = uniqueId;
+                }
             }
         }
     }
@@ -170,5 +191,57 @@ public class AudioDatabaseEditor : Editor
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Generates a unique ID based on a base name, excluding the current index from conflict checking
+    /// </summary>
+    private string GenerateUniqueIdExcludingCurrent(AudioDatabase database, string baseName, int currentIndex)
+    {
+        // Check if baseName conflicts with other entries (excluding current)
+        bool hasConflict = false;
+        for (int i = 0; i < audioClipsProperty.arraySize; i++)
+        {
+            if (i == currentIndex) continue; // Skip current entry
+            
+            var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
+            var idProperty = audioClipData.FindPropertyRelative("id");
+            
+            if (idProperty.stringValue == baseName)
+            {
+                hasConflict = true;
+                break;
+            }
+        }
+        
+        if (!hasConflict)
+            return baseName;
+            
+        // Generate numbered version
+        int counter = 1;
+        string uniqueId;
+        do
+        {
+            uniqueId = $"{baseName}{counter:D2}";
+            hasConflict = false;
+            
+            for (int i = 0; i < audioClipsProperty.arraySize; i++)
+            {
+                if (i == currentIndex) continue; // Skip current entry
+                
+                var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
+                var idProperty = audioClipData.FindPropertyRelative("id");
+                
+                if (idProperty.stringValue == uniqueId)
+                {
+                    hasConflict = true;
+                    break;
+                }
+            }
+            
+            counter++;
+        } while (hasConflict && counter < 100);
+
+        return uniqueId;
     }
 }
