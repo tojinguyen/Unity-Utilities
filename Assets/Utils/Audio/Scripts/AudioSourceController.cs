@@ -69,17 +69,17 @@ public class AudioSourceController : MonoBehaviour
         audioSource.clip = clipData.audioClip;
         audioSource.volume = clipData.volume;
         audioSource.pitch = clipData.pitch;
-        audioSource.spatialBlend = clipData.spatialBlend;
+        audioSource.spatialBlend = clipData.SpatialBlend;
         audioSource.minDistance = clipData.minDistance;
         audioSource.maxDistance = clipData.maxDistance;
         audioSource.rolloffMode = clipData.rolloffMode;
-        audioSource.loop = clipData.playMode == AudioPlayMode.Loop || clipData.playMode == AudioPlayMode.LoopWithRandomDelay;
+        audioSource.loop = clipData.playMode == AudioPlayMode.Loop;
         
         originalVolume = clipData.volume;
         targetVolume = clipData.volume;
         
         // Set position for 3D audio
-        if (position.HasValue && clipData.spatialBlend > 0f)
+        if (position.HasValue && clipData.Is3D)
         {
             transform.position = position.Value;
         }
@@ -131,12 +131,6 @@ public class AudioSourceController : MonoBehaviour
         else
         {
             audioSource.Play();
-        }
-        
-        // Handle loop with random delay
-        if (currentClipData.playMode == AudioPlayMode.LoopWithRandomDelay)
-        {
-            StartLoopWithRandomDelay();
         }
         
         ConsoleLogger.Log($"[AudioSourceController] Started playing: {currentClipId}");
@@ -205,34 +199,6 @@ public class AudioSourceController : MonoBehaviour
         fadeCoroutine = null;
         
         OnFadeComplete?.Invoke(this);
-    }
-    
-    private void StartLoopWithRandomDelay()
-    {
-        if (playCoroutine != null)
-            StopCoroutine(playCoroutine);
-            
-        playCoroutine = StartCoroutine(LoopWithRandomDelayCoroutine());
-    }
-    
-    private IEnumerator LoopWithRandomDelayCoroutine()
-    {
-        while (isPlaying && currentClipData.playMode == AudioPlayMode.LoopWithRandomDelay)
-        {
-            // Wait for current clip to finish
-            while (audioSource.isPlaying)
-                yield return null;
-                
-            // Wait for random delay
-            float delay = currentClipData.GetRandomDelay();
-            yield return new WaitForSeconds(delay);
-            
-            // Play again if still supposed to be playing
-            if (isPlaying)
-            {
-                audioSource.Play();
-            }
-        }
     }
     
     public void Pause()
@@ -306,13 +272,24 @@ public class AudioSourceController : MonoBehaviour
         fadeCoroutine = null;
         playCoroutine = null;
         
-        // Clear events
+        // Don't clear event handlers - they are managed by AudioManager
+        // OnAudioFinished and OnFadeComplete should remain subscribed
+    }
+    
+    /// <summary>
+    /// Cleanup all event handlers (called when destroying object)
+    /// </summary>
+    public void Cleanup()
+    {
+        Reset();
+        
+        // Clear all event handlers
         OnAudioFinished = null;
         OnFadeComplete = null;
     }
     
     private void OnDestroy()
     {
-        Reset();
+        Cleanup();
     }
 }

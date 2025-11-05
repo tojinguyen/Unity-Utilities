@@ -10,8 +10,7 @@ public enum AudioType
 public enum AudioPlayMode
 {
     Once,
-    Loop,
-    LoopWithRandomDelay
+    Loop
 }
 
 public enum AudioFadeType

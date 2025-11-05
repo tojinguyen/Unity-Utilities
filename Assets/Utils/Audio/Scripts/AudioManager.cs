@@ -5,6 +5,35 @@ using UnityEngine;
 using Cysharp.Threading.Tasks;
 
 /// <summary>
+/// Pool statistics for debugging
+/// </summary>
+[Serializable]
+public class AudioPoolStats
+{
+    public int PooledSources;
+    public int ActiveSources;
+    public int MaxPoolSize;
+    public int InitialPoolSize;
+    public int TotalSourcesCreated;
+    public float PoolUtilization;
+    public Dictionary<AudioType, int> ActiveByType;
+}
+
+/// <summary>
+/// Active audio source info for debugging
+/// </summary>
+[Serializable]
+public class AudioSourceInfo
+{
+    public string AudioId;
+    public AudioType AudioType;
+    public bool IsPlaying;
+    public float Volume;
+    public Vector3 Position;
+    public string GameObject;
+}
+
+/// <summary>
 /// Static Audio Manager for handling BGM, SFX, and all audio operations
 /// No Singleton pattern - uses static methods for easy access
 /// </summary>
@@ -307,7 +336,7 @@ public static class AudioManager
             audioSourceController.gameObject.SetActive(false);
             audioSourcePool.Enqueue(audioSourceController);
         }
-        pooledAudioSources = audioSourcePool.Count;
+        UpdatePoolCounters();
     }
     
     private static AudioSourceController CreateAudioSourceController()
@@ -337,20 +366,20 @@ public static class AudioManager
         return controller;
     }
     
-    private static AudioSourceController GetAudioSourceFromPool()
+    private static async UniTask<AudioSourceController> GetAudioSourceFromPoolAsync()
     {
         if (!IsInitialized)
         {
             ConsoleLogger.LogError("[AudioManager] AudioManager is not initialized. Call Initialize() first.");
             return null;
         }
-        
+
         AudioSourceController controller;
-        
+
         if (audioSourcePool.Count > 0)
         {
             controller = audioSourcePool.Dequeue();
-            pooledAudioSources = audioSourcePool.Count;
+            UpdatePoolCounters();
         }
         else if (activeAudioSources.Count < maxPoolSize)
         {
@@ -358,11 +387,14 @@ public static class AudioManager
         }
         else
         {
-            // Pool is full, stop the oldest non-music audio
+            // Pool is full, stop the oldest non-music audio and wait for completion
             controller = GetOldestNonMusicAudioSource();
             if (controller != null)
             {
-                controller.StopAsync(immediate: true).Forget();
+                await controller.StopAsync(immediate: true);
+                // Controller is already cleaned up by OnAudioSourceFinished callback
+                // So we need to get a new one
+                return await GetAudioSourceFromPoolAsync();
             }
             else
             {
@@ -370,11 +402,15 @@ public static class AudioManager
                 return null;
             }
         }
-        
+
         controller.gameObject.SetActive(true);
         controller.Reset();
-        
+
         return controller;
+    }    private static void UpdatePoolCounters()
+    {
+        activeAudioSourcesCounter = activeAudioSources.Count;
+        pooledAudioSources = audioSourcePool.Count;
     }
     
     private static void ReturnAudioSourceToPool(AudioSourceController controller)
@@ -394,8 +430,7 @@ public static class AudioManager
         audioSourcePool.Enqueue(controller);
         
         // Update counters
-        activeAudioSourcesCounter = activeAudioSources.Count;
-        pooledAudioSources = audioSourcePool.Count;
+        UpdatePoolCounters();
     }
     
     private static AudioSourceController GetOldestNonMusicAudioSource()
@@ -478,7 +513,7 @@ public static class AudioManager
         }
         
         // Get audio source from pool
-        var audioSource = GetAudioSourceFromPool();
+        var audioSource = await GetAudioSourceFromPoolAsync();
         if (audioSource == null)
         {
             ConsoleLogger.LogError($"[AudioManager] Failed to get audio source for: {audioId}");
@@ -497,7 +532,7 @@ public static class AudioManager
         activeAudioByType[clipData.audioType].Add(audioSource);
         
         // Update counter
-        activeAudioSourcesCounter = activeAudioSources.Count;
+        UpdatePoolCounters();
         
         // Play the audio
         await audioSource.PlayAsync();
@@ -526,7 +561,7 @@ public static class AudioManager
             return true;
         }
         
-        var newMusicSource = GetAudioSourceFromPool();
+        var newMusicSource = await GetAudioSourceFromPoolAsync();
         if (newMusicSource == null) return false;
         
         // Apply volume multipliers
@@ -703,6 +738,63 @@ public static class AudioManager
             : activeAudioSources.Count;
     }
     
+    /// <summary>
+    /// Get detailed pool statistics for debugging
+    /// </summary>
+    public static AudioPoolStats GetPoolStats()
+    {
+        return new AudioPoolStats
+        {
+            PooledSources = pooledAudioSources,
+            ActiveSources = activeAudioSourcesCounter,
+            MaxPoolSize = maxPoolSize,
+            InitialPoolSize = initialPoolSize,
+            TotalSourcesCreated = pooledAudioSources + activeAudioSourcesCounter,
+            PoolUtilization = maxPoolSize > 0 ? (float)activeAudioSourcesCounter / maxPoolSize : 0f,
+            ActiveByType = activeAudioByType.ToDictionary(
+                kvp => kvp.Key, 
+                kvp => kvp.Value.Count
+            )
+        };
+    }
+    
+    /// <summary>
+    /// Get detailed info about active audio sources
+    /// </summary>
+    public static List<AudioSourceInfo> GetActiveSourcesInfo()
+    {
+        return activeAudioSources.Select(source => new AudioSourceInfo
+        {
+            AudioId = source.CurrentClipId,
+            AudioType = source.CurrentAudioType,
+            IsPlaying = source.IsPlaying,
+            Volume = source.Volume,
+            Position = source.transform.position,
+            GameObject = source.gameObject.name
+        }).ToList();
+    }
+    
+    /// <summary>
+    /// Log detailed pool statistics to console
+    /// </summary>
+    public static void LogPoolStats()
+    {
+        var stats = GetPoolStats();
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("=== AudioManager Pool Statistics ===");
+        sb.AppendLine($"Pooled Sources: {stats.PooledSources}");
+        sb.AppendLine($"Active Sources: {stats.ActiveSources}");
+        sb.AppendLine($"Max Pool Size: {stats.MaxPoolSize}");
+        sb.AppendLine($"Pool Utilization: {stats.PoolUtilization:P1}");
+        sb.AppendLine($"Total Created: {stats.TotalSourcesCreated}");
+        sb.AppendLine("Active by Type:");
+        foreach (var kvp in stats.ActiveByType)
+        {
+            sb.AppendLine($"  {kvp.Key}: {kvp.Value}");
+        }
+        ConsoleLogger.Log(sb.ToString());
+    }
+    
     #endregion
     
     #region Helper Methods
@@ -718,7 +810,7 @@ public static class AudioManager
             audioClipReference = original.audioClipReference,
             volume = original.volume,
             pitch = original.pitch,
-            spatialBlend = original.spatialBlend,
+            spatialMode = original.spatialMode,
             useFade = original.useFade,
             fadeInDuration = original.fadeInDuration,
             fadeOutDuration = original.fadeOutDuration,
@@ -754,6 +846,17 @@ public static class AudioManager
     {
         // Stop all audio
         StopAllAudioAsync(immediate: true).Forget();
+        
+        // Cleanup all audio source controllers
+        foreach (var controller in activeAudioSources.ToList())
+        {
+            controller?.Cleanup();
+        }
+        
+        foreach (var controller in audioSourcePool.ToList())
+        {
+            controller?.Cleanup();
+        }
         
         // Clear events
         OnAudioStarted = null;
