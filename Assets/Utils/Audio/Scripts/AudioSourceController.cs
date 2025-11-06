@@ -84,7 +84,10 @@ public class AudioSourceController : MonoBehaviour
             transform.position = position.Value;
         }
         
-        ConsoleLogger.Log($"[AudioSourceController] Initialized audio: {clipData.id}");
+        if (AudioManager.EnableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioSourceController] Initialized audio: {clipData.id}");
+        }
     }
     
     public async UniTask PlayAsync()
@@ -133,7 +136,10 @@ public class AudioSourceController : MonoBehaviour
             audioSource.Play();
         }
         
-        ConsoleLogger.Log($"[AudioSourceController] Started playing: {currentClipId}");
+        if (AudioManager.EnableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioSourceController] Started playing: {currentClipId}");
+        }
     }
     
     public async UniTask StopAsync(bool immediate = false)
@@ -155,7 +161,10 @@ public class AudioSourceController : MonoBehaviour
             OnAudioComplete();
         }
         
-        ConsoleLogger.Log($"[AudioSourceController] Stopped playing: {currentClipId}");
+        if (AudioManager.EnableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioSourceController] Stopped playing: {currentClipId}");
+        }
     }
     
     public async UniTask FadeToAsync(float targetVol, float duration)
@@ -206,7 +215,10 @@ public class AudioSourceController : MonoBehaviour
         if (isPlaying && audioSource.isPlaying)
         {
             audioSource.Pause();
-            ConsoleLogger.Log($"[AudioSourceController] Paused: {currentClipId}");
+            if (AudioManager.EnableAudioLogs)
+            {
+                ConsoleLogger.Log($"[AudioSourceController] Paused: {currentClipId}");
+            }
         }
     }
     
@@ -215,7 +227,10 @@ public class AudioSourceController : MonoBehaviour
         if (isPlaying && !audioSource.isPlaying)
         {
             audioSource.UnPause();
-            ConsoleLogger.Log($"[AudioSourceController] Resumed: {currentClipId}");
+            if (AudioManager.EnableAudioLogs)
+            {
+                ConsoleLogger.Log($"[AudioSourceController] Resumed: {currentClipId}");
+            }
         }
     }
     
@@ -245,7 +260,10 @@ public class AudioSourceController : MonoBehaviour
         
         OnAudioFinished?.Invoke(this);
         
-        ConsoleLogger.Log($"[AudioSourceController] Audio finished: {currentClipId}");
+        if (AudioManager.EnableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioSourceController] Audio finished: {currentClipId}");
+        }
     }
     
     public void Reset()

@@ -49,6 +49,9 @@ public static class AudioManager
     private static float masterVolume = 1f;
     private static bool masterMuted = false;
     
+    // Debug settings
+    private static bool enableAudioLogs = false;
+    
     // Runtime tracking
     private static int activeAudioSourcesCounter = 0;
     private static int pooledAudioSources = 0;
@@ -104,6 +107,15 @@ public static class AudioManager
     public static string CurrentMusicId => currentMusicId;
     public static bool IsMusicPlaying => currentMusicSource != null && currentMusicSource.IsPlaying;
     public static bool IsInitialized { get; private set; }
+    
+    /// <summary>
+    /// Enable or disable audio-specific logging (errors and warnings are always logged)
+    /// </summary>
+    public static bool EnableAudioLogs
+    {
+        get => enableAudioLogs;
+        set => enableAudioLogs = value;
+    }
 
     #region Static API for common use cases
     
@@ -325,7 +337,10 @@ public static class AudioManager
         PrewarmPool();
         
         IsInitialized = true;
-        ConsoleLogger.Log($"[AudioManager] Initialized with {initialPoolSize} audio sources");
+        if (enableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioManager] Initialized with {initialPoolSize} audio sources");
+        }
     }
 
     private static void PrewarmPool()
@@ -477,7 +492,10 @@ public static class AudioManager
         // Check if audio type is muted
         if (audioDatabase.IsCategoryMuted(clipData.audioType) || masterMuted)
         {
-            ConsoleLogger.Log($"[AudioManager] Audio category {clipData.audioType} is muted, skipping: {audioId}");
+            if (enableAudioLogs)
+            {
+                ConsoleLogger.Log($"[AudioManager] Audio category {clipData.audioType} is muted, skipping: {audioId}");
+            }
             return false;
         }
         
@@ -501,7 +519,10 @@ public static class AudioManager
             var existing = activeOfType.FirstOrDefault(a => a.CurrentClipId == audioId);
             if (existing != null)
             {
-                ConsoleLogger.Log($"[AudioManager] Duplicate audio not allowed: {audioId}");
+                if (enableAudioLogs)
+                {
+                    ConsoleLogger.Log($"[AudioManager] Duplicate audio not allowed: {audioId}");
+                }
                 return false;
             }
         }
@@ -538,7 +559,10 @@ public static class AudioManager
         await audioSource.PlayAsync();
         
         OnAudioStarted?.Invoke(audioId, clipData.audioType);
-        ConsoleLogger.Log($"[AudioManager] Playing audio: {audioId}");
+        if (enableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioManager] Playing audio: {audioId}");
+        }
         
         return true;
     }
@@ -557,7 +581,10 @@ public static class AudioManager
         // Check if already playing this music
         if (currentMusicId == musicId && currentMusicSource != null && currentMusicSource.IsPlaying)
         {
-            ConsoleLogger.Log($"[AudioManager] Music already playing: {musicId}");
+            if (enableAudioLogs)
+            {
+                ConsoleLogger.Log($"[AudioManager] Music already playing: {musicId}");
+            }
             return true;
         }
         
@@ -605,7 +632,10 @@ public static class AudioManager
         activeAudioSourcesCounter = activeAudioSources.Count;
         
         OnAudioStarted?.Invoke(musicId, AudioType.Music);
-        ConsoleLogger.Log($"[AudioManager] Playing music: {musicId}");
+        if (enableAudioLogs)
+        {
+            ConsoleLogger.Log($"[AudioManager] Playing music: {musicId}");
+        }
         
         return true;
     }
@@ -779,6 +809,8 @@ public static class AudioManager
     /// </summary>
     public static void LogPoolStats()
     {
+        if (!enableAudioLogs) return;
+        
         var stats = GetPoolStats();
         var sb = new System.Text.StringBuilder();
         sb.AppendLine("=== AudioManager Pool Statistics ===");
@@ -878,7 +910,10 @@ public static class AudioManager
         }
         
         IsInitialized = false;
-        ConsoleLogger.Log("[AudioManager] Cleaned up resources");
+        if (enableAudioLogs)
+        {
+            ConsoleLogger.Log("[AudioManager] Cleaned up resources");
+        }
     }
     
     #endregion

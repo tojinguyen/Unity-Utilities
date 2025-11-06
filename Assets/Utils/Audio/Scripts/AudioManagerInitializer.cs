@@ -10,7 +10,10 @@ public class AudioManagerInitializer : MonoBehaviour
         if (audioDatabase != null)
         {
             AudioManager.Initialize(audioDatabase);
-            ConsoleLogger.Log("AudioManager initialized successfully");
+            if (AudioManager.EnableAudioLogs)
+            {
+                ConsoleLogger.Log("AudioManager initialized successfully");
+            }
         }
         else
         {
