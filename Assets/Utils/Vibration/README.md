@@ -30,18 +30,48 @@ A comprehensive vibration and haptic feedback package for Unity mobile games, su
 
 ## Quick Start
 
-### 1. Basic Usage
+### 1. Simplified Static Usage (Recommended)
 
 ```csharp
 using TirexGame.Utils.Vibration;
 
-// Simple vibration
+// Simple static calls - NO COMPONENT REFERENCES NEEDED!
+Vibration.Click();      // Perfect for button clicks
+Vibration.Success();    // Success feedback
+Vibration.Error();      // Error feedback
+Vibration.Warning();    // Warning feedback
+
+// Intensity-based vibrations
+Vibration.Short();      // Light vibration
+Vibration.Medium();     // Medium vibration  
+Vibration.Strong();     // Heavy vibration
+
+// Custom duration
+Vibration.Play(150);    // Vibrate for 150ms
+
+// Custom pattern
+long[] pattern = { 0, 100, 50, 200 };
+Vibration.Play(pattern);
+
+// Haptic feedback shortcuts
+Vibration.Haptic.Light();
+Vibration.Haptic.Success();
+Vibration.Haptic.Error();
+
+// Utility
+Vibration.Stop();       // Stop all vibrations
+bool supported = Vibration.IsSupported;
+bool enabled = Vibration.IsEnabled;
+```
+
+### 2. Advanced Usage (VibrationManager)
+
+```csharp
+using TirexGame.Utils.Vibration;
+
+// Full control with VibrationManager
 VibrationManager.Vibrate();
-
-// Vibration with duration (Android) or intensity mapping (iOS)
 VibrationManager.Vibrate(100); // 100ms
-
-// Vibration with intensity
 VibrationManager.Vibrate(VibrationIntensity.Medium);
 
 // Predefined patterns
@@ -50,29 +80,35 @@ VibrationManager.VibrateError();
 VibrationManager.VibrateWarning();
 ```
 
-### 2. Haptic Feedback
+### 3. Haptic Feedback
 
 ```csharp
-// Basic haptic feedback
-VibrationManager.TriggerHapticFeedback(HapticFeedbackType.Selection);
+// Simplified haptic feedback
+Vibration.Haptic.Light();    // Light haptic
+Vibration.Haptic.Medium();   // Medium haptic  
+Vibration.Haptic.Heavy();    // Heavy haptic
+Vibration.Haptic.Success();  // Success haptic
+Vibration.Haptic.Warning();  // Warning haptic
+Vibration.Haptic.Error();    // Error haptic
 
-// iOS-specific feedback types
+// Advanced haptic feedback (VibrationManager)
+VibrationManager.TriggerHapticFeedback(HapticFeedbackType.Selection);
 VibrationManager.TriggerNotificationFeedback(NotificationFeedbackType.Success);
 VibrationManager.TriggerImpactFeedback(ImpactFeedbackType.Heavy);
 ```
 
-### 3. Custom Patterns
+### 4. Custom Patterns
 
 ```csharp
-// Custom vibration pattern (Android)
+// Simplified custom patterns
 long[] pattern = { 0, 100, 50, 200, 50, 100 }; // off, on, off, on...
-VibrationManager.Vibrate(pattern);
+Vibration.Play(pattern);
 
-// Pattern with repeat
+// Advanced patterns with repeat (VibrationManager)
 VibrationManager.Vibrate(pattern, 0); // Repeat from index 0
 ```
 
-### 4. Using VibrationComponent
+### 5. Using VibrationComponent
 
 Add the `VibrationComponent` to any GameObject for easy setup:
 
@@ -96,7 +132,38 @@ public class MyScript : MonoBehaviour
 
 ## API Reference
 
-### VibrationManager (Static Class)
+### Vibration (Simplified Static Class)
+
+The `Vibration` class provides the easiest way to add vibration to your game without any component references:
+
+#### Basic Methods
+- `Click()` - Quick vibration for button clicks
+- `Short()` - Light vibration
+- `Medium()` - Medium vibration
+- `Strong()` - Heavy vibration
+- `Play()` - Default vibration
+- `Play(long milliseconds)` - Custom duration vibration
+- `Play(long[] pattern)` - Custom pattern vibration
+- `Stop()` - Cancel all vibrations
+
+#### Feedback Methods
+- `Success()` - Success pattern
+- `Error()` - Error pattern  
+- `Warning()` - Warning pattern
+
+#### Properties
+- `bool IsSupported` - Platform support check
+- `bool IsEnabled` - Device settings check
+
+#### Haptic Subclass
+- `Haptic.Light()` - Light haptic feedback
+- `Haptic.Medium()` - Medium haptic feedback
+- `Haptic.Heavy()` - Heavy haptic feedback
+- `Haptic.Success()` - Success haptic feedback
+- `Haptic.Warning()` - Warning haptic feedback
+- `Haptic.Error()` - Error haptic feedback
+
+### VibrationManager (Advanced Static Class)
 
 #### Properties
 - `bool IsSupported` - Check if vibration is supported on current platform
@@ -180,6 +247,9 @@ The package includes several example scripts:
 
 ### BasicVibrationExample
 Demonstrates basic vibration functionality with UI integration.
+
+### StaticVibrationExample
+Demonstrates the new simplified static API without component references.
 
 ### HapticFeedbackExample
 Shows different types of haptic feedback and their usage.
