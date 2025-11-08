@@ -9,6 +9,11 @@ namespace TirexGame.Utils.Vibration
     {
         private static IVibrationProvider provider;
         private static bool isInitialized = false;
+        
+        /// <summary>
+        /// Global vibration enabled/disabled state
+        /// </summary>
+        public static bool IsGloballyEnabled = true;
 
         /// <summary>
         /// Initialize the vibration manager
@@ -48,10 +53,16 @@ namespace TirexGame.Utils.Vibration
         public static bool IsEnabled => provider?.IsEnabled ?? false;
 
         /// <summary>
+        /// Check if vibration should be allowed (considers global settings and device capabilities)
+        /// </summary>
+        public static bool CanVibrate => IsGloballyEnabled && IsSupported && IsEnabled;
+
+        /// <summary>
         /// Vibrate with default pattern (100ms)
         /// </summary>
         public static void Vibrate()
         {
+            if (!IsGloballyEnabled) return;
             provider?.Vibrate();
         }
 
@@ -61,6 +72,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="milliseconds">Duration in milliseconds</param>
         public static void Vibrate(int milliseconds)
         {
+            if (!IsGloballyEnabled) return;
             provider?.Vibrate(milliseconds);
         }
 
@@ -70,6 +82,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="intensity">Vibration intensity</param>
         public static void Vibrate(VibrationIntensity intensity)
         {
+            if (!IsGloballyEnabled) return;
             provider?.Vibrate(intensity);
         }
 
@@ -80,6 +93,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="repeat">Repeat pattern (-1 for no repeat)</param>
         public static void Vibrate(int[] pattern, int repeat = -1)
         {
+            if (!IsGloballyEnabled) return;
             provider?.Vibrate(pattern, repeat);
         }
 
@@ -97,6 +111,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="feedbackType">Type of haptic feedback</param>
         public static void TriggerHapticFeedback(HapticFeedbackType feedbackType)
         {
+            if (!IsGloballyEnabled) return;
             provider?.TriggerHapticFeedback(feedbackType);
         }
 
@@ -106,6 +121,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="notificationType">Type of notification feedback</param>
         public static void TriggerNotificationFeedback(NotificationFeedbackType notificationType)
         {
+            if (!IsGloballyEnabled) return;
             provider?.TriggerNotificationFeedback(notificationType);
         }
 
@@ -115,6 +131,7 @@ namespace TirexGame.Utils.Vibration
         /// <param name="impactType">Type of impact feedback</param>
         public static void TriggerImpactFeedback(ImpactFeedbackType impactType)
         {
+            if (!IsGloballyEnabled) return;
             provider?.TriggerImpactFeedback(impactType);
         }
 

@@ -108,6 +108,20 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         public static bool IsEnabled => VibrationManager.IsEnabled;
 
+        /// <summary>
+        /// Check if vibration is globally enabled in app settings
+        /// </summary>
+        public static bool IsGloballyEnabled
+        {
+            get => VibrationManager.IsGloballyEnabled;
+            set => VibrationManager.IsGloballyEnabled = value;
+        }
+
+        /// <summary>
+        /// Check if vibration can be used (considers both global settings and device capabilities)
+        /// </summary>
+        public static bool CanVibrate => VibrationManager.CanVibrate;
+
         // Haptic feedback shortcuts
         public static class Haptic
         {
