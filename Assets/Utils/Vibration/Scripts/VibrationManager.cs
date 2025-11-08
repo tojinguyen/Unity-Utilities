@@ -59,7 +59,7 @@ namespace TirexGame.Utils.Vibration
         /// Vibrate for specified duration in milliseconds
         /// </summary>
         /// <param name="milliseconds">Duration in milliseconds</param>
-        public static void Vibrate(long milliseconds)
+        public static void Vibrate(int milliseconds)
         {
             provider?.Vibrate(milliseconds);
         }
@@ -78,7 +78,7 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         /// <param name="pattern">Array of durations: off, on, off, on...</param>
         /// <param name="repeat">Repeat pattern (-1 for no repeat)</param>
-        public static void Vibrate(long[] pattern, int repeat = -1)
+        public static void Vibrate(int[] pattern, int repeat = -1)
         {
             provider?.Vibrate(pattern, repeat);
         }
@@ -149,7 +149,7 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         public static void VibrateSuccess()
         {
-            long[] pattern = { 0, 100, 50, 100 };
+            int[] pattern = { 0, 100, 50, 100 };
             Vibrate(pattern);
         }
 
@@ -158,7 +158,7 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         public static void VibrateWarning()
         {
-            long[] pattern = { 0, 200, 100, 200, 100, 200 };
+            int[] pattern = { 0, 200, 100, 200, 100, 200 };
             Vibrate(pattern);
         }
 
@@ -167,7 +167,7 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         public static void VibrateDoubleTap()
         {
-            long[] pattern = { 0, 50, 50, 50 };
+            int[] pattern = { 0, 50, 50, 50 };
             Vibrate(pattern);
         }
 

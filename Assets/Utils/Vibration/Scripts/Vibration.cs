@@ -52,7 +52,7 @@ namespace TirexGame.Utils.Vibration
         /// Play vibration for specified milliseconds
         /// </summary>
         /// <param name="milliseconds">Duration in milliseconds</param>
-        public static void Play(long milliseconds)
+        public static void Play(int milliseconds)
         {
             VibrationManager.Vibrate(milliseconds);
         }
@@ -61,7 +61,7 @@ namespace TirexGame.Utils.Vibration
         /// Play vibration with custom pattern
         /// </summary>
         /// <param name="pattern">Pattern array: off, on, off, on...</param>
-        public static void Play(long[] pattern)
+        public static void Play(int[] pattern)
         {
             VibrationManager.Vibrate(pattern);
         }

@@ -85,7 +85,7 @@ namespace TirexGame.Utils.Vibration
             Vibrate(100); // Default 100ms vibration
         }
 
-        public void Vibrate(long milliseconds)
+        public void Vibrate(int milliseconds)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (!IsSupported || !IsEnabled) return;
@@ -96,13 +96,13 @@ namespace TirexGame.Utils.Vibration
                 {
                     // Use VibrationEffect for Android 8.0+
                     AndroidJavaObject vibrationEffect = vibrationEffectClass.CallStatic<AndroidJavaObject>(
-                        "createOneShot", milliseconds, -1); // -1 for default amplitude
+                        "createOneShot", (long)milliseconds, -1); // -1 for default amplitude
                     vibrator.Call("vibrate", vibrationEffect);
                 }
                 else
                 {
                     // Use deprecated method for older Android versions
-                    vibrator.Call("vibrate", milliseconds);
+                    vibrator.Call("vibrate", (long)milliseconds);
                 }
             }
             catch (System.Exception e)
@@ -114,7 +114,7 @@ namespace TirexGame.Utils.Vibration
 
         public void Vibrate(VibrationIntensity intensity)
         {
-            long duration = intensity switch
+            int duration = intensity switch
             {
                 VibrationIntensity.Light => 50,
                 VibrationIntensity.Medium => 100,
@@ -124,24 +124,31 @@ namespace TirexGame.Utils.Vibration
             Vibrate(duration);
         }
 
-        public void Vibrate(long[] pattern, int repeat = -1)
+        public void Vibrate(int[] pattern, int repeat = -1)
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             if (!IsSupported || !IsEnabled) return;
 
             try
             {
+                // Convert int[] to long[] for Android API
+                long[] longPattern = new long[pattern.Length];
+                for (int i = 0; i < pattern.Length; i++)
+                {
+                    longPattern[i] = pattern[i];
+                }
+
                 if (hasVibrationEffect)
                 {
                     // Use VibrationEffect for Android 8.0+
                     AndroidJavaObject vibrationEffect = vibrationEffectClass.CallStatic<AndroidJavaObject>(
-                        "createWaveform", pattern, repeat);
+                        "createWaveform", longPattern, repeat);
                     vibrator.Call("vibrate", vibrationEffect);
                 }
                 else
                 {
                     // Use deprecated method for older Android versions
-                    vibrator.Call("vibrate", pattern, repeat);
+                    vibrator.Call("vibrate", longPattern, repeat);
                 }
             }
             catch (System.Exception e)

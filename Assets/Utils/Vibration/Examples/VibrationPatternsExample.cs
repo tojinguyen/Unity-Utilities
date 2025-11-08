@@ -19,7 +19,7 @@ namespace TirexGame.Utils.Vibration.Examples
         [SerializeField] private Text patternInfoText;
 
         [Header("Custom Pattern")]
-        [SerializeField] private long[] customPattern = { 0, 100, 50, 100, 50, 100 };
+        [SerializeField] private int[] customPattern = { 0, 100, 50, 100, 50, 100 };
         [SerializeField] private int customRepeat = -1;
 
         private void Start()
@@ -103,7 +103,7 @@ namespace TirexGame.Utils.Vibration.Examples
         // Public methods for more pattern examples
         public void PlayHeartbeatPattern()
         {
-            long[] heartbeat = { 0, 100, 100, 100, 200, 100, 200, 100 };
+            int[] heartbeat = { 0, 100, 100, 100, 200, 100, 200, 100 };
             VibrationManager.Vibrate(heartbeat);
             Debug.Log("Pattern Example: Heartbeat pattern");
         }
@@ -111,21 +111,21 @@ namespace TirexGame.Utils.Vibration.Examples
         public void PlayMorseCodeSOSPattern()
         {
             // SOS in Morse code: ... --- ...
-            long[] sos = { 0, 100, 100, 100, 100, 100, 100, 300, 100, 300, 100, 300, 100, 100, 100, 100, 100, 100 };
+            int[] sos = { 0, 100, 100, 100, 100, 100, 100, 300, 100, 300, 100, 300, 100, 100, 100, 100, 100, 100 };
             VibrationManager.Vibrate(sos);
             Debug.Log("Pattern Example: SOS Morse code pattern");
         }
 
         public void PlayNotificationPattern()
         {
-            long[] notification = { 0, 50, 50, 150, 50, 50 };
+            int[] notification = { 0, 50, 50, 150, 50, 50 };
             VibrationManager.Vibrate(notification);
             Debug.Log("Pattern Example: Notification pattern");
         }
 
         public void PlayGameOverPattern()
         {
-            long[] gameOver = { 0, 200, 100, 200, 100, 200, 100, 500 };
+            int[] gameOver = { 0, 200, 100, 200, 100, 200, 100, 500 };
             VibrationManager.Vibrate(gameOver);
             Debug.Log("Pattern Example: Game over pattern");
         }

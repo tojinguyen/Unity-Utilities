@@ -63,7 +63,7 @@ namespace TirexGame.Utils.Vibration
 #endif
         }
 
-        public void Vibrate(long milliseconds)
+        public void Vibrate(int milliseconds)
         {
             // iOS doesn't support duration-based vibration, use intensity instead
             VibrationIntensity intensity = milliseconds switch
@@ -83,7 +83,7 @@ namespace TirexGame.Utils.Vibration
 #endif
         }
 
-        public void Vibrate(long[] pattern, int repeat = -1)
+        public void Vibrate(int[] pattern, int repeat = -1)
         {
             // iOS doesn't support pattern vibration, use simple vibration
             Vibrate();

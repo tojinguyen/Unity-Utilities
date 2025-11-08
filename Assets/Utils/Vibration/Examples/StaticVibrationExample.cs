@@ -92,7 +92,7 @@ namespace TirexGame.Utils.Vibration.Examples
         public void PlayCustomPattern()
         {
             LogAction("Custom Pattern");
-            long[] pattern = { 0, 100, 50, 150, 50, 100 };  // off, on, off, on, off, on
+            int[] pattern = { 0, 100, 50, 150, 50, 100 };  // off, on, off, on, off, on
             Vibration.Play(pattern);
         }
 

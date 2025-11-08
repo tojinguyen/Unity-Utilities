@@ -15,7 +15,7 @@ namespace TirexGame.Utils.Vibration
             Debug.LogWarning("Vibration is not supported on this platform");
         }
 
-        public void Vibrate(long milliseconds)
+        public void Vibrate(int milliseconds)
         {
             Debug.LogWarning("Vibration is not supported on this platform");
         }
@@ -25,7 +25,7 @@ namespace TirexGame.Utils.Vibration
             Debug.LogWarning("Vibration is not supported on this platform");
         }
 
-        public void Vibrate(long[] pattern, int repeat = -1)
+        public void Vibrate(int[] pattern, int repeat = -1)
         {
             Debug.LogWarning("Vibration is not supported on this platform");
         }

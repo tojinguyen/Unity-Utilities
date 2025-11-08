@@ -26,7 +26,7 @@ namespace TirexGame.Utils.Vibration
         /// Vibrate for specified duration in milliseconds
         /// </summary>
         /// <param name="milliseconds">Duration in milliseconds</param>
-        void Vibrate(long milliseconds);
+        void Vibrate(int milliseconds);
 
         /// <summary>
         /// Vibrate with specified intensity
@@ -39,7 +39,7 @@ namespace TirexGame.Utils.Vibration
         /// </summary>
         /// <param name="pattern">Array of durations: off, on, off, on...</param>
         /// <param name="repeat">Repeat pattern (-1 for no repeat)</param>
-        void Vibrate(long[] pattern, int repeat = -1);
+        void Vibrate(int[] pattern, int repeat = -1);
 
         /// <summary>
         /// Cancel ongoing vibration
