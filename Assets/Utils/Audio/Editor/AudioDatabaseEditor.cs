@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
@@ -29,30 +30,30 @@ public class AudioDatabaseEditor : Editor
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Audio Database", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox("Drag audio files into the list below. IDs will be automatically assigned based on filenames.", MessageType.Info);
-        
+
         EditorGUILayout.Space();
 
         // Audio Clips section
         EditorGUILayout.LabelField("Audio Clips", EditorStyles.boldLabel);
-        
+
         // Auto-assign button
         if (GUILayout.Button("Auto-Assign IDs from Filenames"))
         {
             AutoAssignIDs();
         }
-        
+
         // Clear all button
         EditorGUI.BeginChangeCheck();
         if (GUILayout.Button("Clear All Audio Clips", GUILayout.Height(25)))
         {
-            if (EditorUtility.DisplayDialog("Clear All Audio Clips", 
-                "Are you sure you want to clear all audio clips? This action cannot be undone.", 
+            if (EditorUtility.DisplayDialog("Clear All Audio Clips",
+                "Are you sure you want to clear all audio clips? This action cannot be undone.",
                 "Yes, Clear All", "Cancel"))
             {
                 audioClipsProperty.ClearArray();
             }
         }
-        
+
         EditorGUILayout.Space();
 
         // Draw the audio clips list
@@ -80,7 +81,7 @@ public class AudioDatabaseEditor : Editor
     private void AutoAssignIDs()
     {
         AudioDatabase database = target as AudioDatabase;
-        
+
         for (int i = 0; i < audioClipsProperty.arraySize; i++)
         {
             var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
@@ -91,20 +92,20 @@ public class AudioDatabaseEditor : Editor
             {
                 string fileName = audioClip.name;
                 string baseId = GenerateIdFromFileName(fileName);
-                
+
                 // Check if the current ID is already the expected one from filename
                 if (idProperty.stringValue == baseId)
                 {
                     // ID is already correct, no need to change
                     continue;
                 }
-                
+
                 // Generate unique ID, considering other entries but not this one
                 string uniqueId = GenerateUniqueIdExcludingCurrent(database, baseId, i);
                 idProperty.stringValue = uniqueId;
             }
         }
-        
+
         serializedObject.ApplyModifiedProperties();
         EditorUtility.SetDirty(target);
     }
@@ -115,7 +116,7 @@ public class AudioDatabaseEditor : Editor
     private void AutoAssignIDsForNewEntries()
     {
         AudioDatabase database = target as AudioDatabase;
-        
+
         for (int i = 0; i < audioClipsProperty.arraySize; i++)
         {
             var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
@@ -126,11 +127,11 @@ public class AudioDatabaseEditor : Editor
             {
                 string fileName = audioClip.name;
                 string expectedId = GenerateIdFromFileName(fileName);
-                
+
                 // Auto-assign ID if:
                 // 1. ID is empty, OR
                 // 2. ID doesn't match the expected ID from current audio clip name
-                if (string.IsNullOrEmpty(idProperty.stringValue) || 
+                if (string.IsNullOrEmpty(idProperty.stringValue) ||
                     !idProperty.stringValue.StartsWith(expectedId))
                 {
                     // Check if the expected ID is already correct
@@ -138,7 +139,7 @@ public class AudioDatabaseEditor : Editor
                     {
                         continue; // Already correct
                     }
-                    
+
                     string uniqueId = GenerateUniqueIdExcludingCurrent(database, expectedId, i);
                     idProperty.stringValue = uniqueId;
                 }
@@ -173,7 +174,7 @@ public class AudioDatabaseEditor : Editor
         // Split by common separators and convert to PascalCase
         string[] separators = { "_", "-", " ", "." };
         string[] words = fileName.Split(separators, System.StringSplitOptions.RemoveEmptyEntries);
-        
+
         string result = "";
         foreach (string word in words)
         {
@@ -203,20 +204,20 @@ public class AudioDatabaseEditor : Editor
         for (int i = 0; i < audioClipsProperty.arraySize; i++)
         {
             if (i == currentIndex) continue; // Skip current entry
-            
+
             var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
             var idProperty = audioClipData.FindPropertyRelative("id");
-            
+
             if (idProperty.stringValue == baseName)
             {
                 hasConflict = true;
                 break;
             }
         }
-        
+
         if (!hasConflict)
             return baseName;
-            
+
         // Generate numbered version
         int counter = 1;
         string uniqueId;
@@ -224,24 +225,25 @@ public class AudioDatabaseEditor : Editor
         {
             uniqueId = $"{baseName}{counter:D2}";
             hasConflict = false;
-            
+
             for (int i = 0; i < audioClipsProperty.arraySize; i++)
             {
                 if (i == currentIndex) continue; // Skip current entry
-                
+
                 var audioClipData = audioClipsProperty.GetArrayElementAtIndex(i);
                 var idProperty = audioClipData.FindPropertyRelative("id");
-                
+
                 if (idProperty.stringValue == uniqueId)
                 {
                     hasConflict = true;
                     break;
                 }
             }
-            
+
             counter++;
         } while (hasConflict && counter < 100);
 
         return uniqueId;
     }
 }
+#endif
