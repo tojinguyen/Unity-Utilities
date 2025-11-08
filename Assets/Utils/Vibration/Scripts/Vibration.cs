@@ -116,7 +116,7 @@ namespace TirexGame.Utils.Vibration
             /// </summary>
             public static void Light()
             {
-                VibrationManager.TriggerHapticFeedback(HapticFeedbackType.Selection);
+                VibrationManager.TriggerImpactFeedback(ImpactFeedbackType.Light);
             }
 
             /// <summary>
@@ -124,7 +124,7 @@ namespace TirexGame.Utils.Vibration
             /// </summary>
             public static void Medium()
             {
-                VibrationManager.TriggerHapticFeedback(HapticFeedbackType.ImpactLight);
+                VibrationManager.TriggerImpactFeedback(ImpactFeedbackType.Medium);
             }
 
             /// <summary>
@@ -132,7 +132,7 @@ namespace TirexGame.Utils.Vibration
             /// </summary>
             public static void Heavy()
             {
-                VibrationManager.TriggerHapticFeedback(HapticFeedbackType.ImpactHeavy);
+                VibrationManager.TriggerImpactFeedback(ImpactFeedbackType.Heavy);
             }
 
             /// <summary>
