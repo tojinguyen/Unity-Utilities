@@ -1,14 +1,13 @@
 {
     "name": "TirexGame.Utils.Vibration",
-    "rootNamespace": "",
-    "references": [
-        "TirexGame.Utilities"
-    ],
-    "includePlatforms": [
+    "rootNamespace": "TirexGame.Utils.Vibration",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [
         "Android",
+        "Editor",
         "iOS"
     ],
-    "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],
