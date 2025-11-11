@@ -14,11 +14,28 @@ This utility provides a comprehensive solution for integrating and managing mobi
 
 ## How to Use
 
-### Configuration
+### Setup
 
-1.  Create an `AdMobConfig` ScriptableObject by right-clicking in the Project window and selecting `Create > Tirex > Ads > AdMobConfig`.
-2.  Enter your AdMob ad unit IDs for Android and iOS.
-3.  Assign the `AdMobConfig` to the `AdManager` component in your scene.
+1. **Use the Setup Window:** Go to `TirexGame > Ads > Setup AdMob` to use the automated setup window.
+   - Install Google Mobile Ads SDK automatically
+   - Browse and select the folder for your config file
+   - Create AdMobConfig with one click
+   - Add AdManager to your scene automatically
+
+2. **Manual Configuration:**
+   - Create an `AdMobConfig` ScriptableObject by right-clicking in the Project window and selecting `Create > TirexGame > Ads > AdMob Config`.
+   - Enter your AdMob ad unit IDs for Android and iOS.
+   - Assign the `AdMobConfig` to the `AdManager` component in your scene.
+
+### Managing Ad Unit IDs
+
+The `AdMobConfig` inspector now provides convenient buttons to:
+- **Clear Android IDs:** Remove all Android ad unit IDs
+- **Clear iOS IDs:** Remove all iOS ad unit IDs  
+- **Set Test IDs:** Automatically set Google's test ad unit IDs for testing
+- **Clear All:** Remove all ad unit IDs for both platforms
+
+This makes it easy to switch between test and production ad units, or clear unwanted IDs.
 
 ### Displaying Ads
 

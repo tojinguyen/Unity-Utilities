@@ -7,8 +7,8 @@ namespace TirexGame.Utils.Ads
     public class AdMobConfig : ScriptableObject
     {
         [Header("App IDs")]
-        [SerializeField] private string androidAppId = "ca-app-pub-3940256099942544~3347511713"; // Test App ID
-        [SerializeField] private string iosAppId = "ca-app-pub-3940256099942544~1458002511"; // Test App ID
+        [SerializeField] private string androidAppId = "";
+        [SerializeField] private string iosAppId = "";
         
         [Header("Ad Unit IDs")]
         [SerializeField] private AdUnitIds androidAdUnitIds = new AdUnitIds();
@@ -49,38 +49,50 @@ namespace TirexGame.Utils.Ads
         public int RewardedLoadRetryAttempts => rewardedLoadRetryAttempts;
         public float RetryDelay => retryDelay;
         
-        [System.Serializable]
-        public class AdUnitIds
+    [System.Serializable]
+    public class AdUnitIds
+    {
+        [Header("Banner")]
+        public string bannerId = "";
+        
+        [Header("Interstitial")]
+        public string interstitialId = "";
+        
+        [Header("Rewarded")]
+        public string rewardedId = "";
+        
+        /// <summary>
+        /// Clears all ad unit IDs
+        /// </summary>
+        public void ClearAll()
         {
-            [Header("Banner")]
-            public string bannerId = "ca-app-pub-3940256099942544/6300978111"; // Test Banner ID
-            
-            [Header("Interstitial")]
-            public string interstitialId = "ca-app-pub-3940256099942544/1033173712"; // Test Interstitial ID
-            
-            [Header("Rewarded")]
-            public string rewardedId = "ca-app-pub-3940256099942544/5224354917"; // Test Rewarded ID
+            bannerId = string.Empty;
+            interstitialId = string.Empty;
+            rewardedId = string.Empty;
         }
         
-        private void OnValidate()
+        /// <summary>
+        /// Sets test ad unit IDs for Android
+        /// </summary>
+        public void SetAndroidTestIds()
         {
-            // Ensure test IDs are set by default
-            if (enableTestMode)
-            {
-                if (string.IsNullOrEmpty(androidAdUnitIds.bannerId))
-                    androidAdUnitIds.bannerId = "ca-app-pub-3940256099942544/6300978111";
-                if (string.IsNullOrEmpty(androidAdUnitIds.interstitialId))
-                    androidAdUnitIds.interstitialId = "ca-app-pub-3940256099942544/1033173712";
-                if (string.IsNullOrEmpty(androidAdUnitIds.rewardedId))
-                    androidAdUnitIds.rewardedId = "ca-app-pub-3940256099942544/5224354917";
-                    
-                if (string.IsNullOrEmpty(iosAdUnitIds.bannerId))
-                    iosAdUnitIds.bannerId = "ca-app-pub-3940256099942544/2934735716";
-                if (string.IsNullOrEmpty(iosAdUnitIds.interstitialId))
-                    iosAdUnitIds.interstitialId = "ca-app-pub-3940256099942544/4411468910";
-                if (string.IsNullOrEmpty(iosAdUnitIds.rewardedId))
-                    iosAdUnitIds.rewardedId = "ca-app-pub-3940256099942544/1712485313";
-            }
+            bannerId = "ca-app-pub-3940256099942544/6300978111";
+            interstitialId = "ca-app-pub-3940256099942544/1033173712";
+            rewardedId = "ca-app-pub-3940256099942544/5224354917";
+        }
+        
+        /// <summary>
+        /// Sets test ad unit IDs for iOS
+        /// </summary>
+        public void SetIOSTestIds()
+        {
+            bannerId = "ca-app-pub-3940256099942544/2934735716";
+            interstitialId = "ca-app-pub-3940256099942544/4411468910";
+            rewardedId = "ca-app-pub-3940256099942544/1712485313";
+        }
+    }        private void OnValidate()
+        {
+            // OnValidate method kept for future validation logic if needed
         }
     }
 }

@@ -59,7 +59,28 @@ namespace TirexGame.Utils.Ads.Editor
             // Configuration creation
             EditorGUILayout.LabelField("Configuration Setup", EditorStyles.boldLabel);
             
+            EditorGUILayout.BeginHorizontal();
             configPath = EditorGUILayout.TextField("Config Path:", configPath);
+            if (GUILayout.Button("Browse", GUILayout.Width(60)))
+            {
+                string selectedPath = EditorUtility.OpenFolderPanel("Select Config Folder", "Assets", "");
+                if (!string.IsNullOrEmpty(selectedPath))
+                {
+                    // Convert absolute path to relative path
+                    if (selectedPath.StartsWith(Application.dataPath))
+                    {
+                        configPath = "Assets" + selectedPath.Substring(Application.dataPath.Length);
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("Invalid Path", 
+                            "Please select a folder within the Assets directory.", 
+                            "OK");
+                    }
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            
             configName = EditorGUILayout.TextField("Config Name:", configName);
             
             if (GUILayout.Button("Create AdMob Configuration"))
@@ -146,7 +167,7 @@ namespace TirexGame.Utils.Ads.Editor
         private void AddAdManagerToScene()
         {
             // Check if AdManager already exists in scene
-            var existingAdManager = FindObjectOfType<AdManager>();
+            var existingAdManager = FindFirstObjectByType<AdManager>();
             if (existingAdManager != null)
             {
                 EditorUtility.DisplayDialog("AdManager Exists", 
