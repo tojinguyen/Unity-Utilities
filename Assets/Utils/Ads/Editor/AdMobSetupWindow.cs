@@ -7,7 +7,7 @@ namespace TirexGame.Utils.Ads.Editor
 {
     public class AdMobSetupWindow : EditorWindow
     {
-        private string configPath = "Assets/Utils/Scripts/Ads/Resources";
+        private string configPath = "Assets/Config/Ads";
         private string configName = "AdMobConfig";
         
         [MenuItem("TirexGame/Ads/Setup AdMob")]
