@@ -18,6 +18,8 @@ namespace TirexGame.Utils.Editor.Asset
         private bool isScanning = false;
         private string searchFilter = "t:ScriptableObject";
         private bool includeAllAssets = false;
+        private string folderPath = "Assets";
+        private bool useFolderBrowse = true;
         
         private class AssetMismatch
         {
@@ -51,17 +53,46 @@ namespace TirexGame.Utils.Editor.Asset
             
             // Search options
             EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("Search Options", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Scan Options", EditorStyles.boldLabel);
             
-            includeAllAssets = EditorGUILayout.Toggle("Include All Asset Types", includeAllAssets);
+            useFolderBrowse = EditorGUILayout.Toggle("Browse Folder", useFolderBrowse);
             
-            if (!includeAllAssets)
+            if (useFolderBrowse)
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Search Filter:", GUILayout.Width(100));
-                searchFilter = EditorGUILayout.TextField(searchFilter);
+                EditorGUILayout.LabelField("Folder:", GUILayout.Width(60));
+                folderPath = EditorGUILayout.TextField(folderPath);
+                if (GUILayout.Button("Browse", GUILayout.Width(70)))
+                {
+                    string selectedPath = EditorUtility.OpenFolderPanel("Select Folder to Scan", folderPath, "");
+                    if (!string.IsNullOrEmpty(selectedPath))
+                    {
+                        // Convert absolute path to relative Assets path
+                        if (selectedPath.Contains(Application.dataPath))
+                        {
+                            folderPath = "Assets" + selectedPath.Substring(Application.dataPath.Length);
+                        }
+                        else
+                        {
+                            folderPath = selectedPath;
+                        }
+                    }
+                }
                 EditorGUILayout.EndHorizontal();
-                EditorGUILayout.HelpBox("Examples: t:ScriptableObject, t:Material, t:AnimationClip", MessageType.None);
+                EditorGUILayout.HelpBox("Scans all assets in the selected folder and subfolders", MessageType.Info);
+            }
+            else
+            {
+                includeAllAssets = EditorGUILayout.Toggle("Include All Asset Types", includeAllAssets);
+                
+                if (!includeAllAssets)
+                {
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField("Search Filter:", GUILayout.Width(100));
+                    searchFilter = EditorGUILayout.TextField(searchFilter);
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.HelpBox("Examples: t:ScriptableObject, t:Material, t:AnimationClip", MessageType.None);
+                }
             }
             
             EditorGUILayout.EndVertical();
@@ -166,7 +197,20 @@ namespace TirexGame.Utils.Editor.Asset
             {
                 string[] guids;
                 
-                if (includeAllAssets)
+                if (useFolderBrowse)
+                {
+                    // Validate folder path
+                    if (!AssetDatabase.IsValidFolder(folderPath))
+                    {
+                        EditorUtility.DisplayDialog("Invalid Folder", $"The folder path '{folderPath}' is not valid.", "OK");
+                        isScanning = false;
+                        return;
+                    }
+                    
+                    // Search all assets in the specified folder
+                    guids = AssetDatabase.FindAssets("", new[] { folderPath });
+                }
+                else if (includeAllAssets)
                 {
                     // Search all assets
                     guids = AssetDatabase.FindAssets("");
