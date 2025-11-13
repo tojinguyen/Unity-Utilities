@@ -28,7 +28,7 @@ namespace TirexGame.Utils.Editor.Asset
             public bool selected = true;
         }
 
-        [MenuItem("Tirex/Editor/Asset/Fix Asset Name Mismatches")]
+        [MenuItem("TirexGame/Editor/Asset/Fix Asset Name Mismatches")]
         public static void ShowWindow()
         {
             var window = GetWindow<AssetNameFixer>();
