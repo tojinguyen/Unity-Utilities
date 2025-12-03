@@ -1,0 +1,19 @@
+{
+    "name": "TirexGame.Utils.Ads",
+    "rootNamespace": "",
+    "references": [
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:992687029afdf7044bd84a6270305c61"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "ENABLED_ADS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
