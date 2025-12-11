@@ -27,7 +27,7 @@
       "includeLogsCount": 50
     }
   },
-  "include": ["Assets/_Projects/**/*.cs"],
+  "include": ["**/*.cs", "**/*.json", "**/*.md"],
   "ignore": {
     "useGitignore": true,
     "useDotIgnore": true,
