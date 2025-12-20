@@ -84,7 +84,7 @@ namespace ChessDungeonCrawler.GameStates
             };
             
             // Create main state machine
-            _mainStateMachine = new StateMachine(enableConsoleLoggerLogs: true);
+            _mainStateMachine = new StateMachine(enableDebugLogs: true);
             
             // Create and add states
             var mainMenuState = new MainMenuState();

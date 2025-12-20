@@ -13,14 +13,14 @@
         "Purchasing.Common",
         "UnityEngine.Purchasing.AppleCore",
         "UnityEngine.Purchasing.SecurityCore",
-        "UniTask",
         "UniTask.DOTween",
         "DOTween.Modules",
         "DOTweenPro.Scripts",
         "Unity.TextMeshPro",
         "Unity.InputSystem",
         "Unity.Notifications.Android",
-        "Unity.Addressables.Editor"
+        "Unity.Addressables.Editor",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

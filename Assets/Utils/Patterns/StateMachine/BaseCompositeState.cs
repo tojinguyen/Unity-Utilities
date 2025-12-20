@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Patterns.StateMachine
@@ -9,7 +10,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
     public abstract class BaseCompositeState : BaseState, ICompositeState
     {
         protected readonly Dictionary<Type, IState> _subStates = new();
-        protected readonly Dictionary<Type, List<StateTransition>> _subTransitions = new();
+        private readonly Dictionary<Type, List<StateTransition>> _subTransitions = new();
         protected Type _initialSubStateType;
         protected IState _currentSubState;
         protected bool _isSubTransitioning;

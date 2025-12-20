@@ -6,9 +6,20 @@ using UnityEngine;
 namespace TirexGame.Utils.Patterns.StateMachine
 {
     /// <summary>
+    /// Interface for state machines to allow polymorphic sub-states
+    /// </summary>
+    internal interface ISimpleStateMachine
+    {
+        UniTask StartAsync(Enum initialState);
+        UniTask StopAsync();
+        UniTask CheckTransitionsAsync();
+        void Tick();
+    }
+    
+    /// <summary>
     /// Simple state machine using enum as states with builder pattern
     /// </summary>
-    public class SimpleStateMachine<TState> where TState : Enum
+    public class SimpleStateMachine<TState> : ISimpleStateMachine where TState : Enum
     {
         private readonly Dictionary<TState, StateNode> _states = new();
         private readonly Dictionary<TState, List<Transition>> _transitions = new();
@@ -64,6 +75,14 @@ namespace TirexGame.Utils.Patterns.StateMachine
             _isRunning = true;
             await TransitionToAsync(initialState);
             Log($"Started with state: {initialState}");
+        }
+
+        /// <summary>
+        /// Explicit interface implementation for ISimpleStateMachine
+        /// </summary>
+        async UniTask ISimpleStateMachine.StartAsync(Enum initialState)
+        {
+            await StartAsync((TState)initialState);
         }
         
         /// <summary>
@@ -186,7 +205,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
             // Start sub-state machine if exists
             if (node.SubStateMachine != null && node.InitialSubState != null)
             {
-                await node.SubStateMachine.StartAsync(node.InitialSubState.Value);
+                await node.SubStateMachine.StartAsync((Enum)node.InitialSubState);
             }
             
             Log($"Entered: {state}");
@@ -232,7 +251,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
             public Func<UniTask> OnEnter;
             public Func<UniTask> OnExit;
             public Action OnTick;
-            public object SubStateMachine;
+            public ISimpleStateMachine SubStateMachine;
             public object InitialSubState;
         }
         

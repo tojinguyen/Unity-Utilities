@@ -127,6 +127,7 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
                             })
                             .OnExit(() => Debug.Log("  < Spell casting interrupted"))
                             .TransitionTo(CombatState.Attacking, () => Input.GetKeyDown(KeyCode.Q))
+                        .And()
                         .EndSubStates(); // Return to parent state builder
             
             _playerStateMachine
