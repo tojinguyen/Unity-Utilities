@@ -6,16 +6,29 @@ using TirexGame.Utils.Patterns.StateMachine;
 namespace TirexGame.Utils.Patterns.StateMachine.Example
 {
     /// <summary>
+    /// Simple context for the movement state machine
+    /// </summary>
+    public class SimpleContext
+    {
+        public bool IsMoving { get; set; }
+        public bool IsRunning { get; set; }
+    }
+    
+    /// <summary>
     /// Example demonstrating how to use the new type-safe StateMachine
     /// </summary>
     public class StateMachineExample : MonoBehaviour
     {
-        private StateMachine _stateMachine;
+        private StateMachine<SimpleContext> _stateMachine;
+        private SimpleContext _context;
         
         private async void Start()
         {
-            // Create a new StateMachine instance
-            _stateMachine = new StateMachine(enableDebugLogs: true);
+            // Create context
+            _context = new SimpleContext();
+            
+            // Create a new StateMachine instance with context
+            _stateMachine = new StateMachine<SimpleContext>(_context, enableDebugLogs: true);
             
             // Create and add states
             var idleState = new IdleState();
@@ -56,10 +69,11 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
     }
     
     // Example state implementations
-    public class IdleState : BaseTickableState
+    public class IdleState : BaseTickableState<SimpleContext>
     {
         public override async UniTask OnEnter()
         {
+            Context.IsMoving = false;
             Debug.Log("Entered Idle State");
             await base.OnEnter();
         }
@@ -77,10 +91,12 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
         }
     }
     
-    public class WalkingState : BaseState
+    public class WalkingState : BaseState<SimpleContext>
     {
         public override async UniTask OnEnter()
         {
+            Context.IsMoving = true;
+            Context.IsRunning = false;
             Debug.Log("Entered Walking State");
             await base.OnEnter();
         }
@@ -92,10 +108,12 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
         }
     }
     
-    public class RunningState : BaseState
+    public class RunningState : BaseState<SimpleContext>
     {
         public override async UniTask OnEnter()
         {
+            Context.IsMoving = true;
+            Context.IsRunning = true;
             Debug.Log("Entered Running State");
             await base.OnEnter();
         }

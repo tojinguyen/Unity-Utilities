@@ -64,7 +64,7 @@ namespace ChessDungeonCrawler.GameStates
     
     public class ChessDungeonGameManager : MonoBehaviour
     {
-        private StateMachine _mainStateMachine;
+        private StateMachine<GameContext> _mainStateMachine;
         private GameContext _gameContext;
         
         [Header("Game Settings")]
@@ -83,8 +83,8 @@ namespace ChessDungeonCrawler.GameStates
                 TotalFloors = totalFloors
             };
             
-            // Create main state machine
-            _mainStateMachine = new StateMachine(enableDebugLogs: true);
+            // Create main state machine with context
+            _mainStateMachine = new StateMachine<GameContext>(_gameContext, enableDebugLogs: true);
             
             // Create and add states
             var mainMenuState = new MainMenuState();
@@ -92,13 +92,6 @@ namespace ChessDungeonCrawler.GameStates
             var pauseState = new PauseState();
             var gameOverState = new GameOverState();
             var victoryState = new VictoryState();
-            
-            // Initialize states with context
-            mainMenuState.Initialize(_gameContext);
-            gameplayState.Initialize(_gameContext);
-            pauseState.Initialize(_gameContext);
-            gameOverState.Initialize(_gameContext);
-            victoryState.Initialize(_gameContext);
             
             _mainStateMachine.AddState(mainMenuState);
             _mainStateMachine.AddState(gameplayState);

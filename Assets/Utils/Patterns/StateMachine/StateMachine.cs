@@ -8,8 +8,10 @@ namespace TirexGame.Utils.Patterns.StateMachine
     /// <summary>
     /// A flexible state machine implementation for game logic without MonoBehaviour dependency
     /// </summary>
-    public class StateMachine
+    /// <typeparam name="T">The context type for states</typeparam>
+    public class StateMachine<T> where T : class
     {
+        private readonly T _context;
         private readonly bool _enableDebugLogs;
         private Type _currentStateType;
         
@@ -23,11 +25,13 @@ namespace TirexGame.Utils.Patterns.StateMachine
         public event Action<Type> OnTransitionFailed;
         
         /// <summary>
-        /// Create a new StateMachine instance
+        /// Create a new StateMachine instance with context
         /// </summary>
+        /// <param name="context">The context to pass to states</param>
         /// <param name="enableDebugLogs">Enable debug logging</param>
-        public StateMachine(bool enableDebugLogs = true)
+        public StateMachine(T context, bool enableDebugLogs = true)
         {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
             _enableDebugLogs = enableDebugLogs;
         }
         
@@ -47,9 +51,14 @@ namespace TirexGame.Utils.Patterns.StateMachine
         public bool IsTransitioning => _isTransitioning;
         
         /// <summary>
+        /// Get the context
+        /// </summary>
+        public T Context => _context;
+        
+        /// <summary>
         /// Add a state to the state machine
         /// </summary>
-        public void AddState<T>(T state) where T : class, IState
+        public void AddState<TState>(TState state) where TState : class, IState
         {
             if (state == null)
             {
@@ -57,7 +66,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 return;
             }
             
-            var stateType = typeof(T);
+            var stateType = typeof(TState);
             if (_states.ContainsKey(stateType))
             {
                 LogWarning($"State '{stateType.Name}' already exists. Replacing...");
@@ -72,9 +81,9 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// <summary>
         /// Remove a state from the state machine
         /// </summary>
-        public void RemoveState<T>() where T : class, IState
+        public void RemoveState<TState>() where TState : class, IState
         {
-            var stateType = typeof(T);
+            var stateType = typeof(TState);
             if (!_states.ContainsKey(stateType))
             {
                 LogWarning($"State '{stateType.Name}' not found");
@@ -130,25 +139,35 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// <summary>
         /// Start the state machine with an initial state
         /// </summary>
-        public async UniTask StartAsync<T>() where T : class, IState
+        public async UniTask StartAsync<TState>() where TState : class, IState
         {
-            var stateType = typeof(T);
+            var stateType = typeof(TState);
             if (!_states.ContainsKey(stateType))
             {
                 LogError($"Initial state '{stateType.Name}' not found");
                 return;
             }
             
-            await TransitionToAsync<T>();
+            // Initialize context for all states that implement IState<T>
+            foreach (var state in _states.Values)
+            {
+                if (state is IState<T> contextualState)
+                {
+                    contextualState.Initialize(_context);
+                    Log($"Initialized context for state: {state.GetType().Name}");
+                }
+            }
+            
+            await TransitionToAsync<TState>();
             Log($"Started state machine with initial state: {stateType.Name}");
         }
         
         /// <summary>
         /// Manually trigger a transition to a specific state
         /// </summary>
-        public async UniTask<bool> TransitionToAsync<T>() where T : class, IState
+        public async UniTask<bool> TransitionToAsync<TState>() where TState : class, IState
         {
-            var stateType = typeof(T);
+            var stateType = typeof(TState);
             
             if (_isTransitioning)
             {
