@@ -10,12 +10,28 @@ namespace TirexGame.Utils.Patterns.StateMachine
     {
         public virtual async UniTask OnEnter()
         {
-            await UniTask.Yield();
+            try
+            {
+                await UniTask.Yield();
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in OnEnter: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
         
         public virtual async UniTask OnExit()
         {
-            await UniTask.Yield();
+            try
+            {
+                await UniTask.Yield();
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in OnExit: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
     }
     
@@ -29,7 +45,15 @@ namespace TirexGame.Utils.Patterns.StateMachine
         
         public virtual void Initialize(T context)
         {
-            Context = context;
+            try
+            {
+                Context = context;
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in Initialize: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
     }
     
@@ -40,7 +64,15 @@ namespace TirexGame.Utils.Patterns.StateMachine
     {
         public virtual void OnTick()
         {
-            // Override in derived classes
+            try
+            {
+                // Override in derived classes
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in OnTick: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
     }
     

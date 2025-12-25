@@ -19,29 +19,37 @@ namespace TirexGame.Utils.Patterns.StateMachine
 
         public void AddSubState(IState subState, bool isInitial = false)
         {
-            if (subState == null)
+            try
             {
-                ConsoleLogger.LogError($"[{GetType().Name}] Cannot add null sub-state");
-                return;
+                if (subState == null)
+                {
+                    ConsoleLogger.LogError($"[{GetType().Name}] Cannot add null sub-state");
+                    return;
+                }
+
+                var stateType = subState.GetType();
+
+                if (_subStates.ContainsKey(stateType))
+                {
+                    ConsoleLogger.LogWarning($"[{GetType().Name}] Sub-state '{stateType.Name}' already exists. Replacing...");
+                }
+
+                _subStates[stateType] = subState;
+                _subTransitions[stateType] = new List<StateTransition>();
+
+                if (isInitial || _initialSubStateType == null)
+                {
+                    _initialSubStateType = stateType;
+                }
+
+                ConsoleLogger.Log($"[{GetType().Name}] Added sub-state: {stateType.Name}" +
+                         (isInitial ? " (initial)" : ""));
             }
-
-            var stateType = subState.GetType();
-
-            if (_subStates.ContainsKey(stateType))
+            catch (Exception ex)
             {
-                ConsoleLogger.LogWarning($"[{GetType().Name}] Sub-state '{stateType.Name}' already exists. Replacing...");
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in AddSubState: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
             }
-
-            _subStates[stateType] = subState;
-            _subTransitions[stateType] = new List<StateTransition>();
-
-            if (isInitial || _initialSubStateType == null)
-            {
-                _initialSubStateType = stateType;
-            }
-
-            ConsoleLogger.Log($"[{GetType().Name}] Added sub-state: {stateType.Name}" +
-                     (isInitial ? " (initial)" : ""));
         }
 
         public void AddSubTransition<TFrom, TTo>(Func<bool> condition = null)
@@ -71,28 +79,60 @@ namespace TirexGame.Utils.Patterns.StateMachine
 
         public override async UniTask OnEnter()
         {
-            ConsoleLogger.Log($"[{GetType().Name}] Entering composite state");
-            await base.OnEnter();
-
-            // Enter initial sub-state
-            if (_initialSubStateType != null)
+            try
             {
-                await TransitionToSubStateInternalAsync(_initialSubStateType);
+                ConsoleLogger.Log($"[{GetType().Name}] Entering composite state");
+                await base.OnEnter();
+
+                // Enter initial sub-state
+                if (_initialSubStateType != null)
+                {
+                    try
+                    {
+                        await TransitionToSubStateInternalAsync(_initialSubStateType);
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleLogger.LogError($"[{GetType().Name}] Error entering initial sub-state: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in OnEnter: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
             }
         }
 
         public override async UniTask OnExit()
         {
-            // Exit current sub-state first
-            if (_currentSubState != null)
+            try
             {
-                await _currentSubState.OnExit();
-                ConsoleLogger.Log($"[{GetType().Name}] Exited sub-state: {_currentSubState.GetType().Name}");
-                _currentSubState = null;
-            }
+                // Exit current sub-state first
+                if (_currentSubState != null)
+                {
+                    try
+                    {
+                        await _currentSubState.OnExit();
+                        ConsoleLogger.Log($"[{GetType().Name}] Exited sub-state: {_currentSubState.GetType().Name}");
+                        _currentSubState = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleLogger.LogError($"[{GetType().Name}] Error exiting sub-state: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
+                }
 
-            ConsoleLogger.Log($"[{GetType().Name}] Exiting composite state");
-            await base.OnExit();
+                ConsoleLogger.Log($"[{GetType().Name}] Exiting composite state");
+                await base.OnExit();
+            }
+            catch (Exception ex)
+            {
+                ConsoleLogger.LogError($"[{GetType().Name}] Error in OnExit: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
 
         public async UniTask CheckSubTransitionsAsync()
@@ -153,19 +193,34 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 // Exit current sub-state
                 if (_currentSubState != null)
                 {
-                    await _currentSubState.OnExit();
-                    ConsoleLogger.Log($"[{GetType().Name}] Exited sub-state: {_currentSubState.GetType().Name}");
+                    try
+                    {
+                        await _currentSubState.OnExit();
+                        ConsoleLogger.Log($"[{GetType().Name}] Exited sub-state: {_currentSubState.GetType().Name}");
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleLogger.LogError($"[{GetType().Name}] Error exiting sub-state {_currentSubState.GetType().Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
                 }
 
                 // Enter new sub-state
-                _currentSubState = _subStates[stateType];
-                await _currentSubState.OnEnter();
-
-                ConsoleLogger.Log($"[{GetType().Name}] Entered sub-state: {stateType.Name}");
+                try
+                {
+                    _currentSubState = _subStates[stateType];
+                    await _currentSubState.OnEnter();
+                    ConsoleLogger.Log($"[{GetType().Name}] Entered sub-state: {stateType.Name}");
+                }
+                catch (Exception ex)
+                {
+                    ConsoleLogger.LogError($"[{GetType().Name}] Error entering sub-state {stateType.Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    throw;
+                }
             }
             catch (Exception e)
             {
-                ConsoleLogger.LogError($"[{GetType().Name}] Error during sub-state transition: {e.Message}");
+                ConsoleLogger.LogError($"[{GetType().Name}] Error during sub-state transition to {stateType.Name}: {e.Message}\nStackTrace: {e.StackTrace}");
             }
             finally
             {

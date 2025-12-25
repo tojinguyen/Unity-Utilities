@@ -60,21 +60,30 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public async UniTask StartAsync(TState initialState)
         {
-            if (_isRunning)
+            try
             {
-                LogWarning("State machine is already running");
-                return;
+                if (_isRunning)
+                {
+                    LogWarning("State machine is already running");
+                    return;
+                }
+                
+                if (!_states.ContainsKey(initialState))
+                {
+                    LogError($"Initial state '{initialState}' not configured");
+                    return;
+                }
+                
+                _isRunning = true;
+                await TransitionToAsync(initialState);
+                Log($"Started with state: {initialState}");
             }
-            
-            if (!_states.ContainsKey(initialState))
+            catch (Exception ex)
             {
-                LogError($"Initial state '{initialState}' not configured");
-                return;
+                LogError($"Error in StartAsync: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                _isRunning = false;
+                throw;
             }
-            
-            _isRunning = true;
-            await TransitionToAsync(initialState);
-            Log($"Started with state: {initialState}");
         }
 
         /// <summary>
@@ -128,13 +137,29 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 // Exit current state
                 if (previousNode != null)
                 {
-                    await ExitStateAsync(previousNode, previousState);
+                    try
+                    {
+                        await ExitStateAsync(previousNode, previousState);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error exiting state {previousState}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
                 }
                 
                 // Enter new state
-                _currentState = toState;
-                _currentNode = _states[toState];
-                await EnterStateAsync(_currentNode, toState);
+                try
+                {
+                    _currentState = toState;
+                    _currentNode = _states[toState];
+                    await EnterStateAsync(_currentNode, toState);
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Error entering state {toState}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    throw;
+                }
                 
                 OnStateChanged?.Invoke(previousState, toState);
                 Log($"Transitioned: {previousState} -> {toState}");
@@ -143,7 +168,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
             }
             catch (Exception e)
             {
-                LogError($"Transition error: {e.Message}");
+                LogError($"Transition error from {_currentState} to {toState}: {e.Message}\nStackTrace: {e.StackTrace}");
                 return false;
             }
             finally
@@ -157,26 +182,47 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public async UniTask CheckTransitionsAsync()
         {
-            if (!_isRunning || _isTransitioning || _currentNode == null)
-                return;
-            
-            // Check sub-state transitions first
-            if (_currentNode.SubStateMachine != null)
+            try
             {
-                await _currentNode.SubStateMachine.CheckTransitionsAsync();
-            }
-            
-            // Check main transitions
-            if (!_transitions.ContainsKey(_currentState))
-                return;
-            
-            foreach (var transition in _transitions[_currentState])
-            {
-                if (transition.Condition == null || transition.Condition())
+                if (!_isRunning || _isTransitioning || _currentNode == null)
+                    return;
+                
+                // Check sub-state transitions first
+                if (_currentNode.SubStateMachine != null)
                 {
-                    await TransitionToAsync(transition.ToState);
-                    break;
+                    try
+                    {
+                        await _currentNode.SubStateMachine.CheckTransitionsAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error checking sub-state transitions: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    }
                 }
+                
+                // Check main transitions
+                if (!_transitions.ContainsKey(_currentState))
+                    return;
+                
+                foreach (var transition in _transitions[_currentState])
+                {
+                    try
+                    {
+                        if (transition.Condition == null || transition.Condition())
+                        {
+                            await TransitionToAsync(transition.ToState);
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error in transition condition for {_currentState}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error in CheckTransitionsAsync: {ex.Message}\nStackTrace: {ex.StackTrace}");
             }
         }
         
@@ -185,63 +231,131 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public void Tick()
         {
-            if (!_isRunning || _isTransitioning || _currentNode == null)
-                return;
-            
-            // Tick current state
-            _currentNode.OnTick?.Invoke();
-            
-            // Tick sub-state machine
-            _currentNode.SubStateMachine?.Tick();
+            try
+            {
+                if (!_isRunning || _isTransitioning || _currentNode == null)
+                    return;
+                
+                // Tick current state
+                try
+                {
+                    _currentNode.OnTick?.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Error in OnTick for {_currentState}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                }
+                
+                // Tick sub-state machine
+                try
+                {
+                    _currentNode.SubStateMachine?.Tick();
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Error ticking sub-state machine: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error in Tick: {ex.Message}\nStackTrace: {ex.StackTrace}");
+            }
         }
         
         private async UniTask EnterStateAsync(StateNode node, TState state)
         {
-            if (node.OnEnter != null)
+            try
             {
-                await node.OnEnter();
+                if (node.OnEnter != null)
+                {
+                    try
+                    {
+                        await node.OnEnter();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error in OnEnter for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
+                }
+                
+                // Start sub-state machine if exists
+                if (node.SubStateMachine != null && node.InitialSubState != null)
+                {
+                    try
+                    {
+                        await node.SubStateMachine.StartAsync((Enum)node.InitialSubState);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error starting sub-state machine for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
+                }
+                
+                Log($"Entered: {state}");
             }
-            
-            // Start sub-state machine if exists
-            if (node.SubStateMachine != null && node.InitialSubState != null)
+            catch (Exception ex)
             {
-                await node.SubStateMachine.StartAsync((Enum)node.InitialSubState);
+                LogError($"Error in EnterStateAsync for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
             }
-            
-            Log($"Entered: {state}");
         }
         
         private async UniTask ExitStateAsync(StateNode node, TState state)
         {
-            // Stop sub-state machine first
-            if (node.SubStateMachine != null)
+            try
             {
-                await node.SubStateMachine.StopAsync();
+                // Stop sub-state machine first
+                if (node.SubStateMachine != null)
+                {
+                    try
+                    {
+                        await node.SubStateMachine.StopAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error stopping sub-state machine for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    }
+                }
+                
+                if (node.OnExit != null)
+                {
+                    try
+                    {
+                        await node.OnExit();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error in OnExit for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
+                }
+                
+                Log($"Exited: {state}");
             }
-            
-            if (node.OnExit != null)
+            catch (Exception ex)
             {
-                await node.OnExit();
+                LogError($"Error in ExitStateAsync for {state}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
             }
-            
-            Log($"Exited: {state}");
         }
         
         private void Log(string message)
         {
             if (_enableLogs)
-                Debug.Log($"[SimpleStateMachine] {message}");
+                ConsoleLogger.Log($"[SimpleStateMachine] {message}");
         }
         
         private void LogWarning(string message)
         {
             if (_enableLogs)
-                Debug.LogWarning($"[SimpleStateMachine] {message}");
+                ConsoleLogger.LogWarning($"[SimpleStateMachine] {message}");
         }
         
         private void LogError(string message)
         {
-            Debug.LogError($"[SimpleStateMachine] {message}");
+            ConsoleLogger.LogError($"[SimpleStateMachine] {message}");
         }
         
         #region Internal Classes

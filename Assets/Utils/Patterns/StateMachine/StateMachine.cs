@@ -60,22 +60,30 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public void AddState<TState>(TState state) where TState : class, IState
         {
-            if (state == null)
+            try
             {
-                LogError("Cannot add null state");
-                return;
+                if (state == null)
+                {
+                    LogError("Cannot add null state");
+                    return;
+                }
+                
+                var stateType = typeof(TState);
+                if (_states.ContainsKey(stateType))
+                {
+                    LogWarning($"State '{stateType.Name}' already exists. Replacing...");
+                }
+                
+                _states[stateType] = state;
+                _transitions[stateType] = new List<StateTransition>();
+                
+                Log($"Added state: {stateType.Name}");
             }
-            
-            var stateType = typeof(TState);
-            if (_states.ContainsKey(stateType))
+            catch (Exception ex)
             {
-                LogWarning($"State '{stateType.Name}' already exists. Replacing...");
+                LogError($"Error in AddState: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
             }
-            
-            _states[stateType] = state;
-            _transitions[stateType] = new List<StateTransition>();
-            
-            Log($"Added state: {stateType.Name}");
         }
         
         /// <summary>
@@ -141,25 +149,40 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public async UniTask StartAsync<TState>() where TState : class, IState
         {
-            var stateType = typeof(TState);
-            if (!_states.ContainsKey(stateType))
+            try
             {
-                LogError($"Initial state '{stateType.Name}' not found");
-                return;
-            }
-            
-            // Initialize context for all states that implement IState<T>
-            foreach (var state in _states.Values)
-            {
-                if (state is IState<T> contextualState)
+                var stateType = typeof(TState);
+                if (!_states.ContainsKey(stateType))
                 {
-                    contextualState.Initialize(_context);
-                    Log($"Initialized context for state: {state.GetType().Name}");
+                    LogError($"Initial state '{stateType.Name}' not found");
+                    return;
                 }
+                
+                // Initialize context for all states that implement IState<T>
+                foreach (var state in _states.Values)
+                {
+                    if (state is IState<T> contextualState)
+                    {
+                        try
+                        {
+                            contextualState.Initialize(_context);
+                            Log($"Initialized context for state: {state.GetType().Name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            LogError($"Error initializing state {state.GetType().Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        }
+                    }
+                }
+                
+                await TransitionToAsync<TState>();
+                Log($"Started state machine with initial state: {stateType.Name}");
             }
-            
-            await TransitionToAsync<TState>();
-            Log($"Started state machine with initial state: {stateType.Name}");
+            catch (Exception ex)
+            {
+                LogError($"Error in StartAsync: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                throw;
+            }
         }
         
         /// <summary>
@@ -192,23 +215,39 @@ namespace TirexGame.Utils.Patterns.StateMachine
                 // Exit current state
                 if (_currentState != null)
                 {
-                    await _currentState.OnExit();
-                    Log($"Exited state: {_currentStateType?.Name}");
+                    try
+                    {
+                        await _currentState.OnExit();
+                        Log($"Exited state: {_currentStateType?.Name}");
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error in OnExit for {_currentStateType?.Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                        throw;
+                    }
                 }
                 
                 // Enter new state
-                _currentState = newState;
-                _currentStateType = stateType;
-                await _currentState.OnEnter();
-                
-                Log($"Entered state: {_currentStateType.Name}");
-                OnStateChanged?.Invoke(previousState, _currentState);
+                try
+                {
+                    _currentState = newState;
+                    _currentStateType = stateType;
+                    await _currentState.OnEnter();
+                    
+                    Log($"Entered state: {_currentStateType.Name}");
+                    OnStateChanged?.Invoke(previousState, _currentState);
+                }
+                catch (Exception ex)
+                {
+                    LogError($"Error in OnEnter for {stateType.Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    throw;
+                }
                 
                 return true;
             }
             catch (Exception e)
             {
-                LogError($"Error during state transition: {e.Message}");
+                LogError($"Error during state transition from {previousState?.GetType().Name} to {stateType.Name}: {e.Message}\nStackTrace: {e.StackTrace}");
                 OnTransitionFailed?.Invoke(stateType);
                 return false;
             }
@@ -223,22 +262,36 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public async UniTask CheckTransitionsAsync()
         {
-            if (_currentState == null || _isTransitioning || _currentStateType == null)
-                return;
-            
-            if (!_transitions.ContainsKey(_currentStateType))
-                return;
-            
-            foreach (var transition in _transitions[_currentStateType])
+            try
             {
-                if (transition.Condition == null || transition.Condition.Invoke())
+                if (_currentState == null || _isTransitioning || _currentStateType == null)
+                    return;
+                
+                if (!_transitions.ContainsKey(_currentStateType))
+                    return;
+                
+                foreach (var transition in _transitions[_currentStateType])
                 {
-                    // Use reflection to call the generic TransitionToAsync method
-                    var method = GetType().GetMethod(nameof(TransitionToAsync));
-                    var genericMethod = method.MakeGenericMethod(transition.ToStateType);
-                    await (UniTask<bool>)genericMethod.Invoke(this, null);
-                    break; // Only execute first valid transition
+                    try
+                    {
+                        if (transition.Condition == null || transition.Condition.Invoke())
+                        {
+                            // Use reflection to call the generic TransitionToAsync method
+                            var method = GetType().GetMethod(nameof(TransitionToAsync));
+                            var genericMethod = method.MakeGenericMethod(transition.ToStateType);
+                            await (UniTask<bool>)genericMethod.Invoke(this, null);
+                            break; // Only execute first valid transition
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error checking transition from {_currentStateType.Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error in CheckTransitionsAsync: {ex.Message}\nStackTrace: {ex.StackTrace}");
             }
         }
         
@@ -264,9 +317,23 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// </summary>
         public void Tick()
         {
-            if (_currentState != null && !_isTransitioning && _currentState is ITickableState tickableState)
+            try
             {
-                tickableState.OnTick();
+                if (_currentState != null && !_isTransitioning && _currentState is ITickableState tickableState)
+                {
+                    try
+                    {
+                        tickableState.OnTick();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogError($"Error in OnTick for {_currentStateType?.Name}: {ex.Message}\nStackTrace: {ex.StackTrace}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogError($"Error in Tick: {ex.Message}\nStackTrace: {ex.StackTrace}");
             }
         }
         
@@ -274,7 +341,7 @@ namespace TirexGame.Utils.Patterns.StateMachine
         {
             if (_enableDebugLogs)
             {
-                Debug.Log($"[StateMachine] {message}");
+                ConsoleLogger.Log($"[StateMachine] {message}");
             }
         }
         
@@ -282,13 +349,13 @@ namespace TirexGame.Utils.Patterns.StateMachine
         {
             if (_enableDebugLogs)
             {
-                Debug.LogWarning($"[StateMachine] {message}");
+                ConsoleLogger.LogWarning($"[StateMachine] {message}");
             }
         }
         
         private void LogError(string message)
         {
-            Debug.LogError($"[StateMachine] {message}");
+            ConsoleLogger.LogError($"[StateMachine] {message}");
         }
     }
     
