@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.11.1...v1.11.2) (2025-12-25)
+
+
+### Bug Fixes
+
+* update state machine ([2817c88](https://github.com/tojinguyen/Unity-Utilities/commit/2817c88036938ed765e1bc1c77ebd44aa258fbc8))
+
 ## [1.11.1](https://github.com/tojinguyen/Unity-Utilities/compare/v1.11.0...v1.11.1) (2025-12-20)
 
 
