@@ -1,0 +1,19 @@
+{
+    "name": "TirexGame.Utils.UI.FloatingText.Editor",
+    "rootNamespace": "TirexGame.Utils.UI.Editor",
+    "references": [
+        "TirexGame.Utils.UI.FloatingText",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

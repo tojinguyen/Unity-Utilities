@@ -1,0 +1,17 @@
+{
+    "name": "TirexGame.Utils.UI.FloatingText.Examples",
+    "rootNamespace": "TirexGame.Utils.UI.Examples",
+    "references": [
+        "TirexGame.Utils.UI.FloatingText",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
