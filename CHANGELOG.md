@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.11.2...v1.12.0) (2026-01-02)
+
+
+### Features
+
+* implement floating text ([3e2f34a](https://github.com/tojinguyen/Unity-Utilities/commit/3e2f34ade4d9576cbe31ae73be45d747b13b9ed8))
+
 ## [1.11.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.11.1...v1.11.2) (2025-12-25)
 
 
