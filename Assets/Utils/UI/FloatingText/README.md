@@ -21,6 +21,9 @@ Tạo cấu hình cho các loại text trong game của bạn:
    - **Lifetime**: Thời gian tồn tại
    - **Font Size**: Kích thước chữ
    - **Text Color**: Màu chữ
+   - **Font Style**: Bold, Italic, Normal
+   - **Use World Space**: Tick nếu muốn dùng 3D mode
+   - **Randomize Direction**: Thêm biến thiên ngẫu nhiên
    - **Scale Curve**: Animation curve cho scale
    - **Alpha Curve**: Animation curve cho độ mờ
 
@@ -46,63 +49,67 @@ public class Enemy : MonoBehaviour
         var data = isCritical ? criticalData : damageData;
         string text = isCritical ? $"{damage}!" : damage.ToString("0");
 
+        // Tự động chuyển đổi world position sang screen position
         FloatingTextFactory.Create(text, transform.position, data);
     }
 }
 ```
 
-### Cách 2: Tạo Data trong Code
+### Cách 2: Sử dụng Extension Methods
 
 ```csharp
-public class GameManager : MonoBehaviour
+public class Player : MonoBehaviour
 {
-    private FloatingTextData damageData;
+    [SerializeField] private FloatingTextData healingData;
 
-    void Start()
+    public void Heal(float amount)
     {
-        // Tạo config cho damage text
-        damageData = ScriptableObject.CreateInstance<FloatingTextData>();
-        damageData.MoveDirection = new Vector3(0, 1, 0);
-        damageData.MoveSpeed = 3f;
-        damageData.Lifetime = 1.2f;
-        damageData.FontSize = 48f;
-        damageData.TextColor = Color.red;
-    }
-
-    public void ShowDamage(float amount, Vector3 position)
-    {
-        FloatingTextFactory.Create(amount.ToString("0"), position, damageData);
+        // Sử dụng extension method
+        this.ShowFloatingText($"+{amount}", healingData);
     }
 }
 ```
 
-### Cách 3: Sử dụng Builder Pattern
+### Cách 3: Sử dụng FloatingTextManager trực tiếp
 
 ```csharp
-FloatingTextFactory.Builder()
-    .SetText("Critical!")
-    .SetPosition(transform.position)
-    .WithColor(Color.red)
-    .WithFontSize(60)
-    .WithSpeed(4f)
-    .WithLifetime(2f)
-    .Bold()
-    .Show();
+public class GameManager : MonoBehaviour
+{
+    [SerializeField] private FloatingTextData xpData;
+
+    public void ShowXP(float amount, Vector3 position)
+    {
+        FloatingTextManager.Instance.ShowTextAtWorldPosition(
+            $"+{amount} XP",
+            position,
+            xpData
+        );
+    }
+}
 ```
 
 ## API Reference
 
-### FloatingTextFactory
+### FloatingTextFactory (Khuyên dùng)
 
 ```csharp
-// Tạo floating text
-FloatingTextFactory.Create(string text, Vector3 position, FloatingTextData data, bool is3D = false)
+// Tạo floating text tại world position (tự động convert sang screen)
+FloatingTextFactory.Create(string text, Vector3 worldPosition, FloatingTextData data)
 
 // Tạo tại vị trí screen
 FloatingTextFactory.CreateAtScreenPosition(string text, Vector3 screenPos, FloatingTextData data)
 
-// Sử dụng Builder
-FloatingTextFactory.Builder()
+// Tạo ở 3D world space
+FloatingTextFactory.Create3D(string text, Vector3 worldPosition, FloatingTextData data)
+```
+
+### Extension Methods
+
+```csharp
+// Hiển thị floating text tại vị trí của object
+transform.ShowFloatingText(text, data)
+gameObject.ShowFloatingText(text, data)
+component.ShowFloatingText(text, data)
 ```
 
 ### FloatingTextManager
@@ -121,9 +128,22 @@ FloatingTextManager.Instance.ShowTextAtWorldPosition(text, worldPosition, data)
 FloatingTextManager.Instance.ClearAll()
 ```
 
+### Convenience Methods
+
+```csharp
+// Hiển thị damage (sử dụng preset có sẵn)
+FloatingTextManager.Instance.ShowDamage(damage, position)
+
+// Hiển thị healing (sử dụng preset có sẵn)
+FloatingTextManager.Instance.ShowHealing(amount, position)
+
+// Hiển thị critical hit (sử dụng preset có sẵn)
+FloatingTextManager.Instance.ShowCritical(damage, position)
+```
+
 ## Ví dụ
 
-### Hệ thống Damage
+### Hệ thống Damage đơn giản
 
 ```csharp
 public class CombatSystem : MonoBehaviour
@@ -161,11 +181,56 @@ public class Pickup : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            FloatingTextFactory.Create($"+{goldAmount} Gold", transform.position, goldData);
+            // Sử dụng extension method
+            transform.ShowFloatingText($"+{goldAmount} Gold", goldData);
             Destroy(gameObject);
         }
     }
 }
+```
+
+### Sử dụng với Health System
+
+```csharp
+public class HealthSystem : MonoBehaviour
+{
+    [SerializeField] private FloatingTextData damageData;
+    [SerializeField] private FloatingTextData healData;
+
+    private float health = 100f;
+
+    public void TakeDamage(float damage)
+    {
+        health -= damage;
+        this.ShowFloatingText(damage.ToString("0"), damageData);
+    }
+
+    public void Heal(float amount)
+    {
+        health += amount;
+        this.ShowFloatingText($"+{amount}", healData);
+    }
+}
+```
+
+## Quick Presets
+
+FloatingTextData có sẵn các preset trong Editor:
+
+1. Mở FloatingTextData asset trong Inspector
+2. Cuộn xuống phần **Quick Presets**
+3. Click:
+   - **Damage**: Text đỏ, bold, bay lên
+   - **Healing**: Text xanh, bold, bay lên
+   - **Critical**: Text vàng, lớn hơn, bay nhanh hơn
+
+Hoặc sử dụng trong code:
+
+```csharp
+// Sử dụng preset mặc định (không cần tạo asset)
+FloatingTextManager.Instance.ShowDamage(100, transform.position);
+FloatingTextManager.Instance.ShowHealing(50, transform.position);
+FloatingTextManager.Instance.ShowCritical(200, transform.position);
 ```
 
 ## Tips
@@ -174,9 +239,5 @@ public class Pickup : MonoBehaviour
 - **Reuse assets**: Sử dụng lại các asset đã tạo trong toàn bộ project
 - **Object pooling**: Hệ thống tự động pool, không cần lo về performance
 - **Animation curves**: Dùng curve để tạo hiệu ứng đẹp mắt (bounce, fade, etc.)
-
-## Xem thêm
-
-- `CustomTypesExample.cs` - Ví dụ định nghĩa text types riêng
-- `CombatSystemExample.cs` - Ví dụ tích hợp vào combat system
-- `ARCHITECTURE.md` - Chi tiết kiến trúc hệ thống
+- **Use World Space**: Tick option này trong FloatingTextData nếu muốn text ở 3D world space
+- **Extension methods**: Sử dụng `transform.ShowFloatingText()` để code ngắn gọn hơn

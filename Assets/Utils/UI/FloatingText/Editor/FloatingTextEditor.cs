@@ -14,7 +14,6 @@ namespace TirexGame.Utils.UI.Editor
     {
         private string previewText = "100";
         private FloatingTextData previewData;
-        private bool preview3D = false;
         private Vector3 previewPosition = Vector3.zero;
 
         public override void OnInspectorGUI()
@@ -26,7 +25,6 @@ namespace TirexGame.Utils.UI.Editor
 
             previewText = EditorGUILayout.TextField("Text", previewText);
             previewData = (FloatingTextData)EditorGUILayout.ObjectField("Data", previewData, typeof(FloatingTextData), false);
-            preview3D = EditorGUILayout.Toggle("Use 3D Mode", preview3D);
             previewPosition = EditorGUILayout.Vector3Field("Position", previewPosition);
 
             EditorGUILayout.Space(5);
@@ -37,7 +35,7 @@ namespace TirexGame.Utils.UI.Editor
                 {
                     if (previewData != null)
                     {
-                        FloatingTextFactory.Create(previewText, previewPosition, previewData, preview3D);
+                        FloatingTextFactory.Create(previewText, previewPosition, previewData);
                     }
                     else
                     {
@@ -56,7 +54,7 @@ namespace TirexGame.Utils.UI.Editor
 
                 if (GUILayout.Button("Test with Random Numbers"))
                 {
-                    FloatingTextFactory.Create(Random.Range(10, 100).ToString("0"), previewPosition, previewData, preview3D);
+                    FloatingTextFactory.Create(Random.Range(10, 100).ToString("0"), previewPosition, previewData);
                 }
             }
 
