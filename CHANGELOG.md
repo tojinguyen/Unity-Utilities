@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.1...v1.14.2) (2026-01-03)
+
+
+### Bug Fixes
+
+* bug text floating ([b700a94](https://github.com/tojinguyen/Unity-Utilities/commit/b700a945dceb9208692b96db38de1707fe4f90cf))
+
 ## [1.14.1](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.0...v1.14.1) (2026-01-03)
 
 
