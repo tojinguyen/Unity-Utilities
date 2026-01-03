@@ -44,7 +44,6 @@
   <Project Path="Unity.Services.Core.Configuration.csproj" />
   <Project Path="DOTween.Modules.csproj" />
   <Project Path="Unity.Services.Core.Environments.Internal.csproj" />
-  <Project Path="TirexGame.Utils.UI.FloatingText.Examples.csproj" />
   <Project Path="Unity.Notifications.Unified.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.Services.Core.Scheduler.csproj" />

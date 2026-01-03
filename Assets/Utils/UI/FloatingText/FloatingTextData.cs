@@ -67,5 +67,62 @@ namespace TirexGame.Utils.UI
             clone.UseWorldSpace = UseWorldSpace;
             return clone;
         }
+
+        /// <summary>
+        /// Create default data for damage text (red, moves upward)
+        /// </summary>
+        public static FloatingTextData CreateDamageDefault()
+        {
+            FloatingTextData data = CreateInstance<FloatingTextData>();
+            data.MoveDirection = new Vector3(0, 1, 0);
+            data.MoveSpeed = 2f;
+            data.Lifetime = 1.5f;
+            data.FontSize = 36f;
+            data.TextColor = Color.red;
+            data.FontStyle = FontStyles.Bold;
+            data.RandomizeDirection = true;
+            data.RandomAngle = 30f;
+            data.ScaleCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
+            data.AlphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
+            return data;
+        }
+
+        /// <summary>
+        /// Create default data for healing text (green, moves upward)
+        /// </summary>
+        public static FloatingTextData CreateHealingDefault()
+        {
+            FloatingTextData data = CreateInstance<FloatingTextData>();
+            data.MoveDirection = new Vector3(0, 1, 0);
+            data.MoveSpeed = 2f;
+            data.Lifetime = 1.5f;
+            data.FontSize = 36f;
+            data.TextColor = Color.green;
+            data.FontStyle = FontStyles.Bold;
+            data.RandomizeDirection = true;
+            data.RandomAngle = 30f;
+            data.ScaleCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
+            data.AlphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
+            return data;
+        }
+
+        /// <summary>
+        /// Create default data for critical hit text (yellow, larger, moves upward faster)
+        /// </summary>
+        public static FloatingTextData CreateCriticalDefault()
+        {
+            FloatingTextData data = CreateInstance<FloatingTextData>();
+            data.MoveDirection = new Vector3(0, 1, 0);
+            data.MoveSpeed = 3f;
+            data.Lifetime = 2f;
+            data.FontSize = 48f;
+            data.TextColor = Color.yellow;
+            data.FontStyle = FontStyles.Bold;
+            data.RandomizeDirection = true;
+            data.RandomAngle = 40f;
+            data.ScaleCurve = AnimationCurve.EaseInOut(0, 1.2f, 1, 1);
+            data.AlphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
+            return data;
+        }
     }
 }

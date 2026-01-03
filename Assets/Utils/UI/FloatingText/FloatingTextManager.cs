@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
 using TMPro;
 using Tirex.Utils.ObjectPooling;
@@ -125,8 +126,8 @@ namespace TirexGame.Utils.UI
             uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             uiCanvas.sortingOrder = 100;
 
-            canvasObj.AddComponent<UnityEngine.UI.CanvasScaler>();
-            canvasObj.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            canvasObj.AddComponent<CanvasScaler>();
+            canvasObj.AddComponent<GraphicRaycaster>();
         }
 
         /// <summary>

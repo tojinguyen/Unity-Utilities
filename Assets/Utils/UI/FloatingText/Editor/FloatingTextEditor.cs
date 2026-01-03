@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using TMPro;
+using TirexGame.Utils.UI;
 
 namespace TirexGame.Utils.UI.Editor
 {
@@ -59,6 +60,8 @@ namespace TirexGame.Utils.UI.Editor
                 }
             }
 
+            if (Application.isPlaying)
+            {
                 EditorGUILayout.Space(5);
                 if (GUILayout.Button("Clear All", GUILayout.Height(25)))
                 {
@@ -151,7 +154,7 @@ namespace TirexGame.Utils.UI.Editor
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Quick Presets", EditorStyles.boldLabel);
             EditorGUILayout.BeginHorizontal();
-            
+
             if (GUILayout.Button("Damage"))
             {
                 ApplyPreset(FloatingTextData.CreateDamageDefault());
@@ -164,7 +167,7 @@ namespace TirexGame.Utils.UI.Editor
             {
                 ApplyPreset(FloatingTextData.CreateCriticalDefault());
             }
-            
+
             EditorGUILayout.EndHorizontal();
 
             if (GUI.changed)
@@ -176,7 +179,7 @@ namespace TirexGame.Utils.UI.Editor
         private void ApplyPreset(FloatingTextData preset)
         {
             Undo.RecordObject(target, "Apply Preset");
-            
+
             FloatingTextData data = (FloatingTextData)target;
             data.MoveDirection = preset.MoveDirection;
             data.MoveSpeed = preset.MoveSpeed;
@@ -188,27 +191,28 @@ namespace TirexGame.Utils.UI.Editor
             data.FontSize = preset.FontSize;
             data.TextColor = preset.TextColor;
             data.FontStyle = preset.FontStyle;
-            
+
             EditorUtility.SetDirty(target);
             serializedObject.Update();
         }
     }
 
     /// <summary>
-    /// Custom editor for FloatingText component
+    /// Custom editor for FloatingTextBase component
     /// </summary>
-    [CustomEditor(typeof(FloatingText))]
+    [CustomEditor(typeof(FloatingTextBase), true)]
     public class FloatingTextEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
 
-            FloatingText floatingText = (FloatingText)target;
+            FloatingTextBase floatingText = (FloatingTextBase)target;
 
             EditorGUILayout.Space(5);
+            string mode = floatingText is FloatingText2D ? "UI (2D)" : "World Space (3D)";
             EditorGUILayout.HelpBox(
-                $"Mode: {(floatingText.IsUIMode ? "UI (2D)" : "World Space (3D)")}\n" +
+                $"Mode: {mode}\n" +
                 "The mode is automatically detected based on the text component attached.",
                 MessageType.Info
             );
