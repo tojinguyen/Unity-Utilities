@@ -9,8 +9,7 @@ namespace TirexGame.Utils.UI
     [RequireComponent(typeof(TextMeshPro))]
     public class FloatingText3D : FloatingTextBase
     {
-        [Header("3D Text Component")]
-        [SerializeField] private TextMeshPro textMeshPro;
+        [HideInInspector][SerializeField] private TextMeshPro textMeshPro;
 
         private void Awake()
         {

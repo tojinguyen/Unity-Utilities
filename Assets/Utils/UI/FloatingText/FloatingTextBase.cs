@@ -9,14 +9,13 @@ namespace TirexGame.Utils.UI
     /// </summary>
     public abstract class FloatingTextBase : MonoBehaviour
     {
-        [Header("Animation Settings")]
-        [SerializeField] protected Vector3 moveDirection = new Vector3(0, 1, 0);
-        [SerializeField] protected float moveSpeed = 2f;
-        [SerializeField] protected float lifetime = 1.5f;
-        [SerializeField] protected AnimationCurve scaleCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
-        [SerializeField] protected AnimationCurve alphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
-        [SerializeField] protected bool randomizeDirection = false;
-        [SerializeField] protected float randomAngle = 30f;
+        [HideInInspector][SerializeField] protected Vector3 moveDirection = new Vector3(0, 1, 0);
+        [HideInInspector][SerializeField] protected float moveSpeed = 2f;
+        [HideInInspector][SerializeField] protected float lifetime = 1.5f;
+        [HideInInspector][SerializeField] protected AnimationCurve scaleCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
+        [HideInInspector][SerializeField] protected AnimationCurve alphaCurve = AnimationCurve.Linear(0, 1, 1, 0);
+        [HideInInspector][SerializeField] protected bool randomizeDirection = false;
+        [HideInInspector][SerializeField] protected float randomAngle = 30f;
 
         protected float elapsedTime;
         protected Vector3 startPosition;
@@ -35,7 +34,10 @@ namespace TirexGame.Utils.UI
             elapsedTime = 0f;
             onComplete = completionCallback;
 
-            // Apply data if provided
+            // Set text first
+            SetText(text);
+
+            // Apply data if provided (this will set font size, color, style)
             if (data != null)
             {
                 ApplyData(data);
@@ -55,8 +57,7 @@ namespace TirexGame.Utils.UI
             }
             moveDirection = direction.normalized;
 
-            // Set text and get initial color
-            SetText(text);
+            // Get initial color after applying data
             startColor = GetTextColor();
         }
 

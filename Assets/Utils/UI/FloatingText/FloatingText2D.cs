@@ -9,8 +9,7 @@ namespace TirexGame.Utils.UI
     [RequireComponent(typeof(TextMeshProUGUI))]
     public class FloatingText2D : FloatingTextBase
     {
-        [Header("2D UI Text Component")]
-        [SerializeField] private TextMeshProUGUI textMeshProUGUI;
+        [HideInInspector][SerializeField] private TextMeshProUGUI textMeshProUGUI;
         private RectTransform rectTransform;
 
         private void Awake()
