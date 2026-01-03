@@ -12,7 +12,7 @@ namespace TirexGame.Utils.UI.Editor
     public class FloatingTextManagerEditor : UnityEditor.Editor
     {
         private string previewText = "100";
-        private FloatingTextFactory.FloatingTextType previewType = FloatingTextFactory.FloatingTextType.Damage;
+        private FloatingTextData previewData;
         private bool preview3D = false;
         private Vector3 previewPosition = Vector3.zero;
 
@@ -24,7 +24,7 @@ namespace TirexGame.Utils.UI.Editor
             EditorGUILayout.LabelField("Preview & Testing", EditorStyles.boldLabel);
 
             previewText = EditorGUILayout.TextField("Text", previewText);
-            previewType = (FloatingTextFactory.FloatingTextType)EditorGUILayout.EnumPopup("Type", previewType);
+            previewData = (FloatingTextData)EditorGUILayout.ObjectField("Data", previewData, typeof(FloatingTextData), false);
             preview3D = EditorGUILayout.Toggle("Use 3D Mode", preview3D);
             previewPosition = EditorGUILayout.Vector3Field("Position", previewPosition);
 
@@ -34,7 +34,14 @@ namespace TirexGame.Utils.UI.Editor
             {
                 if (Application.isPlaying)
                 {
-                    FloatingTextFactory.Create(previewText, previewPosition, previewType, preview3D);
+                    if (previewData != null)
+                    {
+                        FloatingTextFactory.Create(previewText, previewPosition, previewData, preview3D);
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("Preview", "Please assign a FloatingTextData asset to preview.", "OK");
+                    }
                 }
                 else
                 {
@@ -42,31 +49,15 @@ namespace TirexGame.Utils.UI.Editor
                 }
             }
 
-            if (Application.isPlaying)
+            if (Application.isPlaying && previewData != null)
             {
                 EditorGUILayout.Space(5);
 
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Test Damage"))
+                if (GUILayout.Button("Test with Random Numbers"))
                 {
-                    FloatingTextFactory.Damage(Random.Range(10, 100), previewPosition, preview3D);
+                    FloatingTextFactory.Create(Random.Range(10, 100).ToString("0"), previewPosition, previewData, preview3D);
                 }
-                if (GUILayout.Button("Test Healing"))
-                {
-                    FloatingTextFactory.Healing(Random.Range(5, 50), previewPosition, preview3D);
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Test Critical"))
-                {
-                    FloatingTextFactory.Critical(Random.Range(50, 200), previewPosition, preview3D);
-                }
-                if (GUILayout.Button("Test Miss"))
-                {
-                    FloatingTextFactory.Miss(previewPosition, preview3D);
-                }
-                EditorGUILayout.EndHorizontal();
+            }
 
                 EditorGUILayout.Space(5);
                 if (GUILayout.Button("Clear All", GUILayout.Height(25)))

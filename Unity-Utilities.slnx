@@ -44,6 +44,7 @@
   <Project Path="Unity.Services.Core.Configuration.csproj" />
   <Project Path="DOTween.Modules.csproj" />
   <Project Path="Unity.Services.Core.Environments.Internal.csproj" />
+  <Project Path="TirexGame.Utils.UI.FloatingText.Examples.csproj" />
   <Project Path="Unity.Notifications.Unified.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.Services.Core.Scheduler.csproj" />
@@ -58,6 +59,7 @@
   <Project Path="TirexGame.Utils.Localization.csproj" />
   <Project Path="TirexGame.Utils.Editor.csproj" />
   <Project Path="UniTask.TextMeshPro.csproj" />
+  <Project Path="TirexGame.Utils.UI.FloatingText.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
@@ -79,6 +81,7 @@
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="UnityEngine.Purchasing.WinRTCore.csproj" />
+  <Project Path="TirexGame.Utils.UI.FloatingText.Editor.csproj" />
   <Project Path="TirexGame.Utils.Editor.BuildSystem.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.Services.Core.Networking.csproj" />

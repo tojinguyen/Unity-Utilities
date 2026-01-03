@@ -8,75 +8,27 @@ namespace TirexGame.Utils.UI
     public static class FloatingTextExtensions
     {
         /// <summary>
-        /// Show damage floating text at this transform's position
+        /// Show floating text at this transform's position
         /// </summary>
-        public static FloatingTextBase ShowDamage(this Transform transform, float damage, bool is3D = false)
+        public static FloatingTextBase ShowFloatingText(this Transform transform, string text, FloatingTextData data, bool is3D = false)
         {
-            return FloatingTextFactory.Damage(damage, transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show healing floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowHealing(this Transform transform, float amount, bool is3D = false)
-        {
-            return FloatingTextFactory.Healing(amount, transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show critical hit floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowCritical(this Transform transform, float damage, bool is3D = false)
-        {
-            return FloatingTextFactory.Critical(damage, transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show miss floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowMiss(this Transform transform, bool is3D = false)
-        {
-            return FloatingTextFactory.Miss(transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show experience floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowExperience(this Transform transform, int amount, bool is3D = false)
-        {
-            return FloatingTextFactory.Experience(amount, transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show gold floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowGold(this Transform transform, int amount, bool is3D = false)
-        {
-            return FloatingTextFactory.Gold(amount, transform.position, is3D);
-        }
-
-        /// <summary>
-        /// Show custom floating text at this transform's position
-        /// </summary>
-        public static FloatingTextBase ShowFloatingText(this Transform transform, string text, FloatingTextFactory.FloatingTextType type = FloatingTextFactory.FloatingTextType.Custom, bool is3D = false)
-        {
-            return FloatingTextFactory.Create(text, transform.position, type, is3D);
+            return FloatingTextFactory.Create(text, transform.position, data, is3D);
         }
 
         /// <summary>
         /// Show floating text at GameObject's position
         /// </summary>
-        public static FloatingTextBase ShowFloatingText(this GameObject gameObject, string text, FloatingTextFactory.FloatingTextType type = FloatingTextFactory.FloatingTextType.Custom, bool is3D = false)
+        public static FloatingTextBase ShowFloatingText(this GameObject gameObject, string text, FloatingTextData data, bool is3D = false)
         {
-            return FloatingTextFactory.Create(text, gameObject.transform.position, type, is3D);
+            return FloatingTextFactory.Create(text, gameObject.transform.position, data, is3D);
         }
 
         /// <summary>
         /// Show floating text at Component's position
         /// </summary>
-        public static FloatingTextBase ShowFloatingText(this Component component, string text, FloatingTextFactory.FloatingTextType type = FloatingTextFactory.FloatingTextType.Custom, bool is3D = false)
+        public static FloatingTextBase ShowFloatingText(this Component component, string text, FloatingTextData data, bool is3D = false)
         {
-            return FloatingTextFactory.Create(text, component.transform.position, type, is3D);
+            return FloatingTextFactory.Create(text, component.transform.position, data, is3D);
         }
 
         /// <summary>

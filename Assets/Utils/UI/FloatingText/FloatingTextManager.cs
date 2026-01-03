@@ -1,12 +1,14 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using Tirex.Utils.ObjectPooling;
 
 namespace TirexGame.Utils.UI
 {
     /// <summary>
     /// Manager for creating and pooling floating text instances.
     /// Supports both world space (3D) and screen space (2D/UI) floating text.
+    /// Uses Tirex ObjectPooling system for efficient object management.
     /// </summary>
     public class FloatingTextManager : MonoBehaviour
     {
@@ -26,20 +28,16 @@ namespace TirexGame.Utils.UI
         }
 
         [Header("Prefabs")]
-        [SerializeField] private GameObject floatingText3DPrefab;
-        [SerializeField] private GameObject floatingText2DPrefab;
+        [SerializeField] private FloatingText3D floatingText3DPrefab;
+        [SerializeField] private FloatingText2D floatingText2DPrefab;
 
         [Header("Pooling Settings")]
         [SerializeField] private int initialPoolSize = 20;
-        [SerializeField] private int maxPoolSize = 100;
-        [SerializeField] private bool autoExpand = true;
 
         [Header("Canvas References")]
         [SerializeField] private Canvas uiCanvas;
         [SerializeField] private Camera mainCamera;
 
-        private Queue<FloatingTextBase> pool3D = new Queue<FloatingTextBase>();
-        private Queue<FloatingTextBase> pool2D = new Queue<FloatingTextBase>();
         private List<FloatingTextBase> activeTexts = new List<FloatingTextBase>();
 
         private void Awake()
@@ -61,31 +59,24 @@ namespace TirexGame.Utils.UI
         /// </summary>
         private void InitializePool()
         {
-            // Create default prefabs if not assigned
-            if (floatingText3DPrefab == null)
+            // Prewarm pools using ObjectPooling system
+            if (floatingText3DPrefab != null)
             {
-                floatingText3DPrefab = CreateDefault3DPrefab();
+                ObjectPooling.Prewarm(floatingText3DPrefab, initialPoolSize);
             }
 
-            if (floatingText2DPrefab == null)
+            if (floatingText2DPrefab != null)
             {
-                floatingText2DPrefab = CreateDefault2DPrefab();
-            }
-
-            // Pre-populate pools
-            for (int i = 0; i < initialPoolSize / 2; i++)
-            {
-                CreateNewPooledObject(true);
-                CreateNewPooledObject(false);
+                ObjectPooling.Prewarm(floatingText2DPrefab, initialPoolSize);
             }
         }
 
         /// <summary>
         /// Create a default 3D floating text prefab
         /// </summary>
-        private GameObject CreateDefault3DPrefab()
+        private FloatingText3D CreateDefault3DPrefab()
         {
-            GameObject prefab = new GameObject("FloatingText3D");
+            GameObject prefab = new GameObject("FloatingText3D_Default");
             FloatingText3D floatingText = prefab.AddComponent<FloatingText3D>();
 
             TextMeshPro tmp = prefab.AddComponent<TextMeshPro>();
@@ -94,20 +85,20 @@ namespace TirexGame.Utils.UI
             tmp.color = Color.white;
 
             prefab.SetActive(false);
-            return prefab;
+            return floatingText;
         }
 
         /// <summary>
         /// Create a default 2D/UI floating text prefab
         /// </summary>
-        private GameObject CreateDefault2DPrefab()
+        private FloatingText2D CreateDefault2DPrefab()
         {
             if (uiCanvas == null)
             {
                 CreateUICanvas();
             }
 
-            GameObject prefab = new GameObject("FloatingText2D");
+            GameObject prefab = new GameObject("FloatingText2D_Default");
             RectTransform rectTransform = prefab.AddComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(200, 100);
 
@@ -119,7 +110,7 @@ namespace TirexGame.Utils.UI
             tmp.color = Color.white;
 
             prefab.SetActive(false);
-            return prefab;
+            return floatingText;
         }
 
         /// <summary>
@@ -139,88 +130,52 @@ namespace TirexGame.Utils.UI
         }
 
         /// <summary>
-        /// Create a new pooled object
-        /// </summary>
-        private FloatingTextBase CreateNewPooledObject(bool is3D)
-        {
-            GameObject prefab = is3D ? floatingText3DPrefab : floatingText2DPrefab;
-            GameObject instance = Instantiate(prefab);
-            instance.SetActive(false);
-
-            if (!is3D && uiCanvas != null)
-            {
-                instance.transform.SetParent(uiCanvas.transform, false);
-            }
-            else
-            {
-                instance.transform.SetParent(transform);
-            }
-
-            FloatingTextBase floatingText = instance.GetComponent<FloatingTextBase>();
-            if (floatingText == null)
-            {
-                if (is3D)
-                {
-                    floatingText = instance.AddComponent<FloatingText3D>();
-                }
-                else
-                {
-                    floatingText = instance.AddComponent<FloatingText2D>();
-                }
-            }
-
-            if (is3D)
-            {
-                pool3D.Enqueue(floatingText);
-            }
-            else
-            {
-                pool2D.Enqueue(floatingText);
-            }
-
-            return floatingText;
-        }
-
-        /// <summary>
-        /// Get a floating text from the pool
+        /// Get a floating text from the pool using ObjectPooling system
         /// </summary>
         private FloatingTextBase GetFromPool(bool is3D)
         {
-            Queue<FloatingTextBase> pool = is3D ? pool3D : pool2D;
+            FloatingTextBase instance;
 
-            if (pool.Count == 0)
+            if (is3D)
             {
-                if (autoExpand && (pool3D.Count + pool2D.Count + activeTexts.Count) < maxPoolSize)
+                if (floatingText3DPrefab == null)
                 {
-                    return CreateNewPooledObject(is3D);
+                    Debug.LogWarning("FloatingTextManager: 3D prefab is not assigned. Creating default prefab.");
+                    floatingText3DPrefab = CreateDefault3DPrefab();
+                    ObjectPooling.Prewarm(floatingText3DPrefab, initialPoolSize);
                 }
-                else
-                {
-                    Debug.LogWarning("FloatingTextManager: Pool is empty and auto-expand is disabled or max size reached.");
-                    return null;
-                }
-            }
 
-            FloatingTextBase floatingText = pool.Dequeue();
-            activeTexts.Add(floatingText);
-            return floatingText;
-        }
-
-        /// <summary>
-        /// Return a floating text to the pool
-        /// </summary>
-        private void ReturnToPool(FloatingTextBase floatingText)
-        {
-            activeTexts.Remove(floatingText);
-
-            if (floatingText is FloatingText2D || (floatingText is FloatingText legacy && legacy.IsUIMode))
-            {
-                pool2D.Enqueue(floatingText);
+                instance = ObjectPooling.GetObject(floatingText3DPrefab);
             }
             else
             {
-                pool3D.Enqueue(floatingText);
+                if (floatingText2DPrefab == null)
+                {
+                    Debug.LogWarning("FloatingTextManager: 2D prefab is not assigned. Creating default prefab.");
+                    floatingText2DPrefab = CreateDefault2DPrefab();
+                    ObjectPooling.Prewarm(floatingText2DPrefab, initialPoolSize);
+                }
+
+                instance = ObjectPooling.GetObject(floatingText2DPrefab, uiCanvas != null ? uiCanvas.transform : null);
             }
+
+            if (instance != null)
+            {
+                activeTexts.Add(instance);
+            }
+
+            return instance;
+        }
+
+        /// <summary>
+        /// Return a floating text to the pool using ObjectPooling system
+        /// </summary>
+        private void ReturnToPool(FloatingTextBase floatingText)
+        {
+            if (floatingText == null) return;
+
+            activeTexts.Remove(floatingText);
+            ObjectPooling.ReturnObject(floatingText);
         }
 
         /// <summary>
@@ -340,10 +295,13 @@ namespace TirexGame.Utils.UI
         /// <summary>
         /// Set custom prefabs
         /// </summary>
-        public void SetPrefabs(GameObject prefab3D, GameObject prefab2D)
+        public void SetPrefabs(FloatingText3D prefab3D, FloatingText2D prefab2D)
         {
             floatingText3DPrefab = prefab3D;
             floatingText2DPrefab = prefab2D;
+
+            // Re-initialize pools with new prefabs
+            InitializePool();
         }
 
         /// <summary>

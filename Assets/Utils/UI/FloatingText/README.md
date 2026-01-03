@@ -1,308 +1,182 @@
 # Floating Text System
 
-A powerful and flexible floating text system for Unity games that supports both 2D and 3D environments with TextMeshPro integration.
+Hệ thống hiển thị text bay cho Unity game, hỗ trợ cả 2D và 3D với TextMeshPro.
 
-## Features
+## Yêu cầu
 
-✨ **Dual Mode Support**
+- Unity 2020.3+
+- TextMeshPro package
 
-- World Space (3D) floating text
-- Screen Space (2D/UI) floating text
-- Automatic mode detection
+## Setup
 
-🎨 **Highly Customizable**
+### 1. Tạo FloatingTextData Asset
 
-- Animation curves for scale and alpha
-- Direction and speed control
-- Randomization options
-- Custom colors and fonts
+Tạo cấu hình cho các loại text trong game của bạn:
 
-⚡ **Performance Optimized**
+1. Right-click trong Project → **Create → TirexGame → UI → Floating Text Data**
+2. Đặt tên (ví dụ: `DamageText`, `HealingText`, `GoldText`)
+3. Cấu hình trong Inspector:
+   - **Move Direction**: Hướng bay (VD: `0, 1, 0` để bay lên)
+   - **Move Speed**: Tốc độ bay
+   - **Lifetime**: Thời gian tồn tại
+   - **Font Size**: Kích thước chữ
+   - **Text Color**: Màu chữ
+   - **Scale Curve**: Animation curve cho scale
+   - **Alpha Curve**: Animation curve cho độ mờ
 
-- Built-in object pooling
-- Automatic pool expansion
-- Memory efficient
+### 2. Thêm FloatingTextManager vào Scene
 
-🛠️ **Easy to Use**
+- FloatingTextManager sẽ tự động được tạo khi bạn gọi code lần đầu
+- Hoặc tạo GameObject mới và add component `FloatingTextManager`
 
-- Factory pattern for quick creation
-- Builder pattern for custom configurations
-- Predefined presets (Damage, Healing, Critical, etc.)
-- Editor tools for testing
+## Cách sử dụng
 
-## Quick Start
-
-### Basic Usage
+### Cách 1: Sử dụng FloatingTextData Asset (Khuyên dùng)
 
 ```csharp
 using TirexGame.Utils.UI;
 
-// Show damage text
-FloatingTextFactory.Damage(100, enemyPosition);
+public class Enemy : MonoBehaviour
+{
+    [SerializeField] private FloatingTextData damageData;
+    [SerializeField] private FloatingTextData criticalData;
 
-// Show healing text
-FloatingTextFactory.Healing(50, playerPosition);
+    public void TakeDamage(float damage, bool isCritical = false)
+    {
+        var data = isCritical ? criticalData : damageData;
+        string text = isCritical ? $"{damage}!" : damage.ToString("0");
 
-// Show critical hit
-FloatingTextFactory.Critical(200, enemyPosition);
-
-// Show custom text
-FloatingTextFactory.Create("Level Up!", playerPosition, FloatingTextFactory.FloatingTextType.Experience);
+        FloatingTextFactory.Create(text, transform.position, data);
+    }
+}
 ```
 
-### Using the Builder Pattern
+### Cách 2: Tạo Data trong Code
+
+```csharp
+public class GameManager : MonoBehaviour
+{
+    private FloatingTextData damageData;
+
+    void Start()
+    {
+        // Tạo config cho damage text
+        damageData = ScriptableObject.CreateInstance<FloatingTextData>();
+        damageData.MoveDirection = new Vector3(0, 1, 0);
+        damageData.MoveSpeed = 3f;
+        damageData.Lifetime = 1.2f;
+        damageData.FontSize = 48f;
+        damageData.TextColor = Color.red;
+    }
+
+    public void ShowDamage(float amount, Vector3 position)
+    {
+        FloatingTextFactory.Create(amount.ToString("0"), position, damageData);
+    }
+}
+```
+
+### Cách 3: Sử dụng Builder Pattern
 
 ```csharp
 FloatingTextFactory.Builder()
-    .SetText("Epic!")
+    .SetText("Critical!")
     .SetPosition(transform.position)
-    .WithColor(Color.yellow)
+    .WithColor(Color.red)
     .WithFontSize(60)
-    .WithSpeed(3f)
+    .WithSpeed(4f)
     .WithLifetime(2f)
     .Bold()
     .Show();
 ```
 
-### Using Custom Data
-
-```csharp
-// Create a custom configuration
-FloatingTextData customData = ScriptableObject.CreateInstance<FloatingTextData>();
-customData.MoveDirection = new Vector3(0, 1, 0);
-customData.MoveSpeed = 2.5f;
-customData.Lifetime = 1.5f;
-customData.TextColor = Color.cyan;
-customData.FontSize = 48f;
-
-// Use it
-FloatingTextManager.Instance.ShowText3D("Custom!", position, customData);
-```
-
-## Components
-
-### FloatingText
-
-The core component that handles animation and lifecycle of individual floating text instances.
-
-**Key Properties:**
-
-- `moveDirection`: Direction the text moves
-- `moveSpeed`: Speed of movement
-- `lifetime`: Duration before disappearing
-- `scaleCurve`: Animation curve for scaling
-- `alphaCurve`: Animation curve for fading
-
-### FloatingTextManager
-
-Singleton manager that handles pooling and creation of floating text instances.
-
-**Key Methods:**
-
-- `ShowText3D(text, position, data)`: Show text in world space
-- `ShowText2D(text, screenPosition, data)`: Show text in screen space
-- `ShowTextAtWorldPosition(text, worldPos, data)`: Convert world to screen position
-- `ShowDamage/ShowHealing/ShowCritical`: Convenience methods
-
-### FloatingTextData
-
-ScriptableObject for storing reusable configurations.
-
-**How to Create:**
-
-1. Right-click in Project window
-2. Create → TirexGame → UI → Floating Text Data
-3. Configure properties in Inspector
-4. Use in code or assign to prefabs
+## API Reference
 
 ### FloatingTextFactory
 
-Static factory for creating floating text with predefined presets.
-
-**Available Presets:**
-
-- `Damage`: Red, bold, with random direction
-- `Healing`: Green, upward movement
-- `Critical`: Orange, large, dramatic
-- `Miss`: Gray, italic
-- `Experience`: Blue, smooth fade
-- `Gold`: Golden color
-
-## Advanced Usage
-
-### Creating Custom Prefabs
-
 ```csharp
-// Set custom prefabs at runtime
-FloatingTextManager.Instance.SetPrefabs(my3DPrefab, my2DPrefab);
+// Tạo floating text
+FloatingTextFactory.Create(string text, Vector3 position, FloatingTextData data, bool is3D = false)
+
+// Tạo tại vị trí screen
+FloatingTextFactory.CreateAtScreenPosition(string text, Vector3 screenPos, FloatingTextData data)
+
+// Sử dụng Builder
+FloatingTextFactory.Builder()
 ```
 
-### Working with Camera
+### FloatingTextManager
 
 ```csharp
-// Set custom camera for world-to-screen conversion
-FloatingTextManager.Instance.SetCamera(myCamera);
+// Show text ở world space (3D)
+FloatingTextManager.Instance.ShowText3D(text, position, data)
+
+// Show text ở screen space (2D UI)
+FloatingTextManager.Instance.ShowText2D(text, screenPosition, data)
+
+// Tự động convert world position sang screen
+FloatingTextManager.Instance.ShowTextAtWorldPosition(text, worldPosition, data)
+
+// Xóa tất cả floating text
+FloatingTextManager.Instance.ClearAll()
 ```
 
-### Working with Canvas
+## Ví dụ
+
+### Hệ thống Damage
 
 ```csharp
-// Set custom canvas for UI floating text
-FloatingTextManager.Instance.SetCanvas(myCanvas);
-```
-
-### Pooling Configuration
-
-In the Inspector:
-
-- **Initial Pool Size**: Number of pre-created instances
-- **Max Pool Size**: Maximum pool size limit
-- **Auto Expand**: Automatically create new instances when pool is empty
-
-## Examples
-
-### Damage Number System
-
-```csharp
-public class Enemy : MonoBehaviour
+public class CombatSystem : MonoBehaviour
 {
-    public void TakeDamage(float damage, bool isCritical = false)
-    {
-        health -= damage;
+    [SerializeField] private FloatingTextData damageData;
+    [SerializeField] private FloatingTextData healingData;
+    [SerializeField] private FloatingTextData criticalData;
 
-        if (isCritical)
-        {
-            FloatingTextFactory.Critical(damage, transform.position);
-        }
-        else
-        {
-            FloatingTextFactory.Damage(damage, transform.position);
-        }
+    public void ShowDamage(float amount, Vector3 position)
+    {
+        FloatingTextFactory.Create(amount.ToString("0"), position, damageData);
+    }
+
+    public void ShowHealing(float amount, Vector3 position)
+    {
+        FloatingTextFactory.Create($"+{amount}", position, healingData);
+    }
+
+    public void ShowCritical(float amount, Vector3 position)
+    {
+        FloatingTextFactory.Create($"{amount}!", position, criticalData);
     }
 }
 ```
 
-### Pickup System
+### Hệ thống nhặt vật phẩm
 
 ```csharp
 public class Pickup : MonoBehaviour
 {
-    public int goldAmount = 100;
+    [SerializeField] private FloatingTextData goldData;
+    [SerializeField] private int goldAmount = 100;
 
-    void OnPickup()
+    void OnTriggerEnter(Collider other)
     {
-        FloatingTextFactory.Gold(goldAmount, transform.position);
-        Destroy(gameObject);
+        if (other.CompareTag("Player"))
+        {
+            FloatingTextFactory.Create($"+{goldAmount} Gold", transform.position, goldData);
+            Destroy(gameObject);
+        }
     }
 }
 ```
 
-### Custom Animation
+## Tips
 
-```csharp
-// Create data with custom animation curves
-FloatingTextData data = ScriptableObject.CreateInstance<FloatingTextData>();
+- **Tạo asset cho từng loại text**: Damage, Healing, Gold, XP, Miss, etc.
+- **Reuse assets**: Sử dụng lại các asset đã tạo trong toàn bộ project
+- **Object pooling**: Hệ thống tự động pool, không cần lo về performance
+- **Animation curves**: Dùng curve để tạo hiệu ứng đẹp mắt (bounce, fade, etc.)
 
-// Bounce effect
-data.ScaleCurve = AnimationCurve.EaseInOut(0, 1, 1, 1);
-data.ScaleCurve.AddKey(0.5f, 1.3f); // Peak at middle
+## Xem thêm
 
-// Quick fade at end
-data.AlphaCurve = new AnimationCurve(
-    new Keyframe(0, 1),
-    new Keyframe(0.8f, 1),
-    new Keyframe(1, 0)
-);
-
-FloatingTextManager.Instance.ShowText3D("Bounce!", position, data);
-```
-
-### Multiple Texts at Once
-
-```csharp
-// Show multiple floating texts
-for (int i = 0; i < 10; i++)
-{
-    Vector3 randomPos = transform.position + Random.insideUnitSphere * 2f;
-    FloatingTextFactory.Damage(Random.Range(10, 100), randomPos);
-}
-```
-
-## Best Practices
-
-1. **Use Factory Methods**: Prefer `FloatingTextFactory` over direct manager access for common cases
-2. **Cache Data Objects**: Create `FloatingTextData` assets and reuse them
-3. **Configure Pool Size**: Set appropriate pool size based on your game's needs
-4. **Clear When Done**: Call `ClearAll()` when changing scenes or during cleanup
-5. **3D vs 2D**: Use 3D mode for world objects, 2D for HUD elements
-
-## Performance Tips
-
-- The system uses object pooling by default
-- Pool automatically expands up to `maxPoolSize`
-- Returned texts are reused, not destroyed
-- Use `ClearAll()` to reset all active texts immediately
-
-## Requirements
-
-- Unity 2020.3 or higher
-- TextMeshPro package
-- .NET Standard 2.0+
-
-## Integration with Other Systems
-
-### UniTask Integration
-
-```csharp
-using Cysharp.Threading.Tasks;
-
-async UniTask ShowDamageSequence()
-{
-    FloatingTextFactory.Damage(50, position);
-    await UniTask.Delay(100);
-    FloatingTextFactory.Damage(30, position + Vector3.up);
-    await UniTask.Delay(100);
-    FloatingTextFactory.Damage(20, position + Vector3.up * 2);
-}
-```
-
-### DOTween Integration
-
-```csharp
-using DG.Tweening;
-
-void ShowWithExtraAnimation()
-{
-    var floatingText = FloatingTextFactory.Damage(100, position);
-    floatingText.transform.DOPunchScale(Vector3.one * 0.2f, 0.3f);
-}
-```
-
-## Troubleshooting
-
-**Text not showing:**
-
-- Ensure FloatingTextManager exists in scene
-- Check camera reference for 2D mode
-- Verify canvas exists for UI mode
-- Check layer and sorting order
-
-**Performance issues:**
-
-- Increase pool size to reduce instantiation
-- Use ClearAll() periodically
-- Reduce maxPoolSize if memory is limited
-
-**Text appears at wrong position:**
-
-- For 2D mode, use ShowTextAtWorldPosition()
-- Check camera reference
-- Verify canvas render mode
-
-## License
-
-Part of TirexGame Utilities package.
-
----
-
-For more information and updates, visit the project repository.
+- `CustomTypesExample.cs` - Ví dụ định nghĩa text types riêng
+- `CombatSystemExample.cs` - Ví dụ tích hợp vào combat system
+- `ARCHITECTURE.md` - Chi tiết kiến trúc hệ thống
