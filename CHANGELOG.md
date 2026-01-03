@@ -1,3 +1,11 @@
+# [1.14.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.13.0...v1.14.0) (2026-01-03)
+
+
+### Features
+
+* refactor floating text ([c18036e](https://github.com/tojinguyen/Unity-Utilities/commit/c18036e15f81b3fd0d207c0a0e2340a52abf787c))
+* simply code ([321470e](https://github.com/tojinguyen/Unity-Utilities/commit/321470ee7036cc4dd5e4357cd84b87e0f018d138))
+
 # [1.13.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.12.0...v1.13.0) (2026-01-03)
 
 
