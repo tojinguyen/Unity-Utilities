@@ -314,7 +314,10 @@ namespace Tirex.Utils.ObjectPooling
             {
                 var instance = pool.Dequeue();
                 InstanceToPrefab.Remove(instance);
-                Object.Destroy(instance.gameObject);
+                if (instance != null)
+                {
+                    Object.Destroy(instance.gameObject);
+                }
             }
 
             Pools.Remove(prefabGo);
@@ -361,7 +364,10 @@ namespace Tirex.Utils.ObjectPooling
                 {
                     var instance = pool.Dequeue();
                     InstanceToPrefab.Remove(instance);
-                    Object.Destroy(instance.gameObject);
+                    if (instance != null)
+                    {
+                        Object.Destroy(instance.gameObject);
+                    }
                 }
             }
 
