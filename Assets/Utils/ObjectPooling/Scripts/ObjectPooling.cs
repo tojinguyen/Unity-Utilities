@@ -347,7 +347,6 @@ namespace Tirex.Utils.ObjectPooling
         public static void ClearAllPools()
         {
 #if OBJECT_POOLING_TRACK_PERFORMANCE
-        // ======= PERFORMANCE TRACKING =======
         ConsoleLogger.Log("[ObjectPooling] Clearing all pools - Final summary:");
         foreach (var kvp in PoolStatistics)
         {
@@ -357,17 +356,12 @@ namespace Tirex.Utils.ObjectPooling
                 $"  {prefabGo.name}: Hit Rate: {stats.HitRate:P2}, Total Created: {stats.TotalCreated}, Peak Active: {stats.PeakActiveCount}");
         }
 #endif
-
-            foreach (var pool in Pools.Values)
+            foreach (var kvp in InstanceToPrefab)
             {
-                while (pool.Count > 0)
+                var instance = kvp.Key;
+                if (instance != null)
                 {
-                    var instance = pool.Dequeue();
-                    InstanceToPrefab.Remove(instance);
-                    if (instance != null)
-                    {
-                        Object.Destroy(instance.gameObject);
-                    }
+                    Object.Destroy(instance.gameObject);
                 }
             }
 
