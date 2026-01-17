@@ -54,6 +54,7 @@
   <Project Path="TirexGame.Utils.Vibration.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="GoogleMobileAds.Editor.csproj" />
+  <Project Path="UnityEditor.UI.Analytics.csproj" />
   <Project Path="Purchasing.Common.csproj" />
   <Project Path="TirexGame.Utils.Localization.csproj" />
   <Project Path="TirexGame.Utils.Editor.csproj" />
@@ -62,7 +63,6 @@
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
-  <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Shared.Editor.csproj" />
   <Project Path="TirexGame.Utils.Data.Editor.csproj" />
   <Project Path="Unity.Profiling.Core.csproj" />
@@ -74,6 +74,7 @@
   <Project Path="UnityEngine.Purchasing.SecurityStub.csproj" />
   <Project Path="TirexGame.Utils.Localization.Editor.csproj" />
   <Project Path="DOTweenPro.EditorScripts.csproj" />
+  <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="IAPResolver.csproj" />
   <Project Path="UnityEngine.Purchasing.WinRTStub.csproj" />
   <Project Path="UniTask.Editor.csproj" />
@@ -83,6 +84,7 @@
   <Project Path="TirexGame.Utils.UI.FloatingText.Editor.csproj" />
   <Project Path="TirexGame.Utils.Editor.BuildSystem.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
+  <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Services.Core.Networking.csproj" />
   <Project Path="Unity.VisualScripting.DocCodeExamples.csproj" />
   <Project Path="Unity.ScriptableBuildPipeline.csproj" />

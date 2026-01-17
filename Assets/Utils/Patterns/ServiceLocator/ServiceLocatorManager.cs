@@ -1,4 +1,5 @@
 using UnityEngine;
+using ServiceLocatorImpl = TirexGame.Utils.Patterns.ServiceLocator.ServiceLocator;
 
 namespace TirexGame.Utils.Patterns.ServiceLocator
 {
@@ -25,7 +26,7 @@ namespace TirexGame.Utils.Patterns.ServiceLocator
         {
             base.Initialize();
             
-            _serviceLocator = new ServiceLocator(enableLogging);
+            _serviceLocator = new ServiceLocatorImpl(enableLogging);
             
             if (dontDestroyOnLoad)
             {
