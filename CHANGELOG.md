@@ -1,3 +1,10 @@
+## [1.14.4](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.3...v1.14.4) (2026-01-17)
+
+
+### Bug Fixes
+
+* namespace service locator ([9fd7533](https://github.com/tojinguyen/Unity-Utilities/commit/9fd75339a00eb59120dfef682cf19fdcbfbdabd4))
+
 ## [1.14.3](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.2...v1.14.3) (2026-01-17)
 
 
