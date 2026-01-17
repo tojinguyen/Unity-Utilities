@@ -1,3 +1,10 @@
+## [1.14.3](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.2...v1.14.3) (2026-01-17)
+
+
+### Bug Fixes
+
+* object pooling ([67bb398](https://github.com/tojinguyen/Unity-Utilities/commit/67bb398096a6fafd4c6112692ed4115049985b70))
+
 ## [1.14.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.1...v1.14.2) (2026-01-03)
 
 
