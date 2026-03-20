@@ -207,6 +207,20 @@ namespace TirexGame.Utils.Data.Editor
                         GUI.backgroundColor = Color.white;
                     }
                 }
+
+                EditorGUILayout.Space();
+                if (GUILayout.Button("+ Create New Data", GUILayout.Height(25)))
+                {
+                    // Switch to Data Editor tab to create
+                    _selectedTabIndex = 1;
+                    GUI.FocusControl(null); // Clear focus
+                }
+
+                if (_dataKeys.Count == 0)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.HelpBox("No data found.\nClick the button above or switch to the 'Data Editor' tab to create new data.", MessageType.Info);
+                }
             }
             
             EditorGUILayout.EndVertical();
@@ -628,26 +642,31 @@ namespace TirexGame.Utils.Data.Editor
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField(name, GUILayout.Width(120));
-            
+            DrawValueEditor(type, value, setValue);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawValueEditor(Type type, object value, Action<object> setValue)
+        {
             if (type == typeof(string))
             {
                 setValue(EditorGUILayout.TextField((string)value ?? ""));
             }
             else if (type == typeof(int))
             {
-                setValue(EditorGUILayout.IntField((int)value));
+                setValue(EditorGUILayout.IntField(value != null ? (int)value : 0));
             }
             else if (type == typeof(float))
             {
-                setValue(EditorGUILayout.FloatField((float)value));
+                setValue(EditorGUILayout.FloatField(value != null ? (float)value : 0f));
             }
             else if (type == typeof(bool))
             {
-                setValue(EditorGUILayout.Toggle((bool)value));
+                setValue(EditorGUILayout.Toggle(value != null && (bool)value));
             }
             else if (type == typeof(DateTime))
             {
-                var dateTime = (DateTime)value;
+                var dateTime = value != null ? (DateTime)value : DateTime.Now;
                 var dateString = dateTime.ToString("yyyy-MM-dd HH:mm:ss");
                 var newDateString = EditorGUILayout.TextField(dateString);
                 if (DateTime.TryParse(newDateString, out DateTime newDateTime))
@@ -657,18 +676,92 @@ namespace TirexGame.Utils.Data.Editor
             }
             else if (type == typeof(Vector3))
             {
-                setValue(EditorGUILayout.Vector3Field("", (Vector3)value));
+                setValue(EditorGUILayout.Vector3Field("", value != null ? (Vector3)value : Vector3.zero));
             }
             else if (type == typeof(Vector2))
             {
-                setValue(EditorGUILayout.Vector2Field("", (Vector2)value));
+                setValue(EditorGUILayout.Vector2Field("", value != null ? (Vector2)value : Vector2.zero));
+            }
+            else if (type.IsEnum)
+            {
+                setValue(EditorGUILayout.EnumPopup((Enum)(value ?? Activator.CreateInstance(type))));
+            }
+            else if (typeof(System.Collections.IList).IsAssignableFrom(type) && type.IsGenericType)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                var list = value as System.Collections.IList;
+                if (list == null)
+                {
+                    if (GUILayout.Button("Create List", GUILayout.Width(100)))
+                    {
+                        list = (System.Collections.IList)Activator.CreateInstance(type);
+                        setValue(list);
+                    }
+                }
+                else
+                {
+                    Type elementType = type.GetGenericArguments()[0];
+                    
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.LabelField($"Size: {list.Count}", EditorStyles.boldLabel, GUILayout.Width(100));
+                    if (GUILayout.Button("+", GUILayout.Width(30)))
+                    {
+                        object newElement = elementType == typeof(string) ? "" : (elementType.IsValueType ? Activator.CreateInstance(elementType) : null);
+                        list.Add(newElement);
+                    }
+                    if (GUILayout.Button("Clear", GUILayout.Width(50)))
+                    {
+                        list.Clear();
+                    }
+                    EditorGUILayout.EndHorizontal();
+                    
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"[{i}]", GUILayout.Width(40));
+                        int index = i;
+                        DrawValueEditor(elementType, list[i], v => list[index] = v);
+                        if (GUILayout.Button("-", GUILayout.Width(30)))
+                        {
+                            list.RemoveAt(i);
+                            i--; // Decrement i or just let it skip the next, wait no, if we remove we must decrement i.
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
+                EditorGUILayout.EndVertical();
+            }
+            else if (type.IsClass && type != typeof(string))
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                if (value == null)
+                {
+                    if (GUILayout.Button($"Create {type.Name}", GUILayout.Width(150)))
+                    {
+                        value = Activator.CreateInstance(type);
+                        setValue(value);
+                    }
+                }
+                else
+                {
+                    var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                    foreach (var field in fields)
+                    {
+                        DrawFieldEditor(field.Name, field.FieldType, field.GetValue(value), v => field.SetValue(value, v));
+                    }
+                    
+                    var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.CanWrite);
+                    foreach (var prop in properties)
+                    {
+                        DrawFieldEditor(prop.Name, prop.PropertyType, prop.GetValue(value), v => prop.SetValue(value, v));
+                    }
+                }
+                EditorGUILayout.EndVertical();
             }
             else
             {
                 EditorGUILayout.LabelField($"Unsupported type: {type.Name}");
             }
-            
-            EditorGUILayout.EndHorizontal();
         }
         
         private void ExportAllData()
