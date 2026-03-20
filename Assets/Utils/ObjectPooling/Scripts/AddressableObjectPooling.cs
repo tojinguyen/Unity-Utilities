@@ -57,14 +57,21 @@ namespace Tirex.Utils.ObjectPooling
 
             var pool = _pools[assetRef];
 
-            if (pool.Count > 0)
+            while (pool.Count > 0)
             {
                 var obj = pool.Dequeue();
-                obj.SetActive(true);
-                return obj;
+                if (obj != null)
+                {
+                    obj.SetActive(true);
+                    return obj;
+                }
             }
 
             var newObject = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+            if (newObject != null)
+            {
+                _objectToKeyMap[newObject] = assetRef;
+            }
             return newObject;
         }
 
@@ -87,7 +94,9 @@ namespace Tirex.Utils.ObjectPooling
         /// </summary>
         public static void ReturnObject(GameObject obj)
         {
-            if (obj == null || !_objectToKeyMap.TryGetValue(obj, out var key))
+            if (obj == null) return;
+            
+            if (!_objectToKeyMap.TryGetValue(obj, out var key))
             {
                 Debug.LogError($"Object {obj.name} does not belong to any pool.");
                 return;

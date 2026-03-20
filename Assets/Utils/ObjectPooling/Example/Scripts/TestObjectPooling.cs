@@ -10,7 +10,6 @@ namespace Tirex.Utils.ObjectPooling
         [Header("Regular Object Pooling")]
         [SerializeField] private GameObject regularPrefab;
         [SerializeField] private int prewarmCount = 10;
-        [SerializeField] private Transform spawnParent;
         
         [Header("Addressable Object Pooling")]
         [SerializeField] private AssetReference addressablePrefab;

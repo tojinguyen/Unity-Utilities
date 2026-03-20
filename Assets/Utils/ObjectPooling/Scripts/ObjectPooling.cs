@@ -72,10 +72,33 @@ namespace Tirex.Utils.ObjectPooling
                 Pools[prefabGo] = pool;
             }
 
-            var wasPoolHit = pool.Count > 0;
-            var instance = wasPoolHit
-                ? (T)pool.Dequeue()
-                : Object.Instantiate(prefab);
+            T instance = null;
+            bool wasPoolHit = false;
+
+            while (pool.Count > 0)
+            {
+                var dequeued = pool.Dequeue();
+                if (dequeued != null)
+                {
+                    instance = dequeued as T;
+                    if (instance == null)
+                    {
+                        // Fallback if the pool contains a different component type of the same GameObject
+                        instance = dequeued.GetComponent<T>();
+                    }
+                    if (instance != null)
+                    {
+                        wasPoolHit = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!wasPoolHit)
+            {
+                instance = Object.Instantiate(prefab);
+            }
+
             instance.gameObject.SetActive(true);
             InstanceToPrefab[instance] = prefabGo;
 
@@ -266,6 +289,8 @@ namespace Tirex.Utils.ObjectPooling
         // ======= RETURN & CLEAR =======
         public static void ReturnObject(Component instance)
         {
+            if (instance == null) return;
+            
             if (!InstanceToPrefab.TryGetValue(instance, out var prefabGo))
             {
                 ConsoleLogger.LogWarning($"[ObjectPooling] Tried to return unknown object: {instance.name}");
@@ -292,6 +317,7 @@ namespace Tirex.Utils.ObjectPooling
 
         public static void ReturnObject(GameObject obj)
         {
+            if (obj == null) return;
             var component = obj.GetComponent<Component>();
             if (component == null)
             {
