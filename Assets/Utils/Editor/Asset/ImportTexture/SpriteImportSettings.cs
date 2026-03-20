@@ -29,7 +29,7 @@ public class SpriteImportSettings
         private TextureImporterType selectedTextureType = TextureImporterType.Sprite;
         private int selectedMaxSize = 1024;
         private TextureImporterFormat selectedFormat = TextureImporterFormat.Automatic;
-        private bool autoApplySettings = false;  // Toggle for auto apply
+        private bool autoApplySettings = true;  // Toggle for auto apply
 
         public static void ShowWindow()
         {

@@ -34,6 +34,7 @@
   <Project Path="Unity.TextMeshPro.Editor.csproj" />
   <Project Path="Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection.csproj" />
   <Project Path="Unity.Rider.Editor.csproj" />
+  <Project Path="Unity.AutoGroupGenerator.Editor.csproj" />
   <Project Path="Unity.VisualScripting.State.csproj" />
   <Project Path="UnityEngine.Purchasing.AppleMacosStub.csproj" />
   <Project Path="UnityEngine.Purchasing.Codeless.csproj" />
@@ -60,6 +61,7 @@
   <Project Path="TirexGame.Utils.Editor.csproj" />
   <Project Path="UniTask.TextMeshPro.csproj" />
   <Project Path="TirexGame.Utils.UI.FloatingText.csproj" />
+  <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />
@@ -87,7 +89,6 @@
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Services.Core.Networking.csproj" />
   <Project Path="Unity.VisualScripting.DocCodeExamples.csproj" />
-  <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.PlasticSCM.Editor.Entities.csproj" />
   <Project Path="UniTask.Addressables.csproj" />
   <Project Path="Unity.Services.Core.Environments.csproj" />
