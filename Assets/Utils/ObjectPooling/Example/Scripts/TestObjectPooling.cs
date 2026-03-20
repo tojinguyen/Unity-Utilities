@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using Cysharp.Threading.Tasks;
 
 namespace Tirex.Utils.ObjectPooling
 {
@@ -10,9 +8,6 @@ namespace Tirex.Utils.ObjectPooling
         [Header("Regular Object Pooling")]
         [SerializeField] private GameObject regularPrefab;
         [SerializeField] private int prewarmCount = 10;
-        
-        [Header("Addressable Object Pooling")]
-        [SerializeField] private AssetReference addressablePrefab;
         
         private readonly List<GameObject> _spawnedObjects = new();
         
@@ -23,18 +18,9 @@ namespace Tirex.Utils.ObjectPooling
                 ObjectPooling.Prewarm(regularPrefab, prewarmCount);
                 Debug.Log($"Prewarmed regular pool with {prewarmCount} objects. Pool size: {ObjectPooling.GetPoolSize(regularPrefab)}");
             }
-            
-            if (addressablePrefab != null)
-            {
-                PrewarmAddressablePool(prewarmCount).Forget();
-            }
         }
         
-        private async UniTaskVoid PrewarmAddressablePool(int count)
-        {
-            await AddressableObjectPooling.Prewarm(addressablePrefab, count);
-            Debug.Log($"Prewarmed addressable pool with {count} objects. Pool size: {AddressableObjectPooling.GetPoolSize(addressablePrefab)}");
-        }
+
         
         [ContextMenu("Spawn Regular Object")]
         public void SpawnRegularObject()
@@ -63,33 +49,6 @@ namespace Tirex.Utils.ObjectPooling
             _spawnedObjects.Clear();
         }
         
-        [ContextMenu("Spawn Addressable Object")]
-        public async UniTaskVoid SpawnAddressableObject()
-        {
-            if (addressablePrefab == null) return;
-            
-            var position = new Vector2(Random.Range(-5f, 5f), Random.Range(-3f, 3f));
-            var obj = await AddressableObjectPooling.GetObject(addressablePrefab, position);
-            
-            _spawnedObjects.Add(obj);
-            Debug.Log($"Spawned addressable object. Active objects: {_spawnedObjects.Count}, Pool size: {AddressableObjectPooling.GetPoolSize(addressablePrefab)}");
-        }
-        
-        [ContextMenu("Return All Addressable Objects")]
-        public void ReturnAllAddressableObjects()
-        {
-            foreach (var obj in _spawnedObjects)
-            {
-                if (obj != null)
-                {
-                    AddressableObjectPooling.ReturnObject(obj);
-                }
-            }
-            
-            Debug.Log($"Returned all addressable objects to pool. Pool size: {AddressableObjectPooling.GetPoolSize(addressablePrefab)}");
-            _spawnedObjects.Clear();
-        }
-        
         [ContextMenu("Clear Regular Pool")]
         public void ClearRegularPool()
         {
@@ -99,14 +58,6 @@ namespace Tirex.Utils.ObjectPooling
             Debug.Log("Regular object pool cleared");
         }
         
-        [ContextMenu("Clear Addressable Pool")]
-        public void ClearAddressablePool()
-        {
-            if (addressablePrefab == null) return;
-            
-            AddressableObjectPooling.ClearPool(addressablePrefab);
-            Debug.Log("Addressable object pool cleared");
-        }
 
         [ContextMenu("Clear All Pools")]
         public void ClearAllPools()

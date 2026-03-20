@@ -502,5 +502,27 @@ namespace Tirex.Utils.ObjectPooling
             return 0f;
         }
 #endif
+
+#if UNITY_EDITOR
+        public static IEnumerable<GameObject> GetAllPoolKeys() => Pools.Keys;
+        
+        public static int GetTotalCreated(GameObject prefab)
+        {
+#if OBJECT_POOLING_TRACK_PERFORMANCE
+            if (PoolStatistics.TryGetValue(prefab, out var stats))
+                return stats.TotalCreated;
+#endif
+            return -1;
+        }
+
+        public static int GetPeakActiveCount(GameObject prefab)
+        {
+#if OBJECT_POOLING_TRACK_PERFORMANCE
+            if (PoolStatistics.TryGetValue(prefab, out var stats))
+                return stats.PeakActiveCount;
+#endif
+            return -1;
+        }
+#endif
     }
 }
