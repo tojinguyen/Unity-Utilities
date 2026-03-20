@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
@@ -52,7 +52,7 @@ namespace TirexGame.Utils.LoadingScene
 
         #region Public Methods
         
-        public async Task ExecuteAsync()
+        public async UniTask ExecuteAsync()
         {
             if (isCompleted)
             {
@@ -103,7 +103,7 @@ namespace TirexGame.Utils.LoadingScene
 
         #region Protected Methods
 
-        protected abstract Task ExecuteStepAsync();
+        protected abstract UniTask ExecuteStepAsync();
   
         public void UpdateProgress(float progress)
         {

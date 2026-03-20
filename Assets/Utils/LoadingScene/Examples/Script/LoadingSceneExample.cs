@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
+
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -181,18 +181,18 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             UpdateProgressInternal(0.2f);
             
             // Simulate saving player progress
-            await Task.Delay(300);
+            await UniTask.Delay(300);
             ThrowIfCancelled();
             
             UpdateProgressInternal(0.6f);
             
             // Simulate saving game settings
-            await Task.Delay(200);
+            await UniTask.Delay(200);
             ThrowIfCancelled();
             
             UpdateProgressInternal(1f);
@@ -213,7 +213,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             _dataPaths = dataPaths ?? new string[0];
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             for (int i = 0; i < _dataPaths.Length; i++)
             {
@@ -221,7 +221,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
                 
                 // Simulate loading each data file
                 ConsoleLogger.Log($"Loading data: {_dataPaths[i]}");
-                await Task.Delay(400);
+                await UniTask.Delay(400);
                 
                 UpdateProgressInternal((float)(i + 1) / _dataPaths.Length);
             }
@@ -243,7 +243,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
             _assetKeys = assetKeys ?? new string[0];
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             for (int i = 0; i < _assetKeys.Length; i++)
             {
@@ -256,7 +256,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
                 for (float progress = 0; progress < 1f; progress += 0.1f)
                 {
                     ThrowIfCancelled();
-                    await Task.Delay(50);
+                    await UniTask.Delay(50);
                     
                     float totalProgress = (i + progress) / _assetKeys.Length;
                     UpdateProgressInternal(totalProgress);
@@ -279,7 +279,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             for (int i = 0; i < _systemNames.Length; i++)
             {
@@ -288,7 +288,7 @@ namespace TirexGame.Utils.LoadingScene.Examples
                 ConsoleLogger.Log($"Initializing: {_systemNames[i]}");
                 
                 // Simulate system initialization time
-                await Task.Delay(300);
+                await UniTask.Delay(300);
                 
                 UpdateProgressInternal((float)(i + 1) / _systemNames.Length);
             }
@@ -307,20 +307,20 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             UpdateProgressInternal(0.3f);
             
             // Simulate spawning player
             ConsoleLogger.Log("Spawning player...");
-            await Task.Delay(200);
+            await UniTask.Delay(200);
             ThrowIfCancelled();
             
             UpdateProgressInternal(0.7f);
             
             // Simulate setting up game state
             ConsoleLogger.Log("Setting up game state...");
-            await Task.Delay(300);
+            await UniTask.Delay(300);
             ThrowIfCancelled();
             
             UpdateProgressInternal(1f);
@@ -338,20 +338,20 @@ namespace TirexGame.Utils.LoadingScene.Examples
         {
         }
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             UpdateProgressInternal(0.3f);
             
             // Simulate cleanup game objects
             ConsoleLogger.Log("Cleaning up game objects...");
-            await Task.Delay(200);
+            await UniTask.Delay(200);
             ThrowIfCancelled();
             
             UpdateProgressInternal(0.7f);
             
             // Simulate releasing resources
             ConsoleLogger.Log("Releasing resources...");
-            await Task.Delay(200);
+            await UniTask.Delay(200);
             ThrowIfCancelled();
             
             UpdateProgressInternal(1f);

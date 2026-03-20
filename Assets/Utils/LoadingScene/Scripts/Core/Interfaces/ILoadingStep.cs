@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.LoadingScene
 {
@@ -53,7 +53,7 @@ namespace TirexGame.Utils.LoadingScene
         /// Thực thi bước loading này
         /// </summary>
         /// <returns>Task hoàn thành khi bước loading kết thúc</returns>
-        Task ExecuteAsync();
+        UniTask ExecuteAsync();
         
         /// <summary>
         /// Hủy bỏ bước loading (nếu có thể)

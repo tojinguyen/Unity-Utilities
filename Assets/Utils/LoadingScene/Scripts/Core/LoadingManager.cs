@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
@@ -191,7 +190,7 @@ namespace TirexGame.Utils.LoadingScene
         /// <param name="steps">Danh sách các bước loading</param>
         /// <param name="showUI">Có hiển thị UI không</param>
         /// <returns>Task hoàn thành khi loading xong</returns>
-        public async Task StartLoadingAsync(IEnumerable<ILoadingStep> steps, bool showUI = true)
+        public async UniTask StartLoadingAsync(IEnumerable<ILoadingStep> steps, bool showUI = true)
         {
             if (_isLoading)
             {
@@ -199,7 +198,9 @@ namespace TirexGame.Utils.LoadingScene
                 return;
             }
             
-            await StartLoadingInternal(steps.ToList(), showUI);
+            // To prevent LINQ allocation on ToList when passing from different places
+            List<ILoadingStep> stepList = new List<ILoadingStep>(steps);
+            await StartLoadingInternal(stepList, showUI);
         }
         
         /// <summary>
@@ -208,7 +209,7 @@ namespace TirexGame.Utils.LoadingScene
         /// <param name="step">Bước loading</param>
         /// <param name="showUI">Có hiển thị UI không</param>
         /// <returns>Task hoàn thành khi loading xong</returns>
-        public async Task StartLoadingAsync(ILoadingStep step, bool showUI = true)
+        public async UniTask StartLoadingAsync(ILoadingStep step, bool showUI = true)
         {
             await StartLoadingAsync(new[] { step }, showUI);
         }
@@ -235,7 +236,7 @@ namespace TirexGame.Utils.LoadingScene
             DebugLog("LoadingManager initialized");
         }
         
-        private async Task StartLoadingInternal(List<ILoadingStep> steps, bool showUI)
+        private async UniTask StartLoadingInternal(List<ILoadingStep> steps, bool showUI)
         {
             if (steps == null || steps.Count == 0)
             {
@@ -300,7 +301,7 @@ namespace TirexGame.Utils.LoadingScene
             }
         }
         
-        private async Task ExecuteStepsAsync(CancellationToken cancellationToken)
+        private async UniTask ExecuteStepsAsync(CancellationToken cancellationToken)
         {
             for (int i = 0; i < _loadingSteps.Count; i++)
             {
@@ -348,7 +349,7 @@ namespace TirexGame.Utils.LoadingScene
             }
         }
         
-        private async Task EnsureMinimumLoadingTime()
+        private async UniTask EnsureMinimumLoadingTime()
         {
             var elapsedTime = _loadingStopwatch.Elapsed;
             var minimumTime = TimeSpan.FromSeconds(_minimumLoadingTime);
@@ -357,7 +358,7 @@ namespace TirexGame.Utils.LoadingScene
             {
                 var remainingTime = minimumTime - elapsedTime;
                 DebugLog($"Waiting additional {remainingTime.TotalSeconds:F1}s to meet minimum loading time");
-                await Task.Delay(remainingTime);
+                await UniTask.Delay(remainingTime);
             }
         }
         
@@ -365,7 +366,12 @@ namespace TirexGame.Utils.LoadingScene
         {
             if (_loadingSteps.Count == 0) return;
             
-            float totalWeight = _loadingSteps.Sum(s => s.Weight);
+            float totalWeight = 0f;
+            for (int i = 0; i < _loadingSteps.Count; i++)
+            {
+                totalWeight += _loadingSteps[i].Weight;
+            }
+            
             float completedWeight = 0f;
             
             for (int i = 0; i < _progressData.CurrentStepIndex - 1; i++)
@@ -460,7 +466,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             OnLoadingStarted?.Invoke(_progressData);
             
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
@@ -479,7 +485,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             OnLoadingProgressChanged?.Invoke(_progressData);
             
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
@@ -496,7 +502,7 @@ namespace TirexGame.Utils.LoadingScene
         
         private void NotifyStepStarted(ILoadingStep step)
         {
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
@@ -513,7 +519,7 @@ namespace TirexGame.Utils.LoadingScene
         
         private void NotifyStepCompleted(ILoadingStep step)
         {
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
@@ -530,7 +536,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             OnLoadingCompleted?.Invoke(_progressData);
             
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
@@ -549,7 +555,7 @@ namespace TirexGame.Utils.LoadingScene
         {
             OnLoadingError?.Invoke(step, exception, _progressData);
             
-            foreach (var callback in _progressCallbacks.ToList())
+            var callbacks = new List<ILoadingProgressCallback>(_progressCallbacks); foreach (var callback in callbacks)
             {
                 try
                 {
