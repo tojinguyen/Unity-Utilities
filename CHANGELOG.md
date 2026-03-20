@@ -1,3 +1,15 @@
+# [1.15.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.4...v1.15.0) (2026-03-20)
+
+
+### Features
+
+* implement object pooling tool editor ([c628063](https://github.com/tojinguyen/Unity-Utilities/commit/c628063490efdae564a2945dfbe0afc4d44ae2bf))
+* optimize loading scene feature ([4a6496e](https://github.com/tojinguyen/Unity-Utilities/commit/4a6496e607564d2843ea5688fc0aacc668e3f415))
+* turn off auto apply import asset settings ([e0881e8](https://github.com/tojinguyen/Unity-Utilities/commit/e0881e82f7df36c3a60296750fd0c2d59421ebce))
+* update data package ([e894db7](https://github.com/tojinguyen/Unity-Utilities/commit/e894db7c27d46ad8cb79bee9ef167f0126b43f6a))
+* update package object pooling ([20cdd06](https://github.com/tojinguyen/Unity-Utilities/commit/20cdd06d6134145d11da17164659fcdbe2ecd7cf))
+* update utils ([72b88d1](https://github.com/tojinguyen/Unity-Utilities/commit/72b88d1df324832451346a6fac79f7d90d26e07a))
+
 ## [1.14.4](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.3...v1.14.4) (2026-01-17)
 
 
