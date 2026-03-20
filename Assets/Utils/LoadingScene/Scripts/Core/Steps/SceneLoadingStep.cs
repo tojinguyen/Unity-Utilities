@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -89,7 +89,7 @@ namespace TirexGame.Utils.LoadingScene
         
         #region Protected Methods Override
         
-        protected override async Task ExecuteStepAsync()
+        protected override async UniTask ExecuteStepAsync()
         {
             try
             {
@@ -99,14 +99,14 @@ namespace TirexGame.Utils.LoadingScene
                     await UnloadSceneAsync();
                 }
                 
-                // Bước 2: Load scene mới
-                await LoadSceneAsync();
-                
-                // Bước 3: Unload unused assets nếu cần
+                // Bước 2: Tối ưu - Unload unused assets TRƯỚC KHI load scene mới để tránh Memory Spike
                 if (_unloadUnusedAssets)
                 {
                     await UnloadUnusedAssetsAsync();
                 }
+
+                // Bước 3: Load scene mới
+                await LoadSceneAsync();
                 
                 DebugLog($"Scene loading completed: {(_useSceneName ? _sceneName : _sceneBuildIndex.ToString())}");
             }
@@ -125,7 +125,8 @@ namespace TirexGame.Utils.LoadingScene
             if (_loadOperation != null && !_loadOperation.isDone)
             {
                 // Note: Unity's AsyncOperation cannot be cancelled directly
-                // We can only prevent scene activation
+                // Limbo state warning: stopping activation leaves the scene in memory.
+                DebugLog("WARNING: Cancelling a loading scene will leave it hidden in memory!");
                 if (_loadOperation.allowSceneActivation)
                 {
                     _loadOperation.allowSceneActivation = false;
@@ -137,7 +138,7 @@ namespace TirexGame.Utils.LoadingScene
         
         #region Private Methods
         
-        private async Task UnloadSceneAsync()
+        private async UniTask UnloadSceneAsync()
         {
             DebugLog($"Unloading scene: {_sceneToUnload}");
             UpdateProgressInternal(0.1f);
@@ -156,14 +157,14 @@ namespace TirexGame.Utils.LoadingScene
             {
                 float unloadProgress = Mathf.Clamp01(_unloadOperation.progress / 0.9f);
                 UpdateProgressInternal(0.1f + unloadProgress * 0.2f); // 10% to 30%
-                await Task.Yield();
+                await UniTask.Yield();
             }
             
             ThrowIfCancelled();
             DebugLog($"Scene unloaded: {_sceneToUnload}");
         }
         
-        private async Task LoadSceneAsync()
+        private async UniTask LoadSceneAsync()
         {
             DebugLog($"Starting scene load: {(_useSceneName ? _sceneName : _sceneBuildIndex.ToString())}");
             
@@ -212,16 +213,20 @@ namespace TirexGame.Utils.LoadingScene
                     _loadOperation.allowSceneActivation = true;
                 }
                 
-                await Task.Yield();
+                await UniTask.Yield();
             }
             
             ThrowIfCancelled();
             
             UpdateProgressInternal(0.8f);
+            
+            // Wait 1 frame right after scene becomes active to avoid the instantiation frame spike
+            await UniTask.Yield();
+            
             DebugLog($"Scene loaded: {(_useSceneName ? _sceneName : _sceneBuildIndex.ToString())}");
         }
         
-        private async Task UnloadUnusedAssetsAsync()
+        private async UniTask UnloadUnusedAssetsAsync()
         {
             DebugLog("Unloading unused assets...");
             UpdateProgressInternal(0.85f);
@@ -234,7 +239,7 @@ namespace TirexGame.Utils.LoadingScene
             {
                 float unloadProgress = unloadAssetsOperation.progress;
                 UpdateProgressInternal(0.85f + unloadProgress * 0.15f); // 85% to 100%
-                await Task.Yield();
+                await UniTask.Yield();
             }
             
             ThrowIfCancelled();

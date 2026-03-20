@@ -1,18 +1,18 @@
 using UnityEngine;
 using TirexGame.Utils.Data;
-using TirexGame.Utils.Data.Examples;
+using MyGame.Data;
 
 public class GameInitializer : MonoBehaviour
 {
     private void Start()
     {
-        var playerDataRepository = new FileDataRepository<TirexExamplePlayerData>(
-            useEncryption: true, 
+        var playerDataRepository = new FileDataRepository<TestPlayerData>(
+            useEncryption: true,
             useCompression: true
         );
-        
+
         DataManager.RegisterRepository(playerDataRepository);
-        
-        Debug.Log("Game Initialized with TirexExamplePlayerData Repository");
+
+        Debug.Log("Game Initialized with TestPlayerData Repository");
     }
 }

@@ -26,22 +26,41 @@ namespace Tirex.Utils.ObjectPooling
             var tasks = new List<UniTask<GameObject>>();
             for (var i = 0; i < count; i++)
             {
-                var task = AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
-                tasks.Add(task);
+                try
+                {
+                    var task = AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+                    tasks.Add(task);
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogError($"[AddressableObjectPooling] Prewarm failed to start task for {assetRef}: {e.Message}");
+                }
             }
 
-            // Wait for all tasks to complete simultaneously.
-            var results = await UniTask.WhenAll(tasks);
+            GameObject[] results = null;
+            try
+            {
+                // Wait for all tasks to complete simultaneously.
+                results = await UniTask.WhenAll(tasks);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AddressableObjectPooling] Prewarm encountered an error while loading {assetRef}: {e.Message}");
+                return;
+            }
 
             // After all tasks are completed, process the loaded objects.
-            foreach (var obj in results)
+            if (results != null)
             {
+                foreach (var obj in results)
+                {
                 // If the object is not null, deactivate it and add it to the pool.
                 if (obj == null)
                     continue;
                 obj.SetActive(false);
                 pool.Enqueue(obj);
                 _objectToKeyMap[obj] = assetRef;
+            }
             }
         }
 
@@ -57,14 +76,30 @@ namespace Tirex.Utils.ObjectPooling
 
             var pool = _pools[assetRef];
 
-            if (pool.Count > 0)
+            while (pool.Count > 0)
             {
                 var obj = pool.Dequeue();
-                obj.SetActive(true);
-                return obj;
+                if (obj != null)
+                {
+                    obj.SetActive(true);
+                    return obj;
+                }
             }
 
-            var newObject = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+            GameObject newObject = null;
+            try
+            {
+                newObject = await AddressableHelper.GetAssetAsync<GameObject>(assetRef, GetFeatureName(assetRef));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AddressableObjectPooling] GetObject failed to load {assetRef}: {e.Message}");
+            }
+            
+            if (newObject != null)
+            {
+                _objectToKeyMap[newObject] = assetRef;
+            }
             return newObject;
         }
 
@@ -87,7 +122,9 @@ namespace Tirex.Utils.ObjectPooling
         /// </summary>
         public static void ReturnObject(GameObject obj)
         {
-            if (obj == null || !_objectToKeyMap.TryGetValue(obj, out var key))
+            if (obj == null) return;
+            
+            if (!_objectToKeyMap.TryGetValue(obj, out var key))
             {
                 Debug.LogError($"Object {obj.name} does not belong to any pool.");
                 return;
@@ -127,7 +164,14 @@ namespace Tirex.Utils.ObjectPooling
             }
 
             _pools.Remove(assetRef);
-            AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+            try
+            {
+                AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[AddressableObjectPooling] Failed to unload {assetRef}: {e.Message}");
+            }
         }
 
         /// <summary>
@@ -146,7 +190,14 @@ namespace Tirex.Utils.ObjectPooling
                     Object.Destroy(obj);
                 }
 
-                AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+                try
+                {
+                    AddressableHelper.UnloadAsyncAllAddressableInFeature(GetFeatureName(assetRef)).Forget();
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"[AddressableObjectPooling] Failed to unload {assetRef}: {e.Message}");
+                }
             }
 
             _pools.Clear();
@@ -157,5 +208,9 @@ namespace Tirex.Utils.ObjectPooling
         {
             return string.Format(ADDRESSABLES_OBJECT_POOLING_NAME_FORMAT, assetRef.AssetGUID);
         }
+
+#if UNITY_EDITOR
+        public static IEnumerable<AssetReference> GetAllPoolKeys() => _pools.Keys;
+#endif
     }
 }

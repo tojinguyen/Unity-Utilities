@@ -257,9 +257,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: TirexGame.Utilities::Tirex.Utils.ObjectPooling.TestObjectPooling
   regularPrefab: {fileID: 2621236225515740601, guid: 98414595f1fffa947a434191c50a92a7, type: 3}
   prewarmCount: 10
-  spawnParent: {fileID: 1783075255}
   addressablePrefab:
-    m_AssetGUID: 98414595f1fffa947a434191c50a92a7
+    m_AssetGUID: 
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 

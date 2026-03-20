@@ -3,7 +3,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TirexGame.Utils.Data;
-using TirexGame.Utils.Data.Examples;
+using MyGame.Data;
 using TMPro; 
 using System;
 
@@ -25,8 +25,8 @@ public class SampleUIController : MonoBehaviour
     [SerializeField] private Button takeDamageButton;
     [SerializeField] private Button saveInvalidButton;
 
-    private TirexExamplePlayerData _playerData;
-    private const string DefaultPlayerKey = "TirexExamplePlayerData";
+    private TestPlayerData _playerData;
+    private const string DefaultPlayerKey = "TestPlayerData";
 
     private void Start()
     {
@@ -37,7 +37,7 @@ public class SampleUIController : MonoBehaviour
         takeDamageButton.onClick.AddListener(OnTakeDamageButtonClicked);
         saveInvalidButton.onClick.AddListener(OnSaveInvalidDataClicked);
 
-        DataManager.SubscribeToDataEvents<TirexExamplePlayerData>(
+        DataManager.SubscribeToDataEvents<TestPlayerData>(
             onSaved: OnPlayerDataSaved,
             onLoaded: OnPlayerDataLoaded,
             onDeleted: OnPlayerDataDeleted
@@ -48,7 +48,7 @@ public class SampleUIController : MonoBehaviour
 
     private void OnDestroy()
     {
-        DataManager.UnsubscribeFromDataEvents<TirexExamplePlayerData>(
+        DataManager.UnsubscribeFromDataEvents<TestPlayerData>(
             onSaved: OnPlayerDataSaved,
             onLoaded: OnPlayerDataLoaded,
             onDeleted: OnPlayerDataDeleted
@@ -59,7 +59,7 @@ public class SampleUIController : MonoBehaviour
     {
         SetStatus("Loading data...", Color.yellow);
         
-        _playerData = await DataManager.GetDataAsync<TirexExamplePlayerData>(DefaultPlayerKey);
+        _playerData = await DataManager.GetDataAsync<TestPlayerData>(DefaultPlayerKey);
         
         UpdateUI();
         
@@ -87,7 +87,7 @@ public class SampleUIController : MonoBehaviour
     private async void OnDeleteButtonClicked()
     {
         SetStatus("Deleting data...", Color.yellow);
-        var success = await DataManager.DeleteDataAsync<TirexExamplePlayerData>(DefaultPlayerKey);
+        var success = await DataManager.DeleteDataAsync<TestPlayerData>(DefaultPlayerKey);
 
         if (success)
         {
@@ -162,12 +162,12 @@ public class SampleUIController : MonoBehaviour
 
     #region Event Handlers
 
-    private void OnPlayerDataSaved(TirexExamplePlayerData data)
+    private void OnPlayerDataSaved(TestPlayerData data)
     {
         Debug.Log($"[SampleUIController-Event] PlayerData Saved! Name: {data.PlayerName}");
     }
 
-    private void OnPlayerDataLoaded(TirexExamplePlayerData data)
+    private void OnPlayerDataLoaded(TestPlayerData data)
     {
         Debug.Log($"[SampleUIController-Event] PlayerData Loaded! Name: {data.PlayerName}");
     }

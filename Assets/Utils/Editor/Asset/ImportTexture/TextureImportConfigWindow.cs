@@ -6,7 +6,7 @@ using System.IO;
 /// </summary>
 public class TextureImportConfigWindow : EditorWindow
 {
-    private bool autoConfigEnabled = true;
+    private bool autoConfigEnabled = false;
     private string folderFilter = "";
     private int maxTextureSize = 2048;
     

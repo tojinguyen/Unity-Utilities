@@ -3,7 +3,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TirexGame.Utils.Data;
-using TirexGame.Utils.Data.Examples;
+using MyGame.Data;
 using TMPro;
 using System;
 
@@ -25,8 +25,8 @@ public class SyncDataExample : MonoBehaviour
     [SerializeField] private Button syncExistsButton;
     [SerializeField] private Button syncGetAllKeysButton;
 
-    private TirexExamplePlayerData _playerData;
-    private const string SyncPlayerKey = "SyncTirexExamplePlayerData";
+    private TestPlayerData _playerData;
+    private const string SyncPlayerKey = "SyncTestPlayerData";
 
     private void Start()
     {
@@ -53,7 +53,7 @@ public class SyncDataExample : MonoBehaviour
         });
 
         // Register a memory repository for fast sync operations
-        var memoryRepo = new MemoryDataRepository<TirexExamplePlayerData>();
+        var memoryRepo = new MemoryDataRepository<TestPlayerData>();
         DataManager.RegisterRepository(memoryRepo);
         
         UpdateStatus("DataManager initialized with Memory Repository");
@@ -77,7 +77,7 @@ public class SyncDataExample : MonoBehaviour
             UpdateStatus("Loading data synchronously...");
             
             // Use synchronous API - no await needed!
-            _playerData = DataManager.GetData<TirexExamplePlayerData>(SyncPlayerKey);
+            _playerData = DataManager.GetData<TestPlayerData>(SyncPlayerKey);
             
             if (_playerData != null)
             {
@@ -129,11 +129,11 @@ public class SyncDataExample : MonoBehaviour
             UpdateStatus("Deleting data synchronously...");
             
             // Use synchronous API - no await needed!
-            bool success = DataManager.DeleteData<TirexExamplePlayerData>(SyncPlayerKey);
+            bool success = DataManager.DeleteData<TestPlayerData>(SyncPlayerKey);
             
             if (success)
             {
-                _playerData = new TirexExamplePlayerData();
+                _playerData = new TestPlayerData();
                 _playerData.SetDefaultData();
                 UpdateUIFromData();
                 UpdateStatus("Data deleted successfully");
@@ -154,7 +154,7 @@ public class SyncDataExample : MonoBehaviour
         try
         {
             // Use synchronous API - no await needed!
-            bool exists = DataManager.Exists<TirexExamplePlayerData>(SyncPlayerKey);
+            bool exists = DataManager.Exists<TestPlayerData>(SyncPlayerKey);
             
             UpdateStatus($"Data exists: {exists}");
         }
@@ -169,7 +169,7 @@ public class SyncDataExample : MonoBehaviour
         try
         {
             // Use synchronous API - no await needed!
-            var keys = DataManager.GetAllKeys<TirexExamplePlayerData>();
+            var keys = DataManager.GetAllKeys<TestPlayerData>();
             
             var keyList = string.Join(", ", keys);
             UpdateStatus($"All keys: [{keyList}]");
@@ -196,7 +196,7 @@ public class SyncDataExample : MonoBehaviour
     {
         if (_playerData == null)
         {
-            _playerData = new TirexExamplePlayerData();
+            _playerData = new TestPlayerData();
         }
 
         _playerData.PlayerName = string.IsNullOrEmpty(playerNameInput.text) ? "Unknown Player" : playerNameInput.text;
@@ -239,10 +239,10 @@ public class SyncDataExample : MonoBehaviour
         var syncStopwatch = System.Diagnostics.Stopwatch.StartNew();
         for (int i = 0; i < iterations; i++)
         {
-            var testData = new TirexExamplePlayerData { PlayerName = $"TestPlayer{i}", Level = i };
+            var testData = new TestPlayerData { PlayerName = $"TestPlayer{i}", Level = i };
             DataManager.SaveData(testData, $"TestSync_{i}");
-            var loadedData = DataManager.GetData<TirexExamplePlayerData>($"TestSync_{i}");
-            DataManager.DeleteData<TirexExamplePlayerData>($"TestSync_{i}");
+            var loadedData = DataManager.GetData<TestPlayerData>($"TestSync_{i}");
+            DataManager.DeleteData<TestPlayerData>($"TestSync_{i}");
         }
         syncStopwatch.Stop();
         
