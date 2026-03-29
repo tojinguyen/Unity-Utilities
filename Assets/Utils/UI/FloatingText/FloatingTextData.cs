@@ -35,7 +35,7 @@ namespace TirexGame.Utils.UI
 
         [Header("Text Appearance")]
         [Tooltip("Font size")]
-        [Range(1f, 200f)]
+        [Range(0f, 200f)]
         public float FontSize = 36f;
 
         [Tooltip("Text color")]
