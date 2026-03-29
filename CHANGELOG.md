@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.0...v1.15.1) (2026-03-29)
+
+
+### Bug Fixes
+
+* update range for font size ([fcf5b45](https://github.com/tojinguyen/Unity-Utilities/commit/fcf5b4508e6309c6ff2eaecfb7f66573054fb08b))
+
 # [1.15.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.14.4...v1.15.0) (2026-03-20)
 
 
