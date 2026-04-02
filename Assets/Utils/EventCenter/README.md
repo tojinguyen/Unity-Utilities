@@ -207,10 +207,20 @@ EventSystem.PublishBatch(events);
 
 #### Cách truyền thống (Traditional way):
 ```csharp
-private void OnDestroy()
+// Bạn cần lưu lại subscription object để hủy đăng ký sau này
+private IEventSubscription _skillSelectionClosedSub;
+
+private void OnEnable()
 {
-    // Hủy đăng ký để tránh memory leak
-    EventSystem.Unsubscribe<ScoreChanged>(OnScoreChanged);
+    // Đăng ký event và lưu lại reference
+    _skillSelectionClosedSub = EventSystem.Subscribe<SkillSelectionClosedEvent>(OnSelectionClosed);
+}
+
+private void OnDisable()
+{
+    // Gọi Dispose() (hoặc Unsubscribe()) trên object để hủy đăng ký
+    _skillSelectionClosedSub?.Dispose();
+    _skillSelectionClosedSub = null;
 }
 ```
 
@@ -277,11 +287,35 @@ EventSystem.PublishBatch<T>(IEnumerable<T> events)
 
 #### Unsubscribe
 ```csharp
-// Hủy đăng ký callback cụ thể
-EventSystem.Unsubscribe<T>(Action<T> callback)
+// Constructor callback trả về IEventSubscription. Kể từ bản mới, bạn gọi Dispose() trên subscription đó!
+IEventSubscription subscription = EventSystem.Subscribe<T>(OnEvent);
 
-// Hủy tất cả subscribers của event type
-EventSystem.UnsubscribeAll<T>()
+// Hủy đăng ký callback cụ thể
+subscription.Dispose(); // hoặc subscription.Unsubscribe()
+
+// Hoặc hủy bằng cách implement interface IEventListener<T>
+public class MyClass : MonoBehaviour, IEventListener<PlayerDied>
+{
+    private void OnEnable()  
+    { 
+        EventSystem.Subscribe(this); 
+    }
+    
+    private void OnDisable() 
+    { 
+        EventSystem.Unsubscribe(this); 
+    }
+    
+    public bool HandleEvent(PlayerDied data) 
+    { 
+        // Xử lý event tại đây
+        return true; 
+    }
+    
+    public int Priority => 0;
+    public bool IsActive => true;
+    public bool HandleEvent(BaseEvent baseEvent) => false;
+}
 ```
 
 #### Utility
@@ -427,10 +461,16 @@ private void Start()
 }
 
 // ✅ Hoặc unsubscribe thủ công trong OnDestroy (cách cũ)
+private IEventSubscription _playerMovedSub;
+private void Start()
+{
+    _playerMovedSub = EventSystem.Subscribe<PlayerMoved>(OnPlayerMoved);
+}
 private void OnDestroy()
 {
-    EventSystem.Unsubscribe<PlayerMoved>(OnPlayerMoved);
+    _playerMovedSub?.Dispose();
 }
+
 
 // ✅ Sử dụng meaningful names
 public struct EnemyDefeated { /* ... */ }
