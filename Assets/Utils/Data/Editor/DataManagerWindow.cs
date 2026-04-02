@@ -359,7 +359,7 @@ namespace TirexGame.Utils.Data.Editor
                     "Are you sure you want to clear all cached data?", 
                     "Clear", "Cancel"))
                 {
-                    // TODO: Implement cache clearing
+                    DataManager.ClearCache();
                     EditorUtility.DisplayDialog("Cache Cleared", "All cached data has been cleared!", "OK");
                 }
             }

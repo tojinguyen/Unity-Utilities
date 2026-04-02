@@ -28,6 +28,17 @@ namespace TirexGame.Utils.Data
         public static event Action<Type, object> OnDataLoaded;
         public static event Action<Type, Exception> OnDataError;
         
+        #if UNITY_EDITOR
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetState()
+        {
+            Shutdown();
+            OnDataSaved = null;
+            OnDataLoaded = null;
+            OnDataError = null;
+        }
+        #endif
+
         public static void Initialize(DataManagerConfig config = null)
         {
             lock (_lockObject)

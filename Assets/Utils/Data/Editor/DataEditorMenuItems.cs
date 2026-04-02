@@ -53,6 +53,9 @@ namespace TirexGame.Utils.Data.Editor
                             System.IO.Directory.Delete(dir, true);
                         }
                         
+                        // Clear cache so it doesn't persist to the next play mode when domain reload is disabled
+                        DataManager.ClearCache();
+
                         EditorUtility.DisplayDialog("Success", "All data cleared successfully!", "OK");
                     }
                 }
