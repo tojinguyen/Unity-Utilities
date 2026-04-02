@@ -1,3 +1,10 @@
+## [1.15.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.1...v1.15.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* data tool ([f2aa18a](https://github.com/tojinguyen/Unity-Utilities/commit/f2aa18a9d066cfc8be825bd677092ec9f9aa919f))
+
 ## [1.15.1](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.0...v1.15.1) (2026-03-29)
 
 
