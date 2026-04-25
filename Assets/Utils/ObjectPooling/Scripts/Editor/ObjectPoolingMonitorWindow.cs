@@ -12,7 +12,7 @@ namespace Tirex.Utils.ObjectPooling.Editor
         private string stringSearch = "";
         private bool autoRefresh = true;
         private double lastRefreshTime;
-        private const float RefreshRate = 0.5f; // 0.5 seconds
+        private const float RefreshRate = 0.5f;
         
         [MenuItem("TirexGame/Object Pooling Monitor")]
         public static void ShowWindow()
