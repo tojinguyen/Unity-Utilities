@@ -15,7 +15,7 @@ namespace TirexGame.Utils.Data.Editor
     {
         private Vector2 _scrollPosition;
         private int _selectedTabIndex = 0;
-        private readonly string[] _tabNames = { "Data Browser", "Data Editor", "Settings", "Tools" };
+        private readonly string[] _tabNames = { "Data Browser", "Settings", "Tools" };
         
         // Data Browser
         private List<Type> _dataModelTypes = new List<Type>();
@@ -94,12 +94,9 @@ namespace TirexGame.Utils.Data.Editor
                     DrawDataBrowserTab();
                     break;
                 case 1:
-                    DrawDataEditorTab();
-                    break;
-                case 2:
                     DrawSettingsTab();
                     break;
-                case 3:
+                case 2:
                     DrawToolsTab();
                     break;
             }
@@ -211,9 +208,9 @@ namespace TirexGame.Utils.Data.Editor
                 EditorGUILayout.Space();
                 if (GUILayout.Button("+ Create New Data", GUILayout.Height(25)))
                 {
-                    // Switch to Data Editor tab to create
-                    _selectedTabIndex = 1;
-                    GUI.FocusControl(null); // Clear focus
+                    _newDataKey = "new_data_key";
+                    // Just prompt for key and create immediately since we removed the tab
+                    CreateNewData();
                 }
 
                 if (_dataKeys.Count == 0)
@@ -262,32 +259,7 @@ namespace TirexGame.Utils.Data.Editor
             EditorGUILayout.EndHorizontal();
         }
         
-        private void DrawDataEditorTab()
-        {
-            EditorGUILayout.LabelField("Data Editor", EditorStyles.boldLabel);
-            EditorGUILayout.Space();
-            
-            if (_selectedDataType != null)
-            {
-                EditorGUILayout.LabelField($"Creating new {_selectedDataType.Name}", EditorStyles.boldLabel);
-                
-                EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.LabelField("Data Key:", GUILayout.Width(100));
-                _newDataKey = EditorGUILayout.TextField(_newDataKey);
-                EditorGUILayout.EndHorizontal();
-                
-                EditorGUILayout.Space();
-                
-                if (GUILayout.Button("Create New Data", GUILayout.Height(30)))
-                {
-                    CreateNewData();
-                }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("Select a data type from the Data Browser tab first", MessageType.Warning);
-            }
-        }
+
         
         private void DrawSettingsTab()
         {
@@ -640,10 +612,24 @@ namespace TirexGame.Utils.Data.Editor
         
         private void DrawFieldEditor(string name, Type type, object value, Action<object> setValue)
         {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(name, GUILayout.Width(120));
-            DrawValueEditor(type, value, setValue);
-            EditorGUILayout.EndHorizontal();
+            // Lists and nested objects need a vertical layout (label on its own line as header).
+            bool isComplexType = (typeof(System.Collections.IList).IsAssignableFrom(type) && type.IsGenericType)
+                                 || (type.IsClass && type != typeof(string));
+
+            if (isComplexType)
+            {
+                EditorGUILayout.LabelField(name, EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
+                DrawValueEditor(type, value, setValue);
+                EditorGUI.indentLevel--;
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(name, GUILayout.Width(120));
+                DrawValueEditor(type, value, setValue);
+                EditorGUILayout.EndHorizontal();
+            }
         }
 
         private void DrawValueEditor(Type type, object value, Action<object> setValue)
@@ -688,80 +674,156 @@ namespace TirexGame.Utils.Data.Editor
             }
             else if (typeof(System.Collections.IList).IsAssignableFrom(type) && type.IsGenericType)
             {
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                var list = value as System.Collections.IList;
-                if (list == null)
-                {
-                    if (GUILayout.Button("Create List", GUILayout.Width(100)))
-                    {
-                        list = (System.Collections.IList)Activator.CreateInstance(type);
-                        setValue(list);
-                    }
-                }
-                else
-                {
-                    Type elementType = type.GetGenericArguments()[0];
-                    
-                    EditorGUILayout.BeginHorizontal();
-                    EditorGUILayout.LabelField($"Size: {list.Count}", EditorStyles.boldLabel, GUILayout.Width(100));
-                    if (GUILayout.Button("+", GUILayout.Width(30)))
-                    {
-                        object newElement = elementType == typeof(string) ? "" : (elementType.IsValueType ? Activator.CreateInstance(elementType) : null);
-                        list.Add(newElement);
-                    }
-                    if (GUILayout.Button("Clear", GUILayout.Width(50)))
-                    {
-                        list.Clear();
-                    }
-                    EditorGUILayout.EndHorizontal();
-                    
-                    for (int i = 0; i < list.Count; i++)
-                    {
-                        EditorGUILayout.BeginHorizontal();
-                        EditorGUILayout.LabelField($"[{i}]", GUILayout.Width(40));
-                        int index = i;
-                        DrawValueEditor(elementType, list[i], v => list[index] = v);
-                        if (GUILayout.Button("-", GUILayout.Width(30)))
-                        {
-                            list.RemoveAt(i);
-                            i--; // Decrement i or just let it skip the next, wait no, if we remove we must decrement i.
-                        }
-                        EditorGUILayout.EndHorizontal();
-                    }
-                }
-                EditorGUILayout.EndVertical();
+                DrawListEditor(type, value, setValue);
             }
-            else if (type.IsClass && type != typeof(string))
+            else if ((type.IsClass && type != typeof(string)) || type.IsValueType)
             {
-                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-                if (value == null)
-                {
-                    if (GUILayout.Button($"Create {type.Name}", GUILayout.Width(150)))
-                    {
-                        value = Activator.CreateInstance(type);
-                        setValue(value);
-                    }
-                }
-                else
-                {
-                    var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
-                    foreach (var field in fields)
-                    {
-                        DrawFieldEditor(field.Name, field.FieldType, field.GetValue(value), v => field.SetValue(value, v));
-                    }
-                    
-                    var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.CanWrite);
-                    foreach (var prop in properties)
-                    {
-                        DrawFieldEditor(prop.Name, prop.PropertyType, prop.GetValue(value), v => prop.SetValue(value, v));
-                    }
-                }
-                EditorGUILayout.EndVertical();
+                // Handles both class and struct (struct: IsValueType, not primitive/enum/known Unity types)
+                DrawObjectEditor(type, value, setValue);
             }
             else
             {
                 EditorGUILayout.LabelField($"Unsupported type: {type.Name}");
             }
+        }
+
+        /// <summary>
+        /// Draws an editor for a List&lt;T&gt; field.
+        /// Complex element types (class/struct) get a vertical box per item.
+        /// Primitive types use the compact horizontal row.
+        /// </summary>
+        private void DrawListEditor(Type listType, object value, Action<object> setValue)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            var list = value as System.Collections.IList;
+            if (list == null)
+            {
+                if (GUILayout.Button("Create List", GUILayout.Width(100)))
+                {
+                    list = (System.Collections.IList)Activator.CreateInstance(listType);
+                    setValue(list);
+                }
+            }
+            else
+            {
+                Type elementType = listType.GetGenericArguments()[0];
+                bool elementIsComplex = IsComplexType(elementType);
+
+                // Toolbar
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"Count: {list.Count}", EditorStyles.boldLabel, GUILayout.Width(90));
+                if (GUILayout.Button("+", GUILayout.Width(28)))
+                    list.Add(CreateDefaultInstance(elementType));
+                if (GUILayout.Button("Clear", GUILayout.Width(50)))
+                    list.Clear();
+                EditorGUILayout.EndHorizontal();
+
+                // Elements
+                for (int i = 0; i < list.Count; i++)
+                {
+                    int index = i;
+                    if (elementIsComplex)
+                    {
+                        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"[{i}]", EditorStyles.boldLabel, GUILayout.Width(40));
+                        GUILayout.FlexibleSpace();
+                        bool removed = false;
+                        if (GUILayout.Button("✕", GUILayout.Width(24)))
+                        {
+                            list.RemoveAt(i);
+                            i--;
+                            removed = true;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                        if (!removed)
+                        {
+                            EditorGUI.indentLevel++;
+                            DrawValueEditor(elementType, list[index], v => list[index] = v);
+                            EditorGUI.indentLevel--;
+                        }
+                        EditorGUILayout.EndVertical();
+                    }
+                    else
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        EditorGUILayout.LabelField($"[{i}]", GUILayout.Width(40));
+                        DrawValueEditor(elementType, list[index], v => list[index] = v);
+                        if (GUILayout.Button("-", GUILayout.Width(24)))
+                        {
+                            list.RemoveAt(i);
+                            i--;
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+        /// <summary>
+        /// Draws an editor for a class or struct by iterating its public fields/properties recursively.
+        /// Handles structs correctly by boxing and writing back the mutated value.
+        /// </summary>
+        private void DrawObjectEditor(Type type, object value, Action<object> setValue)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            if (value == null)
+            {
+                if (GUILayout.Button($"Create {type.Name}", GUILayout.Width(160)))
+                {
+                    value = CreateDefaultInstance(type);
+                    setValue(value);
+                }
+            }
+            else
+            {
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    object captured = value;
+                    DrawFieldEditor(field.Name, field.FieldType, field.GetValue(captured), v =>
+                    {
+                        object boxed = captured;
+                        field.SetValue(boxed, v);
+                        if (type.IsValueType) setValue(boxed);
+                    });
+                }
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.CanRead && p.CanWrite);
+                foreach (var prop in properties)
+                {
+                    object captured = value;
+                    DrawFieldEditor(prop.Name, prop.PropertyType, prop.GetValue(captured), v =>
+                    {
+                        object boxed = captured;
+                        prop.SetValue(boxed, v);
+                        if (type.IsValueType) setValue(boxed);
+                    });
+                }
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+        /// <summary>Returns true if the type requires a multi-row (vertical) editor.</summary>
+        private static bool IsComplexType(Type type)
+        {
+            if (typeof(System.Collections.IList).IsAssignableFrom(type) && type.IsGenericType) return true;
+            if (type.IsClass && type != typeof(string)) return true;
+            // Struct that is not a known primitive-like value type
+            if (type.IsValueType && !type.IsPrimitive && !type.IsEnum
+                && type != typeof(DateTime) && type != typeof(Vector2) && type != typeof(Vector3))
+                return true;
+            return false;
+        }
+
+        /// <summary>Creates a safe default instance for any supported type.</summary>
+        private static object CreateDefaultInstance(Type type)
+        {
+            if (type == typeof(string)) return "";
+            if (type.IsValueType)       return Activator.CreateInstance(type);
+            var ctor = type.GetConstructor(Type.EmptyTypes);
+            return ctor != null ? Activator.CreateInstance(type) : null;
         }
         
         private void ExportAllData()
