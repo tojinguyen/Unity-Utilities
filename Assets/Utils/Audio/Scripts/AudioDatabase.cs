@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Audio;
 
 [CreateAssetMenu(fileName = "AudioDatabase", menuName = "Audio/Audio Database")]
 public class AudioDatabase : ScriptableObject
@@ -19,6 +20,8 @@ public class AudioDatabase : ScriptableObject
     public class AudioCategorySettings
     {
         public AudioType audioType;
+        [Tooltip("Optional Audio Mixer Group for this category")]
+        public AudioMixerGroup outputMixerGroup;
         [Range(0f, 1f)] public float masterVolume = 1f;
         public bool muted = false;
         public int maxConcurrentSounds = 10;
@@ -64,6 +67,7 @@ public class AudioDatabase : ScriptableObject
                 var defaultSettings = new AudioCategorySettings
                 {
                     audioType = audioType,
+                    outputMixerGroup = null,
                     masterVolume = 1f,
                     muted = false,
                     maxConcurrentSounds = 10,

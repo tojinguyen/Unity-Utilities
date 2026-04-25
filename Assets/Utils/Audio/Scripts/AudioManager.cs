@@ -546,7 +546,8 @@ public static class AudioManager
         finalClipData.volume *= volumeMultiplier * audioDatabase.GetCategoryVolume(clipData.audioType) * masterVolume;
         
         // Initialize and play
-        audioSource.Initialize(finalClipData, position);
+        var mixerGroup = audioDatabase.GetCategorySettings(clipData.audioType)?.outputMixerGroup;
+        audioSource.Initialize(finalClipData, position, mixerGroup);
         
         // Add to tracking lists
         activeAudioSources.Add(audioSource);
@@ -601,7 +602,8 @@ public static class AudioManager
             var fadeOutTask = currentMusicSource.StopAsync();
             
             // Initialize new music
-            newMusicSource.Initialize(finalClipData);
+            var mixerGroup = audioDatabase.GetCategorySettings(AudioType.Music)?.outputMixerGroup;
+            newMusicSource.Initialize(finalClipData, null, mixerGroup);
             activeAudioSources.Add(newMusicSource);
             activeAudioByType[AudioType.Music].Add(newMusicSource);
             
@@ -620,7 +622,8 @@ public static class AudioManager
             }
             
             // Initialize and play new music
-            newMusicSource.Initialize(finalClipData);
+            var mixerGroup = audioDatabase.GetCategorySettings(AudioType.Music)?.outputMixerGroup;
+            newMusicSource.Initialize(finalClipData, null, mixerGroup);
             activeAudioSources.Add(newMusicSource);
             activeAudioByType[AudioType.Music].Add(newMusicSource);
             await newMusicSource.PlayAsync();

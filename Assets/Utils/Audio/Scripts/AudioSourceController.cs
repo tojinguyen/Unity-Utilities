@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Audio;
 using Cysharp.Threading.Tasks;
 
 public class AudioSourceController : MonoBehaviour
@@ -53,7 +54,7 @@ public class AudioSourceController : MonoBehaviour
         }
     }
     
-    public void Initialize(AudioClipData clipData, Vector3? position = null)
+    public void Initialize(AudioClipData clipData, Vector3? position = null, AudioMixerGroup mixerGroup = null)
     {
         if (clipData == null || !clipData.IsValid)
         {
@@ -66,6 +67,7 @@ public class AudioSourceController : MonoBehaviour
         currentAudioType = clipData.audioType;
         
         // Configure AudioSource
+        audioSource.outputAudioMixerGroup = mixerGroup;
         audioSource.clip = clipData.audioClip;
         audioSource.volume = clipData.volume;
         audioSource.pitch = clipData.pitch;
@@ -275,6 +277,7 @@ public class AudioSourceController : MonoBehaviour
         {
             audioSource.Stop();
             audioSource.clip = null;
+            audioSource.outputAudioMixerGroup = null;
             audioSource.volume = 1f;
             audioSource.pitch = 1f;
         }
