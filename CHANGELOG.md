@@ -1,3 +1,18 @@
+# [1.16.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.2...v1.16.0) (2026-04-25)
+
+
+### Features
+
+* remove factory ([3f1c918](https://github.com/tojinguyen/Unity-Utilities/commit/3f1c9183cfcc6f117d23d79b8075c3b7396a65e7))
+* update audio package ([8e26811](https://github.com/tojinguyen/Unity-Utilities/commit/8e26811e0512d4fd93bf295e081d5951289a2f9c))
+* update editor for data package ([2666ad4](https://github.com/tojinguyen/Unity-Utilities/commit/2666ad4670e8ed0bb192b6aa26673496b5d69a70))
+* update package object pooling ([1189bed](https://github.com/tojinguyen/Unity-Utilities/commit/1189bede2f4554d1ab5a5067b422936ee28e5010))
+* update readme ([af731aa](https://github.com/tojinguyen/Unity-Utilities/commit/af731aa4559c0b1e74ed609145c045ea7961f3c2))
+* update readme ([f5c115a](https://github.com/tojinguyen/Unity-Utilities/commit/f5c115a827a3e532e3a1ca74406bed084dc6715a))
+* update readme ([585470b](https://github.com/tojinguyen/Unity-Utilities/commit/585470b193fb2d0a3bfb768facdf0855524eaeec))
+* update state machine ([589d315](https://github.com/tojinguyen/Unity-Utilities/commit/589d31547b7c85f2a23f232c5d5892678bdb0acd))
+* update tool editor for ui navigator ([8c225e2](https://github.com/tojinguyen/Unity-Utilities/commit/8c225e2c9031417eb544f032b058921b3637fb9c))
+
 ## [1.15.2](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.1...v1.15.2) (2026-04-02)
 
 
