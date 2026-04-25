@@ -46,10 +46,12 @@ namespace TirexGame.Utils.UI
         private RectTransform _content;
         private readonly Dictionary<int, Queue<RecycleViewItem>> _itemPools = new Dictionary<int, Queue<RecycleViewItem>>();
         private readonly List<RecycleViewItem> _activeItems = new List<RecycleViewItem>();
+        private readonly HashSet<int> _activeIndices = new HashSet<int>(); // O(1) lookup thay cho Exists()
         private List<IRecycleViewData> _dataList;
         private Dictionary<int, GameObject> _itemPrefabMap;
         private Dictionary<int, float> _itemTypeHeights = new Dictionary<int, float>();
         private Dictionary<int, float> _itemTypeWidths = new Dictionary<int, float>();
+        private Dictionary<System.Type, int> _itemComponentTypeMap = new Dictionary<System.Type, int>(); // Cache type → typeId
         private float[] _itemPositions; // Cache of item positions for performance
         private int _firstVisibleIndex = -1;
         private int _lastVisibleIndex = -1;
@@ -114,33 +116,36 @@ namespace TirexGame.Utils.UI
             {
                 if (mapping.Prefab == null)
                 {
-                    Debug.LogError($"RecycleView: Prefab for TypeId {mapping.TypeId} is not assigned.");
+                    ConsoleLogger.LogError($"[RecycleView] Prefab for TypeId {mapping.TypeId} is not assigned.");
                     continue;
                 }
                 if (!_itemPrefabMap.ContainsKey(mapping.TypeId))
                 {
                     _itemPrefabMap.Add(mapping.TypeId, mapping.Prefab.gameObject);
-                    
+
+                    // Cache component type → typeId cho ReturnItemToPool fallback
+                    var itemComponent = mapping.Prefab.GetComponent<RecycleViewItem>();
+                    if (itemComponent != null)
+                        _itemComponentTypeMap[itemComponent.GetType()] = mapping.TypeId;
+
                     // Auto-detect dimensions from prefab RectTransform
                     var prefabRect = mapping.Prefab.GetComponent<RectTransform>();
                     if (prefabRect != null)
                     {
-                        float itemHeight = prefabRect.sizeDelta.y > 0 ? prefabRect.sizeDelta.y : 100f; // Use fixed fallback
-                        float itemWidth = prefabRect.sizeDelta.x > 0 ? prefabRect.sizeDelta.x : 100f; // Use fixed fallback
-                        
+                        float itemHeight = prefabRect.sizeDelta.y > 0 ? prefabRect.sizeDelta.y : 100f;
+                        float itemWidth  = prefabRect.sizeDelta.x > 0 ? prefabRect.sizeDelta.x : 100f;
                         _itemTypeHeights[mapping.TypeId] = itemHeight;
-                        _itemTypeWidths[mapping.TypeId] = itemWidth;
+                        _itemTypeWidths[mapping.TypeId]  = itemWidth;
                     }
                     else
                     {
-                        // Fallback to default dimensions
-                        _itemTypeHeights[mapping.TypeId] = 100f; // Use fixed fallback
-                        _itemTypeWidths[mapping.TypeId] = 100f; // Use fixed fallback
+                        _itemTypeHeights[mapping.TypeId] = 100f;
+                        _itemTypeWidths[mapping.TypeId]  = 100f;
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"RecycleView: Duplicate TypeId {mapping.TypeId} found. Only the first one will be used.");
+                    ConsoleLogger.LogWarning($"[RecycleView] Duplicate TypeId {mapping.TypeId} found. Only the first one will be used.");
                 }
             }
         }
@@ -188,6 +193,13 @@ namespace TirexGame.Utils.UI
         public void SetData(List<IRecycleViewData> data)
         {
             _dataList = data;
+            // FIX Bug#8: Reset scroll về đầu khi data mới được set
+            if (_content != null)
+            {
+                _content.anchoredPosition = layoutMode == LayoutMode.Vertical
+                    ? new Vector2(_content.anchoredPosition.x, 0)
+                    : new Vector2(0, _content.anchoredPosition.y);
+            }
             Rebuild();
         }
 
@@ -258,13 +270,12 @@ namespace TirexGame.Utils.UI
                 return;
             }
 
-            // Prevent multiple simultaneous calculations
-            if (_isCalculatingPositions)
+            // FIX Bug#5: Dừng coroutine cũ nếu đang chạy và reset flag
+            if (_isCalculatingPositions && _positionCalculationCoroutine != null)
             {
-                if (_positionCalculationCoroutine != null)
-                {
-                    StopCoroutine(_positionCalculationCoroutine);
-                }
+                StopCoroutine(_positionCalculationCoroutine);
+                _positionCalculationCoroutine = null;
+                _isCalculatingPositions = false;
             }
 
             // For large datasets, use coroutine to spread calculation across frames
@@ -275,6 +286,7 @@ namespace TirexGame.Utils.UI
             }
             else
             {
+                // _isCalculatingPositions đã là false, không cần set thêm
                 CalculateItemPositionsImmediate();
             }
         }
@@ -290,20 +302,13 @@ namespace TirexGame.Utils.UI
             for (int i = 1; i < _dataList.Count; i++)
             {
                 if (layoutMode == LayoutMode.Vertical)
-                {
                     _itemPositions[i] = _itemPositions[i - 1] + GetItemHeight(i - 1) + itemPadding;
-                }
                 else
-                {
                     _itemPositions[i] = _itemPositions[i - 1] + GetItemWidth(i - 1) + itemPadding;
-                }
             }
 
-            // Debug log for position verification
-            if (_dataList.Count <= 10) // Only log for small lists to avoid spam
-            {
-                LogItemPositions();
-            }
+            // FIX Bug#9: Log chỉ còn trong editor, dùng ConsoleLogger (stripped by ENABLE_LOGS define)
+            ConsoleLogger.Log($"[RecycleView] CalculateItemPositions done. Count={_dataList.Count}");
         }
 
         /// <summary>
@@ -354,20 +359,16 @@ namespace TirexGame.Utils.UI
         }
 
         /// <summary>
-        /// Helper method to log item positions for debugging.
+        /// Helper method to log item positions for debugging (stripped in non-ENABLE_LOGS builds).
         /// </summary>
         private void LogItemPositions()
         {
             for (int i = 0; i < _dataList.Count; i++)
             {
                 if (layoutMode == LayoutMode.Vertical)
-                {
-                    Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Height: {GetItemHeight(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
-                }
+                    ConsoleLogger.Log($"[RecycleView] Item {i} | Type:{_dataList[i].ItemType} H:{GetItemHeight(i)} Pos:{_itemPositions[i]} Pad:{itemPadding}");
                 else
-                {
-                    Debug.Log($"RecycleView: Item {i} - Type: {_dataList[i].ItemType}, Width: {GetItemWidth(i)}, Position: {_itemPositions[i]}, Padding: {itemPadding}");
-                }
+                    ConsoleLogger.Log($"[RecycleView] Item {i} | Type:{_dataList[i].ItemType} W:{GetItemWidth(i)} Pos:{_itemPositions[i]} Pad:{itemPadding}");
             }
         }
 
@@ -407,10 +408,9 @@ namespace TirexGame.Utils.UI
         {
             // Return all active items to the pool
             foreach (var item in _activeItems)
-            {
                 ReturnItemToPool(item);
-            }
             _activeItems.Clear();
+            _activeIndices.Clear(); // FIX: sync HashSet
 
             // Reset indices
             _firstVisibleIndex = -1;
@@ -486,6 +486,7 @@ namespace TirexGame.Utils.UI
                 var item = _activeItems[i];
                 if (item.CurrentDataIndex < _firstVisibleIndex || item.CurrentDataIndex > _lastVisibleIndex)
                 {
+                    _activeIndices.Remove(item.CurrentDataIndex); // FIX: sync HashSet
                     ReturnItemToPool(item);
                     _activeItems.RemoveAt(i);
                 }
@@ -494,7 +495,8 @@ namespace TirexGame.Utils.UI
             // Activate and position items that are now visible
             for (int i = _firstVisibleIndex; i <= _lastVisibleIndex; i++)
             {
-                if (_activeItems.Exists(item => item.CurrentDataIndex == i))
+                // FIX Bug#4: O(1) HashSet lookup thay vì O(n) Exists()
+                if (_activeIndices.Contains(i))
                     continue; // Already active
 
                 var data = _dataList[i];
@@ -534,6 +536,7 @@ namespace TirexGame.Utils.UI
 
                 item.BindData(data, i);
                 _activeItems.Add(item);
+                _activeIndices.Add(i); // FIX: track trong HashSet
             }
         }
 
@@ -568,22 +571,33 @@ namespace TirexGame.Utils.UI
         }
 
         /// <summary>
-        /// Find the last visible item index for vertical layout.
+        /// Find the last visible item index using binary search (FIX Bug#3: O(n) → O(log n)).
         /// </summary>
         private int FindLastVisibleIndex(float scrollEndPosition)
         {
             if (_itemPositions == null || _itemPositions.Length == 0)
                 return 0;
 
-            for (int i = 0; i < _itemPositions.Length; i++)
+            int left   = 0;
+            int right  = _itemPositions.Length - 1;
+            int result = _itemPositions.Length - 1;
+
+            while (left <= right)
             {
-                if (_itemPositions[i] > scrollEndPosition)
+                int mid = left + (right - left) / 2;
+
+                if (_itemPositions[mid] <= scrollEndPosition)
                 {
-                    return Mathf.Max(0, i - 1);
+                    result = mid;
+                    left   = mid + 1;
+                }
+                else
+                {
+                    right = mid - 1;
                 }
             }
 
-            return _itemPositions.Length - 1;
+            return result;
         }
 
         /// <summary>
@@ -609,9 +623,7 @@ namespace TirexGame.Utils.UI
         private RecycleViewItem GetItemFromPool(int itemType)
         {
             if (!_itemPools.ContainsKey(itemType))
-            {
                 _itemPools[itemType] = new Queue<RecycleViewItem>();
-            }
 
             RecycleViewItem item;
             if (_itemPools[itemType].Count > 0)
@@ -620,30 +632,39 @@ namespace TirexGame.Utils.UI
             }
             else
             {
+                // FIX Bug#2: Guard rõ ràng, log rồi return null có comment giải thích
                 if (!_itemPrefabMap.ContainsKey(itemType))
                 {
-                    Debug.LogError($"RecycleView: No prefab registered for ItemType {itemType}. Cannot create new item.");
-                    // Return a dummy or handle error appropriately
-                    return null; // This will cause a NullReferenceException downstream, highlighting the configuration error.
+                    ConsoleLogger.LogError($"[RecycleView] No prefab registered for ItemType {itemType}. Cannot create new item.");
+                    return null;
                 }
-                var prefab = _itemPrefabMap[itemType];
-                var instance = Instantiate(prefab, _content);
-                item = instance.GetComponent<RecycleViewItem>();
+
+                var prefab    = _itemPrefabMap[itemType];
+                var instance  = Instantiate(prefab, _content);
+                item          = instance.GetComponent<RecycleViewItem>();
+
+                if (item == null)
+                {
+                    ConsoleLogger.LogError($"[RecycleView] Prefab for ItemType {itemType} does not have a RecycleViewItem component.");
+                    Destroy(instance);
+                    return null;
+                }
+
                 item.Initialize(this);
-                
+
                 // Ensure newly created items have consistent anchor settings
                 var itemRect = instance.GetComponent<RectTransform>();
                 if (layoutMode == LayoutMode.Vertical)
                 {
                     itemRect.anchorMin = new Vector2(0, 1);
                     itemRect.anchorMax = new Vector2(1, 1);
-                    itemRect.pivot = new Vector2(0.5f, 1);
+                    itemRect.pivot     = new Vector2(0.5f, 1);
                 }
                 else
                 {
                     itemRect.anchorMin = new Vector2(0, 0);
                     itemRect.anchorMax = new Vector2(0, 1);
-                    itemRect.pivot = new Vector2(0, 0.5f);
+                    itemRect.pivot     = new Vector2(0, 0.5f);
                 }
             }
 
@@ -656,14 +677,30 @@ namespace TirexGame.Utils.UI
             if (item == null)
                 return;
 
-            var data = _dataList[item.CurrentDataIndex];
-            if (!_itemPools.ContainsKey(data.ItemType))
+            // FIX Bug#1: Không dùng _dataList[item.CurrentDataIndex] vì _dataList có thể null/thay đổi.
+            // Thay vào đó, tra cứu itemType trực tiếp từ _dataList nếu còn valid,
+            // hoặc fallback sang scan _itemPrefabMap theo item component type.
+            int itemType = -1;
+            if (_dataList != null && item.CurrentDataIndex >= 0 && item.CurrentDataIndex < _dataList.Count)
             {
-                _itemPools[data.ItemType] = new Queue<RecycleViewItem>();
+                itemType = _dataList[item.CurrentDataIndex].ItemType;
+            }
+            else
+            {
+                // Fallback: tra cứu từ cache component-type map (O(1), không Instantiate)
+                if (!_itemComponentTypeMap.TryGetValue(item.GetType(), out itemType))
+                {
+                    ConsoleLogger.LogWarning($"[RecycleView] Cannot determine ItemType for item '{item.name}'. Destroying instead of pooling.");
+                    Destroy(item.gameObject);
+                    return;
+                }
             }
 
+            if (!_itemPools.ContainsKey(itemType))
+                _itemPools[itemType] = new Queue<RecycleViewItem>();
+
             item.gameObject.SetActive(false);
-            _itemPools[data.ItemType].Enqueue(item);
+            _itemPools[itemType].Enqueue(item);
         }
 
         #endregion
@@ -679,7 +716,7 @@ namespace TirexGame.Utils.UI
         {
             if (_dataList == null || index < 0 || index >= _dataList.Count)
             {
-                Debug.LogWarning($"Cannot refresh item at index {index}: index out of bounds");
+                ConsoleLogger.LogWarning($"[RecycleView] Cannot refresh item at index {index}: index out of bounds.");
                 return;
             }
 

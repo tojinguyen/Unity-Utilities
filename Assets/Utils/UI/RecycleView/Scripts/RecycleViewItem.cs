@@ -80,7 +80,7 @@ namespace TirexGame.Utils.UI
             TData typedData = data as TData;
             if (typedData == null)
             {
-                Debug.LogError($"Invalid data type passed to item. Expected {typeof(TData)} but got {data.GetType()} at index {index}", gameObject);
+                ConsoleLogger.LogError($"[RecycleView] Invalid data type passed to item. Expected {typeof(TData)} but got {data.GetType()} at index {index}");
                 return;
             }
             BindData(typedData, index);
