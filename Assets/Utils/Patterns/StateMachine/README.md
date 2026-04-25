@@ -1,151 +1,176 @@
-# StateMachine - Type-Safe Implementation
+# StateMachine Package
 
-Một implementation của State Machine pattern được cải tiến không phụ thuộc vào MonoBehaviour và sử dụng Type làm key thay vì string để đảm bảo type safety.
+Package State Machine với hiệu năng cao, zero-allocation transitions, và hỗ trợ `CancellationToken` đầy đủ.
 
-## Tính năng chính
+---
 
-### ✅ Đã cải tiến:
-- **Không phụ thuộc MonoBehaviour**: StateMachine giờ đây là pure C# class
-- **Type-safe**: Sử dụng generic types thay vì string làm key
-- **Loại bỏ Update/FixedUpdate**: Không còn frame-based updates tự động
-- **Manual Tick**: Cung cấp cơ chế tick thủ công cho states cần updates
+## Các Class chính
 
-### 🔧 Tính năng mới:
-- **ITickableState**: Interface cho states cần periodic updates
-- **BaseTickableState**: Base class cho tickable states
-- **Generic transitions**: Type-safe state transitions
-- **Flexible initialization**: Constructor với tùy chọn debug logging
+| Class | Mô tả |
+|---|---|
+| `StateMachine<T>` | State machine dựa trên class, type-safe, có context |
+| `SimpleStateMachine<TEnum>` | State machine dựa trên enum, fluent builder pattern |
+| `BaseState` | Base class cho state đơn giản |
+| `BaseState<T>` | Base class cho state có context |
+| `BaseTickableState` | Base class có `OnTick()` |
+| `BaseCompositeState` | Base class cho state chứa sub-states |
 
-## Cách sử dụng
+---
 
-### 1. Tạo StateMachine
+## StateMachine\<T\> — Dùng khi state là class riêng biệt
 
-```csharp
-// Tạo StateMachine với debug logging
-var stateMachine = new StateMachine(enableDebugLogs: true);
-```
-
-### 2. Tạo States
+### Tạo State
 
 ```csharp
-// Tạo states kế thừa từ BaseState hoặc BaseTickableState
-public class IdleState : BaseState
+using System.Threading;
+using Cysharp.Threading.Tasks;
+
+public class IdleState : BaseState<PlayerContext>
 {
-    public override async UniTask OnEnter()
+    public override UniTask OnEnter(CancellationToken ct = default)
     {
-        Debug.Log("Entered Idle State");
-        await base.OnEnter();
-    }
-    
-    public override async UniTask OnExit()
-    {
-        Debug.Log("Exited Idle State");
-        await base.OnExit();
+        Debug.Log("Entered Idle");
+        return base.OnEnter(ct);
     }
 }
 
-// Cho states cần updates
-public class MovingState : BaseTickableState
+public class RunningState : BaseTickableState<PlayerContext>
 {
     public override void OnTick()
     {
-        // Logic update ở đây
-        UpdateMovement();
+        // Gọi mỗi frame từ stateMachine.Tick()
     }
 }
 ```
 
-### 3. Đăng ký States
+### Setup và chạy
 
 ```csharp
-// Sử dụng generic methods để đảm bảo type safety
-stateMachine.AddState(new IdleState());
-stateMachine.AddState(new WalkingState());
-stateMachine.AddState(new RunningState());
-```
+private StateMachine<PlayerContext> _sm;
 
-### 4. Thiết lập Transitions
+private async void Start()
+{
+    var ctx = new PlayerContext();
+    _sm = new StateMachine<PlayerContext>(ctx, enableDebugLogs: true);
 
-```csharp
-// Type-safe transitions với generic types
-stateMachine.AddTransition<IdleState, WalkingState>(() => Input.GetKey(KeyCode.W));
-stateMachine.AddTransition<WalkingState, RunningState>(() => Input.GetKey(KeyCode.LeftShift));
-stateMachine.AddTransition<RunningState, IdleState>(() => !Input.GetKey(KeyCode.W));
-```
+    _sm.AddState(new IdleState());
+    _sm.AddState(new RunningState());
 
-### 5. Khởi động và quản lý
+    // Transitions tự động — dùng delegate, KHÔNG dùng Reflection
+    _sm.AddTransition<IdleState, RunningState>(() => Input.GetKey(KeyCode.W));
+    _sm.AddTransition<RunningState, IdleState>(() => !Input.GetKey(KeyCode.W));
 
-```csharp
-// Khởi động với state ban đầu
-await stateMachine.StartAsync<IdleState>();
+    // Global transition — có thể fire từ BẤT KỲ state nào
+    _sm.AddGlobalTransition<DeadState>(() => _hp <= 0);
 
-// Trong Update loop (nếu cần)
+    // Truyền destroyCancellationToken để tự dừng khi GameObject bị Destroy
+    await _sm.StartAsync<IdleState>(destroyCancellationToken);
+}
+
 private async void Update()
 {
-    // Kiểm tra transitions tự động
-    await stateMachine.CheckTransitionsAsync();
-    
-    // Manual tick cho tickable states
-    stateMachine.Tick();
+    await _sm.CheckTransitionsAsync();
+    _sm.Tick();
 }
 
-// Chuyển state thủ công
-await stateMachine.TransitionToAsync<RunningState>();
-
-// Dừng StateMachine
-await stateMachine.StopAsync();
-```
-
-## Interfaces và Base Classes
-
-### IState
-```csharp
-public interface IState
+private async void OnDestroy()
 {
-    UniTask OnEnter();
-    UniTask OnExit();
+    await _sm.StopAsync();
 }
 ```
 
-### ITickableState
+### Kiểm tra state hiện tại
+
 ```csharp
-public interface ITickableState
+if (_sm.IsInState<IdleState>())
+    Debug.Log("Đang ở Idle");
+
+if (_sm.IsRunning)
+    Debug.Log("State machine đang chạy");
+```
+
+---
+
+## SimpleStateMachine\<TEnum\> — Dùng khi muốn fluent builder với enum
+
+```csharp
+public enum PlayerState { Idle, Moving, Dead }
+
+private SimpleStateMachine<PlayerState> _sm;
+
+private async void Start()
 {
-    void OnTick();
+    _sm = new SimpleStateMachine<PlayerState>(enableLogs: true);
+
+    _sm.State(PlayerState.Idle)
+        .OnEnter(() => Debug.Log("Idle"))
+        .OnTick(() => { /* check input */ })
+        .TransitionTo(PlayerState.Moving, () => Input.GetKey(KeyCode.W))
+        .TransitionTo(PlayerState.Dead, () => _hp <= 0);
+
+    _sm.State(PlayerState.Moving)
+        .OnEnter(async ct => { await SomethingAsync(ct); }) // Hỗ trợ CancellationToken
+        .OnExit(() => Debug.Log("Stop moving"))
+        .TransitionTo(PlayerState.Idle, () => !Input.GetKey(KeyCode.W));
+
+    // Sub-states (Composite State Pattern)
+    _sm.State(PlayerState.Moving)
+        .WithSubStates<CombatSubState>(CombatSubState.Attacking)
+            .SubState(CombatSubState.Attacking)
+                .OnEnter(() => Debug.Log("Attacking"))
+                .TransitionTo(CombatSubState.Defending, () => isDefending)
+            .And()
+            .SubState(CombatSubState.Defending)
+                .OnEnter(() => Debug.Log("Defending"))
+        .Done(); // hoặc .EndSubStates()
+
+    // Kiểm tra state
+    if (_sm.IsInState(PlayerState.Idle))
+        Debug.Log("Đang Idle");
+
+    await _sm.StartAsync(PlayerState.Idle, destroyCancellationToken);
 }
 ```
 
-### BaseState
-- Basic implementation của IState
-- Phù hợp cho states đơn giản không cần updates
+---
 
-### BaseTickableState
-- Kế thừa BaseState và implement ITickableState
-- Sử dụng cho states cần periodic updates
+## CancellationToken — Best Practices
 
-### BaseState<T> và BaseTickableState<T>
-- Generic versions với context type
-- Sử dụng Initialize(T context) để thiết lập context
+### Dùng `destroyCancellationToken` (khuyến nghị)
 
-## So sánh với version cũ
+```csharp
+// Truyền vào StartAsync — state machine sẽ tự cancel khi GameObject bị Destroy
+await _sm.StartAsync<IdleState>(destroyCancellationToken);
+```
 
-| Tính năng | Version cũ | Version mới |
-|-----------|------------|-------------|
-| Dependency | MonoBehaviour | Pure C# class |
-| State Key | string | Type (type-safe) |
-| Updates | Automatic Update/FixedUpdate | Manual Tick() |
-| Transitions | AddTransition(string, string) | AddTransition<TFrom, TTo>() |
-| State Registration | AddState(IState) | AddState<T>(T state) |
-| State Starting | StartAsync(string) | StartAsync<T>() |
+### Override OnEnter/OnExit với CT
 
-## Lợi ích
+```csharp
+public class LoadingState : BaseState
+{
+    public override async UniTask OnEnter(CancellationToken ct = default)
+    {
+        // Truyền ct vào tất cả UniTask.Delay và async calls
+        await UniTask.Delay(2000, cancellationToken: ct);
+        await LoadAssetsAsync(ct);
+    }
+}
+```
 
-1. **Type Safety**: Compile-time checking thay vì runtime errors
-2. **Performance**: Không phụ thuộc MonoBehaviour lifecycle
-3. **Flexibility**: Manual control over updates
-4. **Maintainability**: Easier to refactor với strongly-typed states
-5. **Testability**: Pure C# class dễ unit test hơn
+---
 
-## Ví dụ hoàn chỉnh
+## So sánh cải tiến
 
-Xem file `StateMachineExample.cs` để xem implementation example đầy đủ.
+| # | Vấn đề cũ | Sau refactor |
+|---|---|---|
+| 1 | Dùng Reflection trong `CheckTransitionsAsync` (GC alloc mỗi frame) | Delegate pre-built, zero allocation |
+| 2 | Không có CancellationToken | CT đầy đủ ở tất cả async methods |
+| 3 | `BaseState.OnEnter()` yield 1 frame vô ích | `UniTask.CompletedTask` — zero cost |
+| 4 | Tên file có dấu cách (`ICompositeState .cs`) | Đã đổi thành `ICompositeState.cs` |
+| 5 | `StateMachine<T>` thiếu `IsRunning` | Đã thêm `IsRunning`, `IsInState<T>()` |
+| 6 | try/catch lồng 3–4 cấp | 1 cấp try/catch duy nhất |
+| 7 | `BaseCompositeState` log không qua flag | `EnableDebugLogs` property |
+| 8 | Không có Global Transition | `AddGlobalTransition<TTo>()` |
+| 9 | `EndSubStates()` khó nhớ | Thêm alias `Done()` |
+
+Xem `Example/` để biết thêm cách dùng đầy đủ.

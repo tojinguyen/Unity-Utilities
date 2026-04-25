@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using TirexGame.Utils.Patterns.StateMachine;
@@ -47,7 +48,8 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
             _stateMachine.AddTransition<RunningState, IdleState>(() => !Input.GetKey(KeyCode.W));
             
             // Start with Idle state
-            await _stateMachine.StartAsync<IdleState>();
+            // Pass destroyCancellationToken so the machine auto-stops when this object is destroyed
+            await _stateMachine.StartAsync<IdleState>(destroyCancellationToken);
         }
         
         private async void Update()
@@ -71,57 +73,56 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
     // Example state implementations
     public class IdleState : BaseTickableState<SimpleContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             Context.IsMoving = false;
             Debug.Log("Entered Idle State");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
         
         public override void OnTick()
         {
-            // This will be called when StateMachine.Tick() is called
-            // Use this for states that need periodic updates
+            // Called every frame via StateMachine.Tick()
         }
         
-        public override async UniTask OnExit()
+        public override UniTask OnExit(CancellationToken ct = default)
         {
             Debug.Log("Exited Idle State");
-            await base.OnExit();
+            return base.OnExit(ct);
         }
     }
     
     public class WalkingState : BaseState<SimpleContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             Context.IsMoving = true;
             Context.IsRunning = false;
             Debug.Log("Entered Walking State");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
         
-        public override async UniTask OnExit()
+        public override UniTask OnExit(CancellationToken ct = default)
         {
             Debug.Log("Exited Walking State");
-            await base.OnExit();
+            return base.OnExit(ct);
         }
     }
     
     public class RunningState : BaseState<SimpleContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             Context.IsMoving = true;
             Context.IsRunning = true;
             Debug.Log("Entered Running State");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
         
-        public override async UniTask OnExit()
+        public override UniTask OnExit(CancellationToken ct = default)
         {
             Debug.Log("Exited Running State");
-            await base.OnExit();
+            return base.OnExit(ct);
         }
     }
 }

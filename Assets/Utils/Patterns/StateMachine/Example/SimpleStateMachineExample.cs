@@ -1,3 +1,4 @@
+using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using TirexGame.Utils.Patterns.StateMachine;
@@ -148,7 +149,8 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
                     });
             
             // Start with Idle state
-            await _playerStateMachine.StartAsync(PlayerState.Idle);
+            // Pass destroyCancellationToken so the machine auto-stops when this object is destroyed
+            await _playerStateMachine.StartAsync(PlayerState.Idle, destroyCancellationToken);
             
             Debug.Log("=== CONTROLS ===");
             Debug.Log("WASD - Move");
@@ -267,7 +269,7 @@ namespace TirexGame.Utils.Patterns.StateMachine.Example
                     .OnTick(() => _stateTimer -= Time.deltaTime)
                     .TransitionTo(LightState.Red, () => _stateTimer <= 0);
             
-            await _lightStateMachine.StartAsync(LightState.Red);
+            await _lightStateMachine.StartAsync(LightState.Red, destroyCancellationToken);
         }
         
         private async void Update()

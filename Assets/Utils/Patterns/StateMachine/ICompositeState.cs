@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Patterns.StateMachine
@@ -12,24 +13,24 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// Add a sub-state to this composite state
         /// </summary>
         void AddSubState(IState subState, bool isInitial = false);
-        
+
         /// <summary>
         /// Add transition between sub-states
         /// </summary>
-        void AddSubTransition<TFrom, TTo>(Func<bool> condition = null) 
-            where TFrom : class, IState 
+        void AddSubTransition<TFrom, TTo>(Func<bool> condition = null)
+            where TFrom : class, IState
             where TTo : class, IState;
-        
+
         /// <summary>
         /// Check and execute sub-state transitions
         /// </summary>
-        UniTask CheckSubTransitionsAsync();
-        
+        UniTask CheckSubTransitionsAsync(CancellationToken ct = default);
+
         /// <summary>
         /// Manually transition to a sub-state
         /// </summary>
-        UniTask TransitionToSubStateAsync<T>() where T : class, IState;
-        
+        UniTask TransitionToSubStateAsync<T>(CancellationToken ct = default) where T : class, IState;
+
         /// <summary>
         /// Get current active sub-state
         /// </summary>

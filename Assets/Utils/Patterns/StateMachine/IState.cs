@@ -1,3 +1,4 @@
+using System.Threading;
 using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.Patterns.StateMachine
@@ -10,14 +11,14 @@ namespace TirexGame.Utils.Patterns.StateMachine
         /// <summary>
         /// Called when entering this state
         /// </summary>
-        UniTask OnEnter();
-        
+        UniTask OnEnter(CancellationToken ct = default);
+
         /// <summary>
         /// Called when exiting this state
         /// </summary>
-        UniTask OnExit();
+        UniTask OnExit(CancellationToken ct = default);
     }
-    
+
     /// <summary>
     /// Generic interface for states with context
     /// </summary>
