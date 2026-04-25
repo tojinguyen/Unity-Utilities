@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using TirexGame.Utils.Patterns.StateMachine;
@@ -123,7 +124,8 @@ namespace ChessDungeonCrawler.GameStates
                 () => Input.GetKeyDown(KeyCode.Return));
             
             // Start with main menu
-            await _mainStateMachine.StartAsync<MainMenuState>();
+            // Pass destroyCancellationToken so the machine auto-stops when this object is destroyed
+            await _mainStateMachine.StartAsync<MainMenuState>(destroyCancellationToken);
         }
         
         private async void Update()
@@ -153,12 +155,12 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class MainMenuState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("=== CHESS DUNGEON CRAWLER ===");
             ConsoleLogger.Log("Press ENTER to start");
             ConsoleLogger.Log("Navigate the dungeon using chess piece movements");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
     }
     
@@ -167,14 +169,11 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class GameplayState : BaseTickableCompositeState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log($"Starting Floor {Context.CurrentFloor}/{Context.TotalFloors}");
-            
-            // Setup sub-states
             SetupSubStates();
-            
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
         
         private void SetupSubStates()
@@ -230,18 +229,18 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class PauseState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("=== GAME PAUSED ===");
             ConsoleLogger.Log("Press ESC to resume");
             Time.timeScale = 0f;
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
         
-        public override async UniTask OnExit()
+        public override UniTask OnExit(CancellationToken ct = default)
         {
             Time.timeScale = 1f;
-            await base.OnExit();
+            return base.OnExit(ct);
         }
     }
     
@@ -250,12 +249,12 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class GameOverState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("=== GAME OVER ===");
             ConsoleLogger.Log($"You reached Floor {Context.CurrentFloor}/{Context.TotalFloors}");
             ConsoleLogger.Log("Press R to return to Main Menu");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
     }
     
@@ -264,13 +263,13 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class VictoryState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("=== VICTORY! ===");
             ConsoleLogger.Log($"You conquered all {Context.TotalFloors} floors!");
             ConsoleLogger.Log($"Items collected: {Context.CollectedItems.Count}");
             ConsoleLogger.Log("Press ENTER to return to Main Menu");
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
     }
     
@@ -283,19 +282,14 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class FloorEntryState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log($"╔══════════════════════════════╗");
             ConsoleLogger.Log($"║   ENTERING FLOOR {Context.CurrentFloor}          ║");
             ConsoleLogger.Log($"╚══════════════════════════════╝");
-            
-            // Initialize floor
             InitializeFloor();
-            
-            await base.OnEnter();
-            
-            // Auto-transition after initialization
-            await UniTask.Delay(1000);
+            await base.OnEnter(ct);
+            await UniTask.Delay(1000, cancellationToken: ct);
         }
         
         private void InitializeFloor()
@@ -359,15 +353,12 @@ namespace ChessDungeonCrawler.GameStates
         private float _turnTimer;
         private const float TurnDuration = 1.5f;
         
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log(">>> Exploration Phase Started");
             ConsoleLogger.Log("Move using chess piece rules. Clear objectives to proceed.");
-            
-            // Setup turn-based sub-states
             SetupTurnStates();
-            
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
         
         private void SetupTurnStates()
@@ -408,19 +399,14 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class BossState : BaseTickableCompositeState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("╔═══════════════════════════════╗");
             ConsoleLogger.Log("║   ⚔️  BOSS CHAMBER  ⚔️        ║");
             ConsoleLogger.Log("╚═══════════════════════════════╝");
-            
-            // Spawn boss
             SpawnBoss();
-            
-            // Setup boss fight sub-states
             SetupBossFightStates();
-            
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
         
         private void SpawnBoss()
@@ -458,24 +444,21 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class FloorCompleteState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("✓ Floor Complete!");
-            
             Context.CurrentFloor++;
-            
             if (Context.CurrentFloor <= Context.TotalFloors)
             {
                 ConsoleLogger.Log($"Advancing to Floor {Context.CurrentFloor}...");
-                await UniTask.Delay(2000);
+                await UniTask.Delay(2000, cancellationToken: ct);
             }
             else
             {
                 Context.BossDefeated = true;
                 ConsoleLogger.Log("All floors cleared! Returning to victory...");
             }
-            
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
     }
     
@@ -488,11 +471,11 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class PlayerTurnState : BaseTickableState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("→ Your Turn");
             Context.CurrentTurnPhase = TurnPhase.PlayerTurn;
-            await base.OnEnter();
+            return base.OnEnter(ct);
         }
         
         public override void OnTick()
@@ -522,12 +505,12 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class ProcessingTurnState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             Context.CurrentTurnPhase = TurnPhase.Processing;
-            await UniTask.Delay(500); // Process animations, effects
+            await UniTask.Delay(500, cancellationToken: ct);
             Context.CurrentTurnPhase = TurnPhase.EnemyTurn;
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
     }
     
@@ -536,18 +519,16 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class EnemyTurnState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("→ Enemy Turn");
             Context.CurrentTurnPhase = TurnPhase.EnemyTurn;
-            
-            await ProcessEnemyTurns();
-            
+            await ProcessEnemyTurns(ct);
             Context.CurrentTurnPhase = TurnPhase.PlayerTurn;
-            await base.OnEnter();
+            await base.OnEnter(ct);
         }
         
-        private async UniTask ProcessEnemyTurns()
+        private async UniTask ProcessEnemyTurns(CancellationToken ct)
         {
             foreach (var enemy in Context.Enemies)
             {
@@ -556,15 +537,14 @@ namespace ChessDungeonCrawler.GameStates
                 if (enemy.Type == ChessPieceType.MUnit)
                 {
                     ConsoleLogger.Log("  🧠 M-Unit strategizing...");
-                    await UniTask.Delay(300);
+                    await UniTask.Delay(300, cancellationToken: ct);
                     ProcessMUnitMove(enemy);
                 }
                 else
                 {
                     ProcessStandardEnemyMove(enemy);
                 }
-                
-                await UniTask.Delay(200);
+                await UniTask.Delay(200, cancellationToken: ct);
             }
         }
         
@@ -628,14 +608,13 @@ namespace ChessDungeonCrawler.GameStates
     /// </summary>
     public class BossDefeatState : BaseState<GameContext>
     {
-        public override async UniTask OnEnter()
+        public override async UniTask OnEnter(CancellationToken ct = default)
         {
             ConsoleLogger.Log("╔═══════════════════════════════╗");
             ConsoleLogger.Log("║   👑 BOSS DEFEATED! 👑        ║");
             ConsoleLogger.Log("╚═══════════════════════════════╝");
-            
-            await UniTask.Delay(2000);
-            await base.OnEnter();
+            await UniTask.Delay(2000, cancellationToken: ct);
+            await base.OnEnter(ct);
         }
     }
 }

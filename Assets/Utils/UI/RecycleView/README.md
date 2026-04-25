@@ -6,14 +6,15 @@ This package is ideal for leaderboards, inventory screens, chat logs, or any oth
 
 ## Features
 
-- **High Performance:** Smoothly scrolls through thousands of items.
+- **High Performance:** Smoothly scrolls through thousands of items using **Binary Search (O(log N))** for visibility detection.
+- **Large Dataset Optimization:** Automatically switches to **Asynchronous Position Calculation** for lists larger than 1000 items to prevent frame drops.
 - **Zero GC Allocation:** No garbage is generated during scrolling, preventing FPS spikes.
 - **Multi-Item Type Support:** Display multiple different prefabs/layouts within the same list.
-- **Efficient Pooling:** Each item type gets its own object pool for fast reuse.
+- **Efficient Pooling:** Each item type gets its own object pool with **O(1) Lookup** for active items.
+- **Auto-Dimension Detection:** Automatically detects item sizes from prefabs, no manual height/width entry required.
 - **Layouts:** Supports both Vertical and Horizontal linear layouts.
-- **Item Padding:** Configurable spacing between items for better visual layout.
-- **Simple API:** A clean interface for setting data and handling user interaction.
-- **Inspector Integration:** Configure all prefabs and settings directly in the Unity Inspector.
+- **Simple API:** Clean interface for setting data, partial refreshes, and click handling.
+- **Developer Friendly:** Integration with `ConsoleLogger` for togglable, stripped logs.
 
 ## Requirements
 
@@ -75,9 +76,9 @@ public class TextRecycleViewItem : RecycleViewItem<TextMessageData>
 3.  Select the `Content` child object of the `Scroll View`. In its `Rect Transform`, set the anchors to **top-stretch**.
     > **Important:** Do NOT add a `Vertical Layout Group` or `Content Size Fitter` to the `Content` object. The `RecycleView` script controls the layout itself.
 4.  On the `RecycleView` component in the Inspector:
-    *   Set the `Item Height` (or `Item Width` for horizontal layouts).
     *   Under `Item Type Mappings`, set the `Size` to the number of different prefabs you have.
-    *   For each element, provide a unique `TypeId` and drag the corresponding UI prefab into the `Prefab` field.
+    *   For each element, provide a unique `TypeId` and drag the tương ứng UI prefab into the `Prefab` field.
+    > **Note:** The script will automatically detect the width/height from the prefab's `RectTransform`. Ensure your prefabs have their sizes correctly defined.
 
 ### 4. Populate the View from Code
 
@@ -120,11 +121,13 @@ public class UIManager : MonoBehaviour
 
 ## Public API Reference
 
-- `void SetData(List<IRecycleViewData> data)`: Clears the list and rebuilds it with the new data.
+- `void SetData(List<IRecycleViewData> data)`: Clears the list and rebuilds it with the new data. Automatically handles large dataset optimizations.
 - `void Refresh()`: Updates the data of currently visible items without a full rebuild.
+- `void RefreshItem(int index)`: Refreshes a specific item by its index if it's currently visible.
+- `void RefreshAllVisibleItems()`: Updates all currently visible items with their latest data.
 - `void SetItemPadding(float padding)`: Sets the padding between items in pixels and rebuilds the list.
 - `float ItemPadding { get; set; }`: Property to get or set the padding between items.
-- `Action<RecycleViewItem> OnItemClicked`: An event that fires when an item's `NotifyItemClicked()` method is called (e.g., from a button's `OnClick` event).
+- `Action<RecycleViewItem> OnItemClicked`: Event that fires when an item is clicked. Compatible with `ConsoleLogger`.
 
 ## Configuration Options
 

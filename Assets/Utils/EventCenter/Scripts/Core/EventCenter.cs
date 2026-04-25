@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 
 namespace TirexGame.Utils.EventCenter
 {
@@ -16,46 +14,19 @@ namespace TirexGame.Utils.EventCenter
         
         #region Configuration
         
-        [Header("Performance Settings")]
-        [SerializeField] private int maxEventsPerFrame = 10000;
-        [SerializeField] private int maxBatchSize = 1000;
-        [SerializeField] private bool processEventsInUpdate = true;
-        [SerializeField] private bool processEventsInFixedUpdate = false;
-        [SerializeField] private bool processEventsInLateUpdate = false;
-        
-        [Header("Pooling Settings")]
-        [SerializeField] private int initialPoolSize = 100;
-        [SerializeField] private int maxPoolSize = 1000;
-        [SerializeField] private bool preWarmPools = true;
-        
         [Header("Debug Settings")]
         [SerializeField] private bool enableLogging = false;
-        [SerializeField] private bool enableProfiling = false;
-        [SerializeField] private bool showStats = false;
         
         #endregion
         
         #region Fields
         
-        // Core components
         private EventDispatcher _dispatcher;
-        private EventQueue _eventQueue;
-        private EventQueue _immediateQueue;
-        
-        // Subscription management
         private readonly List<IEventSubscription> _subscriptions = new List<IEventSubscription>();
-        private readonly Dictionary<IEventListener, List<IEventSubscription>> _listenerSubscriptions 
+        private readonly Dictionary<IEventListener, List<IEventSubscription>> _listenerSubscriptions
             = new Dictionary<IEventListener, List<IEventSubscription>>();
-        
-        // Performance tracking
         private EventCenterStats _stats;
-        private readonly List<float> _frameTimes = new List<float>();
-        private int _frameEventCount;
-        private float _frameStartTime;
-        
-        // State management
         private bool _isInitialized;
-        private bool _isProcessing;
         
         #endregion
         
@@ -65,43 +36,16 @@ namespace TirexGame.Utils.EventCenter
         {
             Initialize();
             
-            // Register this EventCenter with the service locator
+            // Register with service locator (legacy BaseEvent support)
             EventCenterService.SetCurrent(this);
-        }
-        
-        private void Start()
-        {
-            if (preWarmPools)
-            {
-                PreWarmCommonEventTypes();
-            }
-        }
-        
-        private void Update()
-        {
-            if (processEventsInUpdate)
-            {
-                ProcessEventsInternal();
-            }
-        }
-        
-        private void FixedUpdate()
-        {
-            if (processEventsInFixedUpdate)
-            {
-                ProcessEventsInternal();
-            }
-        }
-        
-        private void LateUpdate()
-        {
-            if (processEventsInLateUpdate)
-            {
-                ProcessEventsInternal();
-            }
             
-            UpdateStats();
+            // Wire struct-event system to this instance
+            EventSystem.Initialize(this);
         }
+        
+        private void Update() { }
+        private void FixedUpdate() { }
+        private void LateUpdate() { UpdateStats(); }
         
         private void OnDestroy()
         {
@@ -111,6 +55,7 @@ namespace TirexGame.Utils.EventCenter
                 EventCenterService.SetCurrent(null);
             }
             
+            EventSystem.Shutdown();
             Clear();
         }
         
@@ -121,22 +66,9 @@ namespace TirexGame.Utils.EventCenter
         private void Initialize()
         {
             if (_isInitialized) return;
-            
-            // Initialize components
             _dispatcher = new EventDispatcher(enableLogging);
-            _eventQueue = new EventQueue(initialPoolSize, maxEventsPerFrame, maxBatchSize, enableLogging);
-            _immediateQueue = new EventQueue(50, 1000, 100, enableLogging);
-            
-            // Initialize stats
             _stats = new EventCenterStats();
-            
             _isInitialized = true;
-        }
-        
-        private void PreWarmCommonEventTypes()
-        {
-            // Pre-warm pools for common event types
-            // You can extend this based on your game's common events
         }
         
         #endregion
@@ -215,20 +147,11 @@ namespace TirexGame.Utils.EventCenter
         public void PublishEvent(BaseEvent eventData)
         {
             if (eventData == null || eventData.IsDisposed) return;
-            
 #if UNITY_EDITOR
-            // Hook for Editor tracking
             NotifyEditorOnPublish(eventData);
 #endif
-            
-            if (eventData.IsImmediate)
-            {
-                _immediateQueue.Enqueue(eventData);
-            }
-            else
-            {
-                _eventQueue.Enqueue(eventData);
-            }
+            _dispatcher.Dispatch(eventData);
+            _stats.EventsProcessedThisFrame++;
         }
         
         /// <summary>
@@ -254,26 +177,18 @@ namespace TirexGame.Utils.EventCenter
         }
         
         /// <summary>
-        /// Process all queued events
+        /// No-op — events are dispatched synchronously on Publish. Kept for interface compatibility.
         /// </summary>
-        public void ProcessEvents()
-        {
-            ProcessEventsInternal();
-        }
+        public void ProcessEvents() { }
         
         /// <summary>
         /// Clear all events and subscriptions
         /// </summary>
         public void Clear()
         {
-            _eventQueue?.Clear();
-            _immediateQueue?.Clear();
             _dispatcher?.Clear();
-            
             foreach (var subscription in _subscriptions)
-            {
                 subscription.Dispose();
-            }
             _subscriptions.Clear();
             _listenerSubscriptions.Clear();
         }
@@ -299,13 +214,9 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEvent<T>(T payload, int priority = 0) where T : struct
         {
-#if UNITY_EDITOR
-            // Hook for Editor tracking - struct events
-            NotifyEditorOnPublishStruct(payload, priority);
-#endif
-            
-            // Dispatch immediately - no queuing, no wrapper
-            var listenersNotified = _dispatcher.Dispatch(payload);
+            // Struct events are dispatched via EventHub<T> directly from EventSystem.Publish().
+            // This method is kept for IEventCenter interface compatibility (legacy usage).
+            EventHub<T>.Publish(payload);
         }
         
         /// <summary>
@@ -316,12 +227,8 @@ namespace TirexGame.Utils.EventCenter
         /// <param name="priority">Event priority (higher value = higher priority)</param>
         public void PublishEventImmediate<T>(T payload, int priority = 0) where T : struct
         {
-#if UNITY_EDITOR
-            // Hook for Editor tracking - struct events immediate
-            NotifyEditorOnPublishStruct(payload, priority);
-#endif
-            // Dispatch immediately - no queuing, no wrapper (same implementation as regular PublishEvent for structs)
-            var listenersNotified = _dispatcher.Dispatch(payload);
+            // Immediate struct publish — same as regular since EventHub<T> is always synchronous
+            EventHub<T>.Publish(payload);
         }
         
         /// <summary>
@@ -367,100 +274,14 @@ namespace TirexGame.Utils.EventCenter
         #endregion
         
         #region Event Processing
-        
-        private void ProcessEventsInternal()
-        {
-            if (_isProcessing || !_isInitialized) 
-            {
-                return;
-            }
-            
-            _isProcessing = true;
-            _frameStartTime = Time.realtimeSinceStartup;
-            _frameEventCount = 0;
-            
-            try
-            {
-                // Process immediate events first
-                ProcessImmediateEvents();
-                
-                // Process regular events
-                ProcessRegularEvents();
-            }
-            finally
-            {
-                _isProcessing = false;
-            }
-        }
-        
-        private void ProcessImmediateEvents()
-        {
-            var processed = _immediateQueue.ProcessBatch(ProcessSingleEvent, maxBatchSize);
-            _frameEventCount += processed;
-        }
-        
-        private void ProcessRegularEvents()
-        {
-            var remainingEvents = maxEventsPerFrame - _frameEventCount;
-            
-            if (remainingEvents <= 0) 
-            {
-                return;
-            }
-            
-            var processed = _eventQueue.ProcessBatch(ProcessSingleEvent, remainingEvents);
-            _frameEventCount += processed;
-        }
-        
-        private void ProcessSingleEvent(BaseEvent eventData)
-        {
-            if (eventData == null || eventData.IsDisposed || !eventData.IsValid())
-            {
-                return;
-            }
-            
-            // Simple BaseEvent dispatch - no reflection needed
-            var listenersNotified = _dispatcher.Dispatch(eventData);
-            
-            // Return to pool if poolable
-            if (eventData.IsPoolable)
-            { 
-                eventData.Dispose();
-            }
-        }
-        
         #endregion
         
         #region Statistics
         
         private void UpdateStats()
         {
-            var frameTime = Time.realtimeSinceStartup - _frameStartTime;
-            _frameTimes.Add(frameTime);
-            
-            // Keep only last 60 frames for average calculation
-            if (_frameTimes.Count > 60)
-            {
-                _frameTimes.RemoveAt(0);
-            }
-            
-            _stats.EventsProcessedThisFrame = _frameEventCount;
-            _stats.QueuedEvents = _eventQueue.Count + _immediateQueue.Count;
+            _stats.QueuedEvents = 0;
             _stats.ActiveSubscriptions = _subscriptions.Count;
-            _stats.PooledEvents = 0; // Will be updated by EventPool
-            _stats.AverageProcessingTime = _frameTimes.Count > 0 
-                ? _frameTimes.Sum() / _frameTimes.Count * 1000f 
-                : 0f;
-            _stats.PeakEventsPerFrame = Mathf.Max(_stats.PeakEventsPerFrame, _frameEventCount);
-            
-            if (showStats && enableLogging && Time.frameCount % 60 == 0)
-            {
-                LogStats();
-            }
-        }
-        
-        private void LogStats()
-        {
         }
         
         #endregion
@@ -472,18 +293,15 @@ namespace TirexGame.Utils.EventCenter
         /// </summary>
         public T CreateAndPublishEvent<T>(object source = null) where T : BaseEvent, new()
         {
-            var eventData = EventPoolService.Get<T>();
+            var eventData = new T();
             eventData.Initialize(source);
             PublishEvent(eventData);
             return eventData;
         }
         
-        /// <summary>
-        /// Create an event without publishing it
-        /// </summary>
         public T CreateEvent<T>(object source = null) where T : BaseEvent, new()
         {
-            var eventData = EventPoolService.Get<T>();
+            var eventData = new T();
             eventData.Initialize(source);
             return eventData;
         }
@@ -545,143 +363,45 @@ namespace TirexGame.Utils.EventCenter
         #region Editor Integration
         
 #if UNITY_EDITOR
-        /// <summary>
-        /// Notify Editor tracking for BaseEvent publish
-        /// </summary>
+        // ── Editor notification for legacy BaseEvent publish ──────────────────
+        // Uses a cached method reference (looked up once, not per-event).
+        
+        private static System.Reflection.MethodInfo _editorPublishMethod;
+        private static bool _editorPublishLookupDone;
+        
         private void NotifyEditorOnPublish(BaseEvent eventData)
         {
-            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-            System.Type bridgeType = null;
+            var method = GetEditorPublishMethod();
+            if (method == null) return;
             
-            foreach (var assembly in assemblies)
-            {
-                bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
-                if (bridgeType != null)
-                {
-                    break;
-                }
-            }
-            
-            if (bridgeType != null)
-            {
-                var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (publishMethod != null)
-                {
-                    var listeners = GatherListenerInfo(eventData);
-                    var category = ResolveEventCategory(eventData.GetType().Name);
-                    publishMethod.Invoke(null, new object[] { eventData.GetType().Name, eventData, this, category, listeners });
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Notify Editor tracking for struct event publish
-        /// </summary>
-        private void NotifyEditorOnPublishStruct<T>(T payload, int priority) where T : struct
-        {
-            var assemblies = System.AppDomain.CurrentDomain.GetAssemblies();
-            System.Type bridgeType = null;
-            
-            foreach (var assembly in assemblies)
-            {
-                bridgeType = assembly.GetType("EventCenter.EditorTools.EventCaptureBridge");
-                if (bridgeType != null)
-                {
-                    break;
-                }
-            }
-            
-            if (bridgeType != null)
-            {
-                var publishMethod = bridgeType.GetMethod("Publish", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                if (publishMethod != null)
-                {
-                    var listeners = GatherStructListenerInfo<T>();
-                    var category = ResolveEventCategory(typeof(T).Name);
-                    publishMethod.Invoke(null, new object[] { typeof(T).Name, payload, this, category, listeners });
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Gather listener information for BaseEvent
-        /// </summary>
-        private System.Collections.Generic.List<object> GatherListenerInfo(BaseEvent eventData)
-        {
-            var listeners = new System.Collections.Generic.List<object>();
             try
             {
-                var eventType = eventData.GetType();
-                var listenerCount = _dispatcher?.GetListenerCount(eventType) ?? 0;
-                
-                for (int i = 0; i < listenerCount; i++)
-                {
-                    var listenerInfo = new
-                    {
-                        name = $"Listener_{i + 1}",
-                        targetInfo = new
-                        {
-                            objectName = "Unknown",
-                            typeName = "IEventListener",
-                            instanceId = i
-                        },
-                        durationMs = 0f,
-                        exception = string.Empty
-                    };
-                    listeners.Add(listenerInfo);
-                }
+                var category = ResolveEventCategory(eventData.GetType().Name);
+                method.Invoke(null, new object[] { eventData.GetType().Name, eventData, this, category, null });
             }
-            catch
-            {
-            }
-            return listeners;
+            catch { }
         }
         
-        /// <summary>
-        /// Gather listener information for struct events
-        /// </summary>
-        private System.Collections.Generic.List<object> GatherStructListenerInfo<T>() where T : struct
+        private static System.Reflection.MethodInfo GetEditorPublishMethod()
         {
-            var listeners = new System.Collections.Generic.List<object>();
-            try
-            {
-                var eventType = typeof(T);
-                var listenerCount = _dispatcher?.GetListenerCount<T>() ?? 0;
-                
-                for (int i = 0; i < listenerCount; i++)
-                {
-                    var listenerInfo = new
-                    {
-                        name = $"StructListener_{i + 1}",
-                        targetInfo = new
-                        {
-                            objectName = "Unknown",
-                            typeName = "IEventListener<T>",
-                            instanceId = i
-                        },
-                        durationMs = 0f,
-                        exception = string.Empty
-                    };
-                    listeners.Add(listenerInfo);
-                }
-            }
-            catch
-            {
-            }
-            return listeners;
+            if (_editorPublishLookupDone) return _editorPublishMethod;
+            _editorPublishLookupDone = true;
+            
+            var bridgeType = System.Type.GetType(
+                "EventCenter.EditorTools.EventCaptureBridge, Assembly-CSharp-Editor");
+            _editorPublishMethod = bridgeType?.GetMethod(
+                "Publish",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            return _editorPublishMethod;
         }
         
-        /// <summary>
-        /// Resolve event category from event name
-        /// </summary>
-        private string ResolveEventCategory(string eventName)
+        private static string ResolveEventCategory(string name)
         {
-            // Simple categorization based on naming patterns
-            if (eventName.Contains("Player")) return "Player";
-            if (eventName.Contains("UI")) return "UI";
-            if (eventName.Contains("Game")) return "Gameplay";
-            if (eventName.Contains("Audio") || eventName.Contains("Sound")) return "Audio";
-            if (eventName.Contains("Network")) return "Network";
+            if (name.Contains("Player"))  return "Player";
+            if (name.Contains("UI"))      return "UI";
+            if (name.Contains("Game"))    return "Gameplay";
+            if (name.Contains("Audio") || name.Contains("Sound")) return "Audio";
+            if (name.Contains("Network")) return "Network";
             return "Uncategorized";
         }
 #endif

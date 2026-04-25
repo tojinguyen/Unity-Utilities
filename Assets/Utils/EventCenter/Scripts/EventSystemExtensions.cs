@@ -1,131 +1,212 @@
-using UnityEngine;
 using System;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 
 namespace TirexGame.Utils.EventCenter
 {
     /// <summary>
-    /// Extension methods for automatic event unsubscription when GameObject is destroyed
-    /// Phương thức mở rộng để tự động hủy đăng ký event khi GameObject bị hủy
+    /// Extension methods that make event subscription feel native on MonoBehaviour.
+    ///
+    /// USAGE:
+    /// <code>
+    ///   // Auto-cleanup when GameObject is destroyed
+    ///   this.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+    ///
+    ///   // With priority
+    ///   this.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead, priority: 10);
+    ///
+    ///   // Subscribe once, auto-cleanup
+    ///   this.SubscribeOnce&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+    ///
+    ///   // Subscribe with filter
+    ///   this.SubscribeWhen&lt;PlayerDeadEvent&gt;(OnPlayerDead, e => e.IsLocalPlayer);
+    /// </code>
     /// </summary>
     public static class EventSystemExtensions
     {
+        // ── Core Subscribe ────────────────────────────────────────────────────
+
         /// <summary>
-        /// Subscribe to an event and automatically unsubscribe when the MonoBehaviour is destroyed
-        /// Đăng ký event và tự động hủy đăng ký khi MonoBehaviour bị hủy
+        /// Subscribe to a struct event.
+        /// Automatically unsubscribes when the MonoBehaviour's GameObject is destroyed.
         /// </summary>
-        /// <typeparam name="T">Event type</typeparam>
-        /// <param name="component">MonoBehaviour that will be monitored for destruction</param>
-        /// <param name="callback">Event callback</param>
-        public static void SubscribeWithCleanup<T>(this MonoBehaviour component, Action<T> callback) 
+        public static IEventSubscription Subscribe<T>(
+            this MonoBehaviour component,
+            Action<T> callback,
+            int priority = 0)
             where T : struct
+        {
+            if (!ValidateArgs(component, callback, nameof(Subscribe))) 
+                return NullSubscription.Instance;
+
+            var sub = EventSystem.Subscribe(callback, priority);
+            component.GetCancellationTokenOnDestroy().Register(sub.Dispose);
+            return sub;
+        }
+
+        // ── Subscribe Once ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Subscribe to a struct event that fires only once, then auto-unsubscribes.
+        /// Also unsubscribes if the component is destroyed before the event fires.
+        /// </summary>
+        public static IEventSubscription SubscribeOnce<T>(
+            this MonoBehaviour component,
+            Action<T> callback,
+            int priority = 0)
+            where T : struct
+        {
+            if (!ValidateArgs(component, callback, nameof(SubscribeOnce)))
+                return NullSubscription.Instance;
+
+            var sub = EventSystem.SubscribeOnce(callback, priority);
+            component.GetCancellationTokenOnDestroy().Register(sub.Dispose);
+            return sub;
+        }
+
+        // ── Subscribe When ────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Subscribe to a struct event with a filter.
+        /// Callback only fires when <paramref name="condition"/> returns true.
+        /// Auto-cleanup on destroy.
+        /// </summary>
+        public static IEventSubscription SubscribeWhen<T>(
+            this MonoBehaviour component,
+            Action<T> callback,
+            Func<T, bool> condition,
+            int priority = 0)
+            where T : struct
+        {
+            if (component == null || callback == null || condition == null)
+            {
+                ConsoleLogger.LogError("[EventSystem] SubscribeWhen: null argument.");
+                return NullSubscription.Instance;
+            }
+
+            var sub = EventSystem.SubscribeWhen(callback, condition, priority);
+            component.GetCancellationTokenOnDestroy().Register(sub.Dispose);
+            return sub;
+        }
+
+        // ── Helper ────────────────────────────────────────────────────────────
+
+        private static bool ValidateArgs<T>(MonoBehaviour component, Action<T> callback, string methodName)
         {
             if (component == null)
             {
-                ConsoleLogger.LogError("[EventSystem] Component is null, cannot subscribe with cleanup");
-                return;
+                ConsoleLogger.LogError($"[EventSystem] {methodName}: component is null.");
+                return false;
             }
-
             if (callback == null)
             {
-                ConsoleLogger.LogError("[EventSystem] Callback is null, cannot subscribe");
-                return;
+                ConsoleLogger.LogError($"[EventSystem] {methodName}: callback is null.");
+                return false;
             }
-
-            try
-            {
-                var subscription = EventSystem.Subscribe<T>(callback);
-                
-                if (subscription != null)
-                {
-                    component.GetCancellationTokenOnDestroy().Register(() => 
-                    {
-                        subscription?.Dispose();
-                    });
-                }
-                else
-                {
-                    ConsoleLogger.LogError($"[EventSystemExtensions] ❌ Subscription returned null for {typeof(T).Name}");
-                }
-            }
-            catch (System.Exception ex)
-            {
-                ConsoleLogger.LogError($"[EventSystemExtensions] ❌ Exception in SubscribeWithCleanup for {typeof(T).Name}: {ex.Message}");
-                ConsoleLogger.LogError($"[EventSystemExtensions] Stack trace: {ex.StackTrace}");
-            }
+            return true;
         }
 
-        /// <summary>
-        /// Subscribe to an event with condition and automatically unsubscribe when destroyed
-        /// Đăng ký event có điều kiện và tự động hủy đăng ký khi bị hủy
-        /// </summary>
-        public static void SubscribeWhenWithCleanup<T>(this MonoBehaviour component, Action<T> callback, Func<T, bool> condition) 
+        // ── Backward-compat aliases (old names → new names) ───────────────────
+        // These allow existing code to compile without changes.
+        // Use the shorter names (Subscribe / SubscribeWhen / SubscribeOnce) in new code.
+
+        /// <inheritdoc cref="Subscribe{T}(MonoBehaviour, Action{T}, int)"/>
+        [System.Obsolete("Use Subscribe<T>() instead.")]
+        public static IEventSubscription SubscribeWithCleanup<T>(
+            this MonoBehaviour component, Action<T> callback, int priority = 0)
+            where T : struct
+            => Subscribe(component, callback, priority);
+
+        /// <inheritdoc cref="SubscribeWhen{T}(MonoBehaviour, Action{T}, Func{T,bool}, int)"/>
+        [System.Obsolete("Use SubscribeWhen<T>() instead.")]
+        public static IEventSubscription SubscribeWhenWithCleanup<T>(
+            this MonoBehaviour component, Action<T> callback, Func<T, bool> condition, int priority = 0)
+            where T : struct
+            => SubscribeWhen(component, callback, condition, priority);
+
+        /// <inheritdoc cref="SubscribeOnce{T}(MonoBehaviour, Action{T}, int)"/>
+        [System.Obsolete("Use SubscribeOnce<T>() instead.")]
+        public static IEventSubscription SubscribeOnceWithCleanup<T>(
+            this MonoBehaviour component, Action<T> callback, int priority = 0)
+            where T : struct
+            => SubscribeOnce(component, callback, priority);
+
+        /// <inheritdoc cref="SubscribeOnce{T}(MonoBehaviour, Action{T}, int)"/>
+        [System.Obsolete("Use SubscribeOnce<T>(callback, condition) instead.")]
+        public static IEventSubscription SubscribeOnceWithCleanup<T>(
+            this MonoBehaviour component, Action<T> callback, Func<T, bool> condition, int priority = 0)
             where T : struct
         {
-            if (component == null || callback == null || condition == null)
-            {
-                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeWhenWithCleanup");
-                return;
-            }
+            if (!ValidateArgs(component, callback, nameof(SubscribeOnceWithCleanup)))
+                return NullSubscription.Instance;
 
-            var subscription = EventSystem.SubscribeWhen<T>(callback, condition);
-
-            component.GetCancellationTokenOnDestroy().Register(() => 
-            {
-                subscription?.Dispose();
-            });
-        }
-
-        /// <summary>
-        /// Subscribe once and automatically handle cleanup (though SubscribeOnce already cleans itself)
-        /// Đăng ký một lần và tự động xử lý cleanup (mặc dù SubscribeOnce đã tự cleanup)
-        /// </summary>
-        public static void SubscribeOnceWithCleanup<T>(this MonoBehaviour component, Action<T> callback) 
-            where T : struct
-        {
-            if (component == null || callback == null)
-            {
-                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
-                return;
-            }
-
-            var subscription = EventSystem.SubscribeOnce<T>(callback);
-            
-            // SubscribeOnce tự động cleanup sau lần đầu, nhưng chúng ta vẫn register
-            // để đảm bảo cleanup nếu component bị destroy trước khi event được trigger
-            component.GetCancellationTokenOnDestroy().Register(() => 
-            {
-                subscription?.Dispose();
-            });
-        }
-
-        /// <summary>
-        /// Subscribe once with condition and automatic cleanup
-        /// Đăng ký một lần có điều kiện và tự động cleanup
-        /// </summary>
-        public static void SubscribeOnceWithCleanup<T>(this MonoBehaviour component, Action<T> callback, Func<T, bool> condition) 
-            where T : struct
-        {
-            if (component == null || callback == null || condition == null)
-            {
-                ConsoleLogger.LogError("[EventSystem] Invalid parameters for SubscribeOnceWithCleanup");
-                return;
-            }
-
-            IEventSubscription subscription = null;
-            subscription = EventSystem.Subscribe<T>((payload) =>
+            IEventSubscription sub = null;
+            sub = Subscribe<T>(component, payload =>
             {
                 if (condition(payload))
                 {
                     callback(payload);
-                    subscription?.Dispose();
+                    sub?.Dispose();
                 }
-            });
+            }, priority);
+            return sub;
+        }
+    }
 
-            component.GetCancellationTokenOnDestroy().Register(() => 
-            {
-                subscription?.Dispose();
-            });
+    // ──────────────────────────────────────────────────────────────────────────
+    // AddTo — fluent chaining into a group or MonoBehaviour lifetime
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Extension methods on IEventSubscription for fluent group management.
+    /// </summary>
+    public static class EventSubscriptionExtensions
+    {
+        // ── AddTo EventSubscriptionGroup ──────────────────────────────────────
+
+        /// <summary>
+        /// Add this subscription to a group.
+        /// The group disposes it when <see cref="EventSubscriptionGroup.Dispose"/> is called.
+        ///
+        /// <code>
+        ///   // Non-MonoBehaviour class:
+        ///   private readonly EventSubscriptionGroup _subs = new EventSubscriptionGroup();
+        ///
+        ///   void Init()
+        ///   {
+        ///       EventSystem.Subscribe&lt;EventA&gt;(OnA).AddTo(_subs);
+        ///       EventSystem.Subscribe&lt;EventB&gt;(OnB).AddTo(_subs);
+        ///   }
+        ///
+        ///   void Cleanup() => _subs.Dispose();
+        /// </code>
+        /// </summary>
+        /// <returns>The original subscription (for further chaining if needed).</returns>
+        public static IEventSubscription AddTo(this IEventSubscription subscription, EventSubscriptionGroup group)
+        {
+            group?.Add(subscription);
+            return subscription;
+        }
+
+        // ── AddTo MonoBehaviour ───────────────────────────────────────────────
+
+        /// <summary>
+        /// Wire this subscription to a MonoBehaviour's lifetime.
+        /// It will be disposed automatically when the MonoBehaviour's GameObject is destroyed.
+        ///
+        /// Equivalent to using <c>this.Subscribe&lt;T&gt;(callback)</c> but works on
+        /// any subscription, including those created outside the MonoBehaviour.
+        ///
+        /// <code>
+        ///   EventSystem.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead).AddTo(this);
+        /// </code>
+        /// </summary>
+        /// <returns>The original subscription.</returns>
+        public static IEventSubscription AddTo(this IEventSubscription subscription, MonoBehaviour component)
+        {
+            if (subscription == null || component == null) return subscription;
+            component.GetCancellationTokenOnDestroy().Register(subscription.Dispose);
+            return subscription;
         }
     }
 }
