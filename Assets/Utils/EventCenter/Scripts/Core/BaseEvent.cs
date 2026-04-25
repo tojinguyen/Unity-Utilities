@@ -132,14 +132,7 @@ namespace TirexGame.Utils.EventCenter
         public void Dispose()
         {
             if (IsDisposed) return;
-            
             OnDispose();
-            
-            if (IsPoolable)
-            {
-                EventPoolService.Return(this);
-            }
-            
             IsDisposed = true;
         }
         

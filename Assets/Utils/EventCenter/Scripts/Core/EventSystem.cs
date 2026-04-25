@@ -4,314 +4,316 @@ using UnityEngine;
 namespace TirexGame.Utils.EventCenter
 {
     /// <summary>
-    /// Static event system API for convenient event handling
-    /// Provides easy-to-use static methods for subscribing, publishing, and managing events
+    /// Static entry point for the Event System.
+    /// 
+    /// PRIMARY API — recommended for all new code:
+    /// <code>
+    ///   // Publish
+    ///   EventSystem.Publish(new PlayerDeadEvent());
+    ///
+    ///   // Subscribe (manual unsubscribe)
+    ///   var sub = EventSystem.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+    ///   sub.Dispose(); // when done
+    ///
+    ///   // Subscribe (auto-cleanup with MonoBehaviour)
+    ///   this.Subscribe&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+    ///
+    ///   // Subscribe once
+    ///   EventSystem.SubscribeOnce&lt;PlayerDeadEvent&gt;(OnPlayerDead);
+    ///
+    ///   // Subscribe with filter
+    ///   EventSystem.SubscribeWhen&lt;PlayerDeadEvent&gt;(OnPlayerDead, e => e.IsLocalPlayer);
+    /// </code>
+    ///
+    /// LEGACY API (backward compat — BaseEvent class):
+    /// <code>
+    ///   EventSystem.PublishLegacy(myBaseEvent);
+    ///   EventSystem.SubscribeLegacy&lt;MyEvent&gt;(callback);
+    /// </code>
     /// </summary>
     public static class EventSystem
     {
-        #region Private Fields
-        
+        #region Internal State
+
         private static IEventCenter _eventCenter;
-        private static bool _isInitialized = false;
-        
+        private static bool _isInitialized;
+
         #endregion
-        
+
         #region Initialization
-        
+
         /// <summary>
-        /// Initialize the static event system
-        /// This is called automatically on first use
+        /// Called automatically by EventCenter MonoBehaviour on Awake.
+        /// </summary>
+        /// <summary>
+        /// Initialize by auto-discovering the EventCenter from EventCenterService.
+        /// Called automatically by EventCenter MonoBehaviour — but can also be called manually.
         /// </summary>
         public static void Initialize()
         {
-            if (_isInitialized) return;
-            
-            _eventCenter = EventCenterService.Current;
-            
-            if (_eventCenter == null)
+            if (_isInitialized && _eventCenter != null) return;
+            EnsureLegacyInitialized();
+        }
+
+        /// <summary>
+        /// Initialize with an explicit IEventCenter instance.
+        /// Called internally by EventCenter MonoBehaviour on Awake.
+        /// </summary>
+        internal static void Initialize(IEventCenter center)
+        {
+            _eventCenter     = center;
+            _isInitialized   = true;
+        }
+
+        /// <summary>
+        /// True if the system is ready to receive publish/subscribe calls.
+        /// </summary>
+        public static bool IsInitialized => _isInitialized && _eventCenter != null;
+
+        internal static void Shutdown()
+        {
+            _eventCenter    = null;
+            _isInitialized  = false;
+        }
+
+        #endregion
+
+        #region Struct Event API  ──  PRIMARY (zero-allocation)
+
+        /// <summary>
+        /// Publish a struct event to all subscribers.
+        /// Zero GC allocation for the dispatch itself.
+        /// </summary>
+        public static void Publish<T>(T payload) where T : struct
+        {
+#if UNITY_EDITOR
+            EditorBridge.NotifyPublish(payload);
+#endif
+            EventHub<T>.Publish(payload);
+        }
+
+        /// <summary>
+        /// Subscribe to a struct event type.
+        /// Returns an IDisposable subscription token — call Dispose() to unsubscribe.
+        /// </summary>
+        public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0)
+            where T : struct
+        {
+            if (callback == null)
             {
-                return;
+                ConsoleLogger.LogError("[EventSystem] Subscribe: callback is null.");
+                return NullSubscription.Instance;
             }
-            
-            _isInitialized = true;
+            return EventHub<T>.Subscribe(callback, priority);
         }
-        
+
         /// <summary>
-        /// Ensure the event system is initialized
+        /// Subscribe to a struct event that fires only once, then auto-unsubscribes.
         /// </summary>
-        private static void EnsureInitialized()
+        public static IEventSubscription SubscribeOnce<T>(Action<T> callback, int priority = 0)
+            where T : struct
         {
-            if (!_isInitialized || _eventCenter == null)
+            if (callback == null) return NullSubscription.Instance;
+
+            IEventSubscription sub = null;
+            sub = Subscribe<T>(payload =>
             {
-                Initialize();
-                
-                // If initialization still failed, throw an exception
-                if (_eventCenter == null)
-                {
-                    throw new InvalidOperationException();
-                }
-            }
+                callback(payload);
+                sub?.Dispose();
+            }, priority);
+            return sub;
         }
-        
+
         /// <summary>
-        /// Check if the event system is initialized
+        /// Subscribe to a struct event with a filter predicate.
+        /// The callback is only invoked when <paramref name="condition"/> returns true.
         /// </summary>
-        public static bool IsInitialized => _isInitialized;
-        
+        public static IEventSubscription SubscribeWhen<T>(
+            Action<T> callback,
+            Func<T, bool> condition,
+            int priority = 0)
+            where T : struct
+        {
+            if (callback == null || condition == null) return NullSubscription.Instance;
+
+            return Subscribe<T>(payload =>
+            {
+                if (condition(payload)) callback(payload);
+            }, priority);
+        }
+
+        /// <summary>
+        /// Unsubscribe a specific callback from a struct event type.
+        /// Prefer holding and Disposing the IEventSubscription returned by Subscribe.
+        /// </summary>
+        public static void Unsubscribe<T>(Action<T> callback) where T : struct
+        {
+            EventHub<T>.Unsubscribe(callback);
+        }
+
+        /// <summary>
+        /// Number of active subscribers for a given struct event type.
+        /// </summary>
+        public static int GetSubscriberCount<T>() where T : struct
+            => EventHub<T>.Count;
+
         #endregion
-        
-        #region Struct Event Subscription (Primary API)
-        
+
+        #region Legacy BaseEvent API  ──  BACKWARD COMPAT
+
         /// <summary>
-        /// Subscribe to struct events of a specific type
+        /// Publish a legacy BaseEvent (class-based). May allocate.
         /// </summary>
-        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
-        /// <param name="listener">The listener to register</param>
-        /// <returns>Subscription handle for managing the subscription</returns>
-        public static IEventSubscription Subscribe<T>(IEventListener<T> listener) where T : struct
-        {
-            EnsureInitialized();
-            return _eventCenter.Subscribe(listener);
-        }
-        
-        /// <summary>
-        /// Subscribe to struct events with a callback function
-        /// </summary>
-        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
-        /// <param name="callback">Callback function to invoke</param>
-        /// <param name="priority">Priority of this callback (higher = executed first)</param>
-        /// <returns>Subscription handle for managing the subscription</returns>
-        public static IEventSubscription Subscribe<T>(Action<T> callback, int priority = 0) where T : struct
-        {
-            EnsureInitialized();
-            var subscription = _eventCenter.Subscribe(callback, priority);
-            return subscription;
-        }
-        
-        /// <summary>
-        /// Unsubscribe from a specific struct type
-        /// </summary>
-        /// <typeparam name="T">Type of struct to unsubscribe from</typeparam>
-        /// <param name="listener">The listener to unsubscribe</param>
-        public static void Unsubscribe<T>(IEventListener<T> listener) where T : struct
-        {
-            EnsureInitialized();
-            _eventCenter.Unsubscribe(listener);
-        }
-        
-        /// <summary>
-        /// Unsubscribe a listener from all events
-        /// </summary>
-        /// <param name="listener">The listener to unsubscribe</param>
-        public static void Unsubscribe(IEventListener listener)
-        {
-            EnsureInitialized();
-            _eventCenter.Unsubscribe(listener);
-        }
-        
-        #endregion
-        
-        #region Struct Event Publishing (Primary API)
-        
-        /// <summary>
-        /// Publish a struct event to all registered listeners
-        /// </summary>
-        /// <typeparam name="T">Type of struct payload</typeparam>
-        /// <param name="payload">The struct payload</param>
-        /// <param name="priority">Event priority (higher value = higher priority)</param>
-        public static void Publish<T>(T payload, int priority = 0) where T : struct
-        {
-            EnsureInitialized();
-            _eventCenter.PublishEvent(payload, priority);
-        }
-        
-        /// <summary>
-        /// Publish a struct event with immediate processing (bypasses queue)
-        /// </summary>
-        /// <typeparam name="T">Type of struct payload</typeparam>
-        /// <param name="payload">The struct payload to publish immediately</param>
-        /// <param name="priority">Event priority (higher value = higher priority)</param>
-        public static void PublishImmediate<T>(T payload, int priority = 0) where T : struct
-        {
-            EnsureInitialized();
-            _eventCenter.PublishEventImmediate(payload, priority);
-        }
-        
-        #endregion
-        
-        #region Legacy BaseEvent Support
-        
-        /// <summary>
-        /// Subscribe to legacy BaseEvent types (for backward compatibility)
-        /// </summary>
-        /// <typeparam name="T">Type of BaseEvent to subscribe to</typeparam>
-        /// <param name="listener">The listener to register</param>
-        /// <returns>Subscription handle for managing the subscription</returns>
-        public static IEventSubscription SubscribeLegacy<T>(IEventListenerLegacy<T> listener) where T : BaseEvent
-        {
-            EnsureInitialized();
-            return _eventCenter.SubscribeLegacy(listener);
-        }
-        
-        /// <summary>
-        /// Subscribe to legacy BaseEvent types with callback (for backward compatibility)
-        /// </summary>
-        /// <typeparam name="T">Type of BaseEvent to subscribe to</typeparam>
-        /// <param name="callback">Callback function to invoke</param>
-        /// <param name="priority">Priority of this callback</param>
-        /// <returns>Subscription handle for managing the subscription</returns>
-        public static IEventSubscription SubscribeLegacy<T>(Action<T> callback, int priority = 0) where T : BaseEvent
-        {
-            EnsureInitialized();
-            return _eventCenter.SubscribeLegacy(callback, priority);
-        }
-        
-        /// <summary>
-        /// Publish a legacy BaseEvent (for backward compatibility)
-        /// </summary>
-        /// <param name="eventData">The event to publish</param>
         public static void PublishLegacy(BaseEvent eventData)
         {
-            EnsureInitialized();
-            _eventCenter.PublishEvent(eventData);
+            EnsureLegacyInitialized();
+            _eventCenter?.PublishEvent(eventData);
         }
-        
+
         /// <summary>
-        /// Publish a legacy BaseEvent with immediate processing (for backward compatibility)
+        /// Publish a legacy BaseEvent with immediate processing.
         /// </summary>
-        /// <param name="eventData">The event to publish immediately</param>
         public static void PublishLegacyImmediate(BaseEvent eventData)
         {
-            EnsureInitialized();
-            _eventCenter.PublishEventImmediate(eventData);
+            EnsureLegacyInitialized();
+            _eventCenter?.PublishEventImmediate(eventData);
         }
-        
-        #endregion
-        
-        #region System Management
-        
+
         /// <summary>
-        /// Process all queued events
-        /// Usually called automatically by Unity's event loop
+        /// Subscribe to a legacy BaseEvent type.
+        /// </summary>
+        public static IEventSubscription SubscribeLegacy<T>(Action<T> callback, int priority = 0)
+            where T : BaseEvent
+        {
+            EnsureLegacyInitialized();
+            return _eventCenter?.SubscribeLegacy(callback, priority) ?? NullSubscription.Instance;
+        }
+
+        /// <summary>
+        /// Subscribe to a legacy BaseEvent type using IEventListenerLegacy.
+        /// </summary>
+        public static IEventSubscription SubscribeLegacy<T>(IEventListenerLegacy<T> listener)
+            where T : BaseEvent
+        {
+            EnsureLegacyInitialized();
+            return _eventCenter?.SubscribeLegacy(listener) ?? NullSubscription.Instance;
+        }
+
+        private static void EnsureLegacyInitialized()
+        {
+            if (_isInitialized && _eventCenter != null) return;
+
+            // Fallback: try to get EventCenterService for backward compat
+            _eventCenter = EventCenterService.Current;
+            if (_eventCenter != null) _isInitialized = true;
+        }
+
+        #endregion
+
+        #region System Management
+
+        /// <summary>
+        /// Process all queued events (called automatically by EventCenter MonoBehaviour).
         /// </summary>
         public static void ProcessEvents()
         {
-            if (!_isInitialized) return;
-            _eventCenter.ProcessEvents();
+            _eventCenter?.ProcessEvents();
         }
-        
+
         /// <summary>
-        /// Clear all events and subscriptions
+        /// Check if logging is enabled.
+        /// </summary>
+        public static bool IsLoggingEnabled
+            => _isInitialized && (_eventCenter?.IsLoggingEnabled ?? false);
+
+        /// <summary>
+        /// Get stats from the legacy event center (struct events are zero-overhead).
+        /// </summary>
+        public static EventCenterStats GetStats()
+            => _isInitialized ? (_eventCenter?.GetStats() ?? default) : default;
+
+        /// <summary>
+        /// Clear all events and subscriptions (legacy queue).
+        /// Struct-event subscriptions in EventHub are not affected.
         /// </summary>
         public static void Clear()
         {
-            if (!_isInitialized) return;
             _eventCenter?.Clear();
         }
-        
+
         /// <summary>
-        /// Get statistics about the event system
-        /// </summary>
-        /// <returns>Event system statistics</returns>
-        public static EventCenterStats GetStats()
-        {
-            if (!_isInitialized) return default;
-            return _eventCenter.GetStats();
-        }
-        
-        /// <summary>
-        /// Log the current status and statistics of the event system
+        /// Log the current status of the event system.
+        /// No-op in release builds unless logging is enabled.
         /// </summary>
         public static void LogStatus()
         {
-            // Logging disabled
-        }
-        
-        /// <summary>
-        /// Check if logging is enabled in the current EventCenter
-        /// </summary>
-        /// <returns>True if logging is enabled, false otherwise</returns>
-        public static bool IsLoggingEnabled()
-        {
-            if (!_isInitialized || _eventCenter == null)
+            if (!_isInitialized)
             {
-                return false;
+                ConsoleLogger.Log("[EventSystem] Not initialized.");
+                return;
             }
-            
-            return _eventCenter.IsLoggingEnabled;
+            var stats = GetStats();
+            ConsoleLogger.Log($"[EventSystem] Active subscriptions: {stats.ActiveSubscriptions} | Queued events: {stats.QueuedEvents}");
         }
-        
+
         /// <summary>
-        /// Shutdown the static event system
+        /// Publish multiple struct events of the same type in one call.
         /// </summary>
-        public static void Shutdown()
-        {
-            if (_isInitialized)
-            {
-                Clear();
-                _eventCenter = null;
-                _isInitialized = false;
-            }
-        }
-        
-        #endregion
-        
-        #region Convenience Methods
-        
-        /// <summary>
-        /// Subscribe to an event for a single execution (auto-unsubscribes after first trigger)
-        /// </summary>
-        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
-        /// <param name="callback">Callback function to invoke once</param>
-        /// <param name="priority">Priority of this callback</param>
-        /// <returns>Subscription handle</returns>
-        public static IEventSubscription SubscribeOnce<T>(Action<T> callback, int priority = 0) where T : struct
-        {
-            IEventSubscription subscription = null;
-            subscription = Subscribe<T>((payload) =>
-            {
-                callback(payload);
-                subscription?.Dispose(); // Auto-unsubscribe after first execution
-            }, priority);
-            return subscription;
-        }
-        
-        /// <summary>
-        /// Subscribe to an event with a condition check
-        /// </summary>
-        /// <typeparam name="T">Type of struct to subscribe to</typeparam>
-        /// <param name="callback">Callback function to invoke</param>
-        /// <param name="condition">Condition that must be true for callback to execute</param>
-        /// <param name="priority">Priority of this callback</param>
-        /// <returns>Subscription handle</returns>
-        public static IEventSubscription SubscribeWhen<T>(Action<T> callback, Func<T, bool> condition, int priority = 0) where T : struct
-        {
-            return Subscribe<T>((payload) =>
-            {
-                if (condition(payload))
-                {
-                    callback(payload);
-                }
-            }, priority);
-        }
-        
-        /// <summary>
-        /// Batch publish multiple events of the same type
-        /// </summary>
-        /// <typeparam name="T">Type of struct to publish</typeparam>
-        /// <param name="events">Array of events to publish</param>
-        /// <param name="priority">Priority for all events</param>
         public static void PublishBatch<T>(T[] events, int priority = 0) where T : struct
         {
-            EnsureInitialized();
-            foreach (var evt in events)
+            if (events == null) return;
+            for (int i = 0; i < events.Length; i++)
             {
-                _eventCenter.PublishEvent(evt, priority);
+                EventHub<T>.Publish(events[i]);
             }
         }
-        
-        #endregion
-        
 
+        #endregion
+
+        #region Editor Bridge (compile-time stripped in builds)
+#if UNITY_EDITOR
+        private static class EditorBridge
+        {
+            private static bool _triedLookup;
+            private static System.Reflection.MethodInfo _publishMethod;
+
+            internal static void NotifyPublish<T>(T payload) where T : struct
+            {
+                if (!_triedLookup)
+                {
+                    _triedLookup = true;
+                    var bridgeType = System.Type.GetType(
+                        "EventCenter.EditorTools.EventCaptureBridge, Assembly-CSharp-Editor");
+                    _publishMethod = bridgeType?.GetMethod(
+                        "Publish",
+                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                }
+
+                if (_publishMethod == null) return;
+                
+                try
+                {
+                    _publishMethod.Invoke(null, new object[]
+                    {
+                        typeof(T).Name, (object)payload, null,
+                        ResolveCategory(typeof(T).Name),
+                        null
+                    });
+                }
+                catch { /* Editor hook failure is non-critical */ }
+            }
+
+            private static string ResolveCategory(string name)
+            {
+                if (name.Contains("Player")) return "Player";
+                if (name.Contains("UI"))     return "UI";
+                if (name.Contains("Game"))   return "Gameplay";
+                if (name.Contains("Audio") || name.Contains("Sound")) return "Audio";
+                if (name.Contains("Network")) return "Network";
+                return "Uncategorized";
+            }
+        }
+#endif
+        #endregion
     }
 }
