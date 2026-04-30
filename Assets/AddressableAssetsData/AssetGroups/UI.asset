@@ -20,11 +20,6 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 0ee6f3d72404ef249804b74ff1799864
-    m_Address: Background
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2104d89dc2a62324f84bce3de838870d
     m_Address: PopEnter
     m_ReadOnly: 0
@@ -32,11 +27,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2485ddbb31dd13f41abc787aa49094a8
     m_Address: TooltipDefault
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2fdaa92554ea74641ba44b7347cb21c8
-    m_Address: gift
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -65,18 +55,8 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 5196a226039a98448a23e0c4f725ab9e
-    m_Address: MainScreen
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 5775c7536d953764791e5ac612d2e854
     m_Address: PopExit
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 5f0f3d4a627031f41b1f15a3a926ecfe
-    m_Address: UINavigator
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
@@ -102,11 +82,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b3db4494d0197e24697d136d9b8180eb
     m_Address: ToastHide
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: dca87d8ad6e96e448a9f0c7dfe37de54
-    m_Address: Item
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

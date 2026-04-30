@@ -52,7 +52,6 @@
   <Project Path="Unity.Services.Core.Telemetry.csproj" />
   <Project Path="Unity.Addressables.csproj" />
   <Project Path="Unity.Services.Core.Components.csproj" />
-  <Project Path="TirexGame.Utils.Vibration.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
   <Project Path="GoogleMobileAds.Editor.csproj" />
   <Project Path="UnityEditor.UI.Analytics.csproj" />
@@ -60,7 +59,7 @@
   <Project Path="TirexGame.Utils.Localization.csproj" />
   <Project Path="TirexGame.Utils.Editor.csproj" />
   <Project Path="UniTask.TextMeshPro.csproj" />
-  <Project Path="TirexGame.Utils.UI.FloatingText.csproj" />
+  <Project Path="TirexGame.Utils.Vibration.csproj" />
   <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
@@ -83,7 +82,6 @@
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="UnityEngine.Purchasing.WinRTCore.csproj" />
-  <Project Path="TirexGame.Utils.UI.FloatingText.Editor.csproj" />
   <Project Path="TirexGame.Utils.Editor.BuildSystem.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />

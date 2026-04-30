@@ -12,30 +12,22 @@ namespace Utils.Scripts.UIManager.UINavigator.Editor
 {
     public class UINavigatorSetupTool
     {
-        [MenuItem("Tools/UINavigator/Setup UI Hierarchy")]
+        [MenuItem("BombGuy/Utils/UINavigator/Setup UI Hierarchy")]
         public static void SetupUIHierarchy()
         {
-            // 1. Find or create Canvas
-            Canvas canvas = Object.FindFirstObjectByType<Canvas>();
-            if (canvas == null)
-            {
-                GameObject canvasGo = new GameObject("Canvas");
-                canvas = canvasGo.AddComponent<Canvas>();
-                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvasGo.AddComponent<CanvasScaler>();
-                canvasGo.AddComponent<GraphicRaycaster>();
-                Undo.RegisterCreatedObjectUndo(canvasGo, "Create Canvas");
-            }
+            // 1. Always create a new Canvas
+            GameObject canvasGo = new GameObject("Canvas");
+            Canvas canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-            // Setup Canvas Scaler for Mobile
-            CanvasScaler scaler = canvas.GetComponent<CanvasScaler>();
-            if (scaler != null)
-            {
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1080, 1920); // Default Portrait for mobile
-                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                scaler.matchWidthOrHeight = 0.5f;
-            }
+            CanvasScaler scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080, 1920);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasGo.AddComponent<GraphicRaycaster>();
+            Undo.RegisterCreatedObjectUndo(canvasGo, "Create Canvas");
 
             // 2. Ensure EventSystem exists
             if (Object.FindFirstObjectByType<EventSystem>() == null)
@@ -54,8 +46,13 @@ namespace Utils.Scripts.UIManager.UINavigator.Editor
 
             // 4. Create Sub Containers
             CreateContainer<ScreenContainer>(layerContainerGo.transform, "ScreenContainer");
-            CreateContainer<ModalContainer>(layerContainerGo.transform, "ModalViewContainer");
-            CreateContainer<AlertContainer>(layerContainerGo.transform, "AlertViewContainer");
+
+            var modalContainer = CreateContainer<ModalContainer>(layerContainerGo.transform, "ModalViewContainer");
+            AssignBlockOverlay<ModalContainer>(modalContainer, "modalBlockOverlay", "Assets/Utils/UI/UINavigator/Prefabs/ModalBlockOverlay.prefab");
+
+            var alertContainer = CreateContainer<AlertContainer>(layerContainerGo.transform, "AlertViewContainer");
+            AssignBlockOverlay<AlertContainer>(alertContainer, "modalBlockOverlayOverride", "Assets/Utils/UI/UINavigator/Prefabs/AlertBlockOverlay.prefab");
+
             CreateContainer<OverloadToastContainer>(layerContainerGo.transform, "ToastViewContainer");
             CreateContainer<TooltipContainer>(layerContainerGo.transform, "TooltipViewContainer");
 
@@ -70,6 +67,23 @@ namespace Utils.Scripts.UIManager.UINavigator.Editor
             SetupFullStretch(go.GetComponent<RectTransform>());
             Undo.RegisterCreatedObjectUndo(go, $"Create {name}");
             return go;
+        }
+
+        private static void AssignBlockOverlay<T>(GameObject container, string fieldName, string prefabPath) where T : Component
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            if (prefab == null)
+            {
+                Debug.LogWarning($"<b>[UINavigator]</b> BlockOverlay prefab not found at: {prefabPath}");
+                return;
+            }
+            var comp = container.GetComponent<T>();
+            if (comp == null) return;
+            var so = new SerializedObject(comp);
+            var prop = so.FindProperty(fieldName);
+            if (prop == null) return;
+            prop.objectReferenceValue = prefab;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void SetupFullStretch(RectTransform rect)

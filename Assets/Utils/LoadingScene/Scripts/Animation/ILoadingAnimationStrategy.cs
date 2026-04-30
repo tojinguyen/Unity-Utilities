@@ -4,27 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Interface định nghĩa Strategy Pattern cho animation của Loading UI.
-    /// Implement interface này trong project của bạn để tạo animation hoàn toàn custom.
-    /// 
-    /// Example (trong project game của bạn):
-    /// <code>
-    /// public class DOTweenLoadingAnimation : MonoBehaviour, ILoadingAnimationStrategy
-    /// {
-    ///     public async UniTask PlayShowAnimation(GameObject target, CancellationToken ct)
-    ///     {
-    ///         await target.transform.DOScale(Vector3.one, 0.3f).ToUniTask(cancellationToken: ct);
-    ///     }
-    ///     public async UniTask PlayHideAnimation(GameObject target, CancellationToken ct)
-    ///     {
-    ///         await target.transform.DOScale(Vector3.zero, 0.3f).ToUniTask(cancellationToken: ct);
-    ///     }
-    ///     public void PlayIdleAnimation(GameObject target) { }
-    ///     public void StopIdleAnimation(GameObject target) { }
-    /// }
-    /// </code>
-    /// </summary>
     public interface ILoadingAnimationStrategy
     {
         /// <summary>

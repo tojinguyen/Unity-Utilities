@@ -5,11 +5,6 @@ using UnityEngine.UI;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Animation strategy tạo hiệu ứng spinner xoay vòng trong khi loading đang chạy.
-    /// Dùng cho icon loading (bánh răng, vòng tròn...).
-    /// Kéo component này lên GameObject spinner, sau đó assign vào DefaultLoadingUIController.
-    /// </summary>
     [AddComponentMenu("TirexGame/Loading/Animation/Spinner Animation")]
     public class SpinnerAnimationStrategy : MonoBehaviour, ILoadingAnimationStrategy
     {

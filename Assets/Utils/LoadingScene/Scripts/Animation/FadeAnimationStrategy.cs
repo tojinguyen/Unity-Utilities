@@ -4,10 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Animation strategy dùng CanvasGroup để fade in/out Loading UI.
-    /// Đây là animation mặc định, đơn giản và phổ biến nhất.
-    /// </summary>
     [AddComponentMenu("TirexGame/Loading/Animation/Fade Animation")]
     public class FadeAnimationStrategy : MonoBehaviour, ILoadingAnimationStrategy
     {

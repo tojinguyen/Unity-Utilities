@@ -4,9 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Animation strategy dùng RectTransform để slide Loading UI vào/ra từ các hướng.
-    /// </summary>
     [AddComponentMenu("TirexGame/Loading/Animation/Slide Animation")]
     public class SlideAnimationStrategy : MonoBehaviour, ILoadingAnimationStrategy
     {
