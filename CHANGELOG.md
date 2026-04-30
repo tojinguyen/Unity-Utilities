@@ -1,3 +1,15 @@
+# [1.17.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.16.0...v1.17.0) (2026-04-30)
+
+
+### Features
+
+* add DefaultLoadingUIController for managing scene loading progress with optional animation strategies ([86b2fed](https://github.com/tojinguyen/Unity-Utilities/commit/86b2fed2bd9840842eedb507a598c5f0cfad0288))
+* refactor loading scene ([88e1897](https://github.com/tojinguyen/Unity-Utilities/commit/88e18977a724c00f1d39377c59bbc47478c3b19a))
+* remove code not used ([76ae70a](https://github.com/tojinguyen/Unity-Utilities/commit/76ae70ae379ad8a8ecebda7e49631e6d73aff068))
+* remove not used code ([483c4c8](https://github.com/tojinguyen/Unity-Utilities/commit/483c4c8ea932a722651a634ff6bbbe350009648c))
+* remove package ([7ae0da4](https://github.com/tojinguyen/Unity-Utilities/commit/7ae0da41aa1b0768c0fc5717e6314e9a1de08c46))
+* update ui navigator ([23e513d](https://github.com/tojinguyen/Unity-Utilities/commit/23e513d4f20d072301e3ccba82ec2fa3e4a08843))
+
 # [1.16.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.15.2...v1.16.0) (2026-04-25)
 
 
