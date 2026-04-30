@@ -4,10 +4,6 @@ using UnityEngine;
 
 namespace TirexGame.Utils.LoadingScene
 {
-    /// <summary>
-    /// Animation strategy dùng Scale để zoom in/out Loading UI.
-    /// Kết hợp với fade để tạo hiệu ứng "pop" đẹp mắt.
-    /// </summary>
     [AddComponentMenu("TirexGame/Loading/Animation/Scale Animation")]
     public class ScaleAnimationStrategy : MonoBehaviour, ILoadingAnimationStrategy
     {

@@ -5,509 +5,365 @@ using TMPro;
 
 namespace TirexGame.Utils.LoadingScene.Editor
 {
-    /// <summary>
-    /// Editor Window để tạo nhanh LoadingManager Prefab.
-    /// Menu: Tools → TirexGame → Loading Manager Creator
-    /// </summary>
     public class LoadingManagerCreatorWindow : EditorWindow
     {
         // ---- Prefab Settings ----
-        private string _prefabName = "LoadingManager";
+        private string _prefabName = "LoadSceneManager";
         private string _savePath = "Assets/Prefabs";
+        private int _canvasSortingOrder = 999;
 
-        // ---- Canvas Settings ----
-        private int _canvasSortingOrder = 1000;
-
-        // ---- UI Toggles ----
+        // ---- UI Options ----
         private bool _addProgressBar = true;
-        private bool _addStepNameText = true;
-        private bool _addStepDescText = true;
         private bool _addPercentText = true;
-        private bool _addProgressInfoText = false;
-        private bool _addCancelButton = false;
-        private bool _addErrorPanel = false;
+        private float _completionDelay = 0.8f;
 
-        // ---- Animation Preset ----
-        private AnimationPreset _animationPreset = AnimationPreset.Fade;
-        private Color _panelBackgroundColor = new Color(0.05f, 0.05f, 0.05f, 0.92f);
-        private Color _progressBarColor = new Color(0.2f, 0.7f, 1f, 1f);
+        // ---- Animation ----
+        private AnimationPreset _animPreset = AnimationPreset.Fade;
+
+        // ---- Style ----
+        private Color _panelColor = new Color(0f, 0f, 0f, 0.92f);
+        private Color _barColor = new Color(0.2f, 0.7f, 1f, 1f);
         private Color _textColor = Color.white;
 
         // ---- Foldouts ----
-        private bool _showUIOptions = true;
-        private bool _showAnimOptions = true;
-        private bool _showStyleOptions = true;
+        private bool _foldPrefab = true;
+        private bool _foldUI = true;
+        private bool _foldAnim = true;
+        private bool _foldStyle = true;
 
         private Vector2 _scroll;
         private GUIStyle _headerStyle;
-        private GUIStyle _boxStyle;
 
-        private enum AnimationPreset
-        {
-            None,
-            Fade,
-            Slide,
-            Scale,
-            SpinnerWithFade
-        }
+        private enum AnimationPreset { None, Fade, Slide, Scale, Spinner }
 
-        [MenuItem("Tools/TirexGame/Loading Manager Creator")]
-        public static void ShowWindow()
+        [MenuItem("BombGuy/Utils/LoadingScene/Creator Window")]
+        public static void Open()
         {
-            var window = GetWindow<LoadingManagerCreatorWindow>("Loading Manager Creator");
-            window.minSize = new Vector2(380, 520);
-            window.maxSize = new Vector2(480, 800);
+            var w = GetWindow<LoadingManagerCreatorWindow>("Loading Scene Creator");
+            w.minSize = new Vector2(360, 480);
+            w.maxSize = new Vector2(460, 680);
         }
 
         private void OnGUI()
         {
             InitStyles();
-
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
             DrawHeader();
-            EditorGUILayout.Space(4);
 
-            DrawSection("📁 Prefab Settings", ref _showUIOptions, DrawPrefabSettings);
-            DrawSection("🖼 UI Components", ref _showUIOptions, DrawUIOptions);
-            DrawSection("🎬 Animation Preset", ref _showAnimOptions, DrawAnimOptions);
-            DrawSection("🎨 Style", ref _showStyleOptions, DrawStyleOptions);
+            DrawSection("Prefab Settings", ref _foldPrefab, DrawPrefabSettings);
+            DrawSection("UI Options", ref _foldUI, DrawUIOptions);
+            DrawSection("Animation Preset", ref _foldAnim, DrawAnimOptions);
+            DrawSection("Style", ref _foldStyle, DrawStyleOptions);
 
-            EditorGUILayout.Space(8);
-            DrawCreateButton();
+            EditorGUILayout.Space(10);
+            DrawButtons();
 
             EditorGUILayout.EndScrollView();
         }
 
+        // ─────────────────────────────────────────────────────────
+        // Draw Sections
+        // ─────────────────────────────────────────────────────────
+
         private void DrawHeader()
         {
             EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("⚡ Loading Manager Creator", _headerStyle);
-            EditorGUILayout.LabelField("Tạo nhanh LoadingManager Prefab hoàn chỉnh", EditorStyles.centeredGreyMiniLabel);
+            EditorGUILayout.LabelField("Loading Scene Creator", _headerStyle);
+            EditorGUILayout.LabelField("Tạo nhanh LoadSceneManager Prefab", EditorStyles.centeredGreyMiniLabel);
             EditorGUILayout.Space(4);
-            DrawHorizontalLine();
+            DrawLine();
         }
 
         private void DrawPrefabSettings()
         {
             _prefabName = EditorGUILayout.TextField("Prefab Name", _prefabName);
-
             EditorGUILayout.BeginHorizontal();
             _savePath = EditorGUILayout.TextField("Save Path", _savePath);
-            if (GUILayout.Button("Browse", GUILayout.Width(60)))
+            if (GUILayout.Button("...", GUILayout.Width(30)))
             {
-                string path = EditorUtility.OpenFolderPanel("Select Save Folder", "Assets", "");
-                if (!string.IsNullOrEmpty(path))
-                {
-                    // Convert absolute path → relative
-                    if (path.StartsWith(Application.dataPath))
-                        _savePath = "Assets" + path.Substring(Application.dataPath.Length);
-                }
+                string path = EditorUtility.OpenFolderPanel("Select Folder", "Assets", "");
+                if (!string.IsNullOrEmpty(path) && path.StartsWith(Application.dataPath))
+                    _savePath = "Assets" + path.Substring(Application.dataPath.Length);
             }
             EditorGUILayout.EndHorizontal();
-
             _canvasSortingOrder = EditorGUILayout.IntField("Canvas Sorting Order", _canvasSortingOrder);
+            _completionDelay = EditorGUILayout.FloatField("Completion Delay (s)", _completionDelay);
         }
 
         private void DrawUIOptions()
         {
-            _addProgressBar = EditorGUILayout.Toggle("Progress Bar (Slider)", _addProgressBar);
-            _addStepNameText = EditorGUILayout.Toggle("Step Name Text", _addStepNameText);
-            _addStepDescText = EditorGUILayout.Toggle("Step Description Text", _addStepDescText);
+            _addProgressBar = EditorGUILayout.Toggle("Progress Bar", _addProgressBar);
             _addPercentText = EditorGUILayout.Toggle("Progress % Text", _addPercentText);
-            _addProgressInfoText = EditorGUILayout.Toggle("Progress Info Text", _addProgressInfoText);
-            EditorGUILayout.Space(2);
-            _addCancelButton = EditorGUILayout.Toggle("Cancel Button", _addCancelButton);
-            _addErrorPanel = EditorGUILayout.Toggle("Error Panel", _addErrorPanel);
         }
 
         private void DrawAnimOptions()
         {
-            _animationPreset = (AnimationPreset)EditorGUILayout.EnumPopup("Preset", _animationPreset);
-
+            _animPreset = (AnimationPreset)EditorGUILayout.EnumPopup("Preset", _animPreset);
             EditorGUILayout.Space(2);
-            switch (_animationPreset)
+            string hint = _animPreset switch
             {
-                case AnimationPreset.None:
-                    EditorGUILayout.HelpBox("Không có animation. Show/Hide ngay lập tức.", MessageType.Info);
-                    break;
-                case AnimationPreset.Fade:
-                    EditorGUILayout.HelpBox("Thêm FadeAnimationStrategy. Fade in khi show, fade out khi hide.", MessageType.Info);
-                    break;
-                case AnimationPreset.Slide:
-                    EditorGUILayout.HelpBox("Thêm SlideAnimationStrategy. Slide từ dưới lên khi show.", MessageType.Info);
-                    break;
-                case AnimationPreset.Scale:
-                    EditorGUILayout.HelpBox("Thêm ScaleAnimationStrategy. Zoom in khi show, zoom out khi hide.", MessageType.Info);
-                    break;
-                case AnimationPreset.SpinnerWithFade:
-                    EditorGUILayout.HelpBox("Thêm SpinnerAnimationStrategy. Fade + spinner xoay khi loading.", MessageType.Info);
-                    break;
-            }
+                AnimationPreset.None    => "Instant show/hide, không animation.",
+                AnimationPreset.Fade    => "FadeAnimationStrategy — fade in/out.",
+                AnimationPreset.Slide   => "SlideAnimationStrategy — slide từ dưới lên.",
+                AnimationPreset.Scale   => "ScaleAnimationStrategy — zoom in/out.",
+                AnimationPreset.Spinner => "SpinnerAnimationStrategy — xoay spinner.",
+                _                       => ""
+            };
+            EditorGUILayout.HelpBox(hint, MessageType.Info);
         }
 
         private void DrawStyleOptions()
         {
-            _panelBackgroundColor = EditorGUILayout.ColorField("Panel Background", _panelBackgroundColor);
-            _progressBarColor = EditorGUILayout.ColorField("Progress Bar Color", _progressBarColor);
-            _textColor = EditorGUILayout.ColorField("Text Color", _textColor);
+            _panelColor = EditorGUILayout.ColorField("Panel Background", _panelColor);
+            _barColor   = EditorGUILayout.ColorField("Progress Bar Color", _barColor);
+            _textColor  = EditorGUILayout.ColorField("Text Color", _textColor);
         }
 
-        private void DrawCreateButton()
+        private void DrawButtons()
         {
-            GUI.backgroundColor = new Color(0.2f, 0.8f, 0.3f);
-            if (GUILayout.Button("✨ Create LoadingManager Prefab", GUILayout.Height(40)))
-            {
-                CreatePrefab();
-            }
+            EditorGUILayout.BeginHorizontal();
+
+            GUI.backgroundColor = new Color(0.3f, 0.7f, 1f);
+            if (GUILayout.Button("Add to Scene", GUILayout.Height(36)))
+                AddToScene();
+
+            GUI.backgroundColor = new Color(0.2f, 0.85f, 0.3f);
+            if (GUILayout.Button("Save as Prefab", GUILayout.Height(36)))
+                SaveAsPrefab();
+
             GUI.backgroundColor = Color.white;
+            EditorGUILayout.EndHorizontal();
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────
-        // Prefab Creation
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────
+        // Creation
+        // ─────────────────────────────────────────────────────────
 
-        private void CreatePrefab()
+        private void AddToScene()
         {
-            if (string.IsNullOrEmpty(_prefabName))
+            var root = BuildHierarchy();
+            Undo.RegisterCreatedObjectUndo(root, "Create LoadSceneManager");
+            Selection.activeGameObject = root;
+            EditorGUIUtility.PingObject(root);
+        }
+
+        private void SaveAsPrefab()
+        {
+            if (string.IsNullOrWhiteSpace(_prefabName))
             {
-                EditorUtility.DisplayDialog("Error", "Prefab name cannot be empty!", "OK");
+                EditorUtility.DisplayDialog("Error", "Prefab name cannot be empty.", "OK");
                 return;
             }
 
-            // Đảm bảo thư mục tồn tại
             if (!AssetDatabase.IsValidFolder(_savePath))
             {
                 System.IO.Directory.CreateDirectory(_savePath);
                 AssetDatabase.Refresh();
             }
 
-            // ── Tạo root LoadingManager ──────────────────────────────────────────────
-            var root = new GameObject(_prefabName);
-            var loadingManager = root.AddComponent<LoadingManager>();
-
-            // ── Tạo UI hierarchy dưới root ────────────────────────────────────────────
-            var uiRoot = CreateUIRoot(root.transform);
-            var controller = uiRoot.GetComponent<DefaultLoadingUIController>();
-
-            // ── Thêm Animation Strategy ───────────────────────────────────────────────
-            AttachAnimationStrategy(uiRoot, controller);
-
-            // ── Lưu Prefab ────────────────────────────────────────────────────────────
-            string assetPath = $"{_savePath}/{_prefabName}.prefab";
-            var prefab = PrefabUtility.SaveAsPrefabAsset(root, assetPath);
+            var root = BuildHierarchy();
+            string path = $"{_savePath}/{_prefabName}.prefab";
+            var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             DestroyImmediate(root);
 
             if (prefab != null)
             {
                 AssetDatabase.Refresh();
-                EditorUtility.DisplayDialog("✅ Success",
-                    $"Prefab created at:\n{assetPath}\n\nDrag nó vào scene và assign UIController vào LoadingManager nếu cần.",
-                    "OK");
                 Selection.activeObject = prefab;
                 EditorGUIUtility.PingObject(prefab);
-            }
-            else
-            {
-                EditorUtility.DisplayDialog("❌ Error", "Failed to create prefab!", "OK");
+                Debug.Log($"[LoadingScene] Prefab saved: {path}");
             }
         }
 
-        private GameObject CreateUIRoot(Transform parent)
+        private GameObject BuildHierarchy()
         {
-            // Canvas
+            // Root — LoadSceneManager
+            var root = new GameObject(_prefabName);
+            var manager = root.AddComponent<LoadSceneManager>();
+
+            // Canvas — Loading UI
             var canvasGo = new GameObject("LoadingUI");
-            canvasGo.transform.SetParent(parent, false);
+            canvasGo.transform.SetParent(root.transform, false);
 
             var canvas = canvasGo.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = _canvasSortingOrder;
 
-            canvasGo.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080, 1920);
+            scaler.matchWidthOrHeight = 0.5f;
+
             canvasGo.AddComponent<GraphicRaycaster>();
 
             var controller = canvasGo.AddComponent<DefaultLoadingUIController>();
 
-            // LoadingPanel
-            var panelGo = CreatePanel(canvasGo.transform, "LoadingPanel", _panelBackgroundColor);
+            // Loading Panel
+            var panel = MakeStretchedPanel("LoadingPanel", canvasGo.transform, _panelColor);
 
-            // ── Progress Bar ──────────────────────────────────────────────────────────
-            Slider progressBar = null;
+            Slider slider = null;
             if (_addProgressBar)
-            {
-                progressBar = CreateProgressBar(panelGo.transform);
-            }
+                slider = MakeProgressBar(panel.transform);
 
-            // ── Texts ─────────────────────────────────────────────────────────────────
-            TextMeshProUGUI stepNameText = null;
-            if (_addStepNameText)
-                stepNameText = CreateTMProText(panelGo.transform, "StepNameText", "Loading...", 24, FontStyles.Bold, new Vector2(0, 60));
-
-            TextMeshProUGUI stepDescText = null;
-            if (_addStepDescText)
-                stepDescText = CreateTMProText(panelGo.transform, "StepDescText", "Please wait...", 16, FontStyles.Normal, new Vector2(0, 30));
-
-            TextMeshProUGUI percentText = null;
+            TextMeshProUGUI percentTMP = null;
             if (_addPercentText)
-                percentText = CreateTMProText(panelGo.transform, "PercentText", "0%", 20, FontStyles.Bold, new Vector2(0, -40));
+                percentTMP = MakeText("ProgressPercentText", panel.transform, "0%", 56, new Vector2(0, 80));
 
-            TextMeshProUGUI infoText = null;
-            if (_addProgressInfoText)
-                infoText = CreateTMProText(panelGo.transform, "ProgressInfoText", "Step 0/0", 14, FontStyles.Normal, new Vector2(0, -70));
-
-            // ── Cancel Button ─────────────────────────────────────────────────────────
-            Button cancelButton = null;
-            if (_addCancelButton)
-                cancelButton = CreateButton(panelGo.transform, "CancelButton", "Cancel", new Vector2(0, -110));
-
-            // ── Error Panel ───────────────────────────────────────────────────────────
-            GameObject errorPanel = null;
-            TextMeshProUGUI errorText = null;
-            Button errorCloseButton = null;
-            if (_addErrorPanel)
-                (errorPanel, errorText, errorCloseButton) = CreateErrorPanel(canvasGo.transform);
-
-            // ── Wire references vào Controller ────────────────────────────────────────
-            var so = new SerializedObject(controller);
-            SetSerializedField(so, "_loadingPanel", panelGo);
-            SetSerializedField(so, "_progressBar", progressBar);
-            SetSerializedField(so, "_stepNameText", stepNameText);
-            SetSerializedField(so, "_stepDescriptionText", stepDescText);
-            SetSerializedField(so, "_progressPercentText", percentText);
-            SetSerializedField(so, "_progressInfoText", infoText);
-            SetSerializedField(so, "_cancelButton", cancelButton);
-            SetSerializedField(so, "_errorPanel", errorPanel);
-            SetSerializedField(so, "_errorText", errorText);
-            SetSerializedField(so, "_errorCloseButton", errorCloseButton);
-            so.ApplyModifiedPropertiesWithoutUndo();
-
-            return canvasGo;
-        }
-
-        private void AttachAnimationStrategy(GameObject uiRoot, DefaultLoadingUIController controller)
-        {
-            if (_animationPreset == AnimationPreset.None) return;
-
-            MonoBehaviour strategy = _animationPreset switch
+            // Attach animation strategy
+            if (_animPreset != AnimationPreset.None)
             {
-                AnimationPreset.Fade => uiRoot.AddComponent<FadeAnimationStrategy>(),
-                AnimationPreset.Slide => uiRoot.AddComponent<SlideAnimationStrategy>(),
-                AnimationPreset.Scale => uiRoot.AddComponent<ScaleAnimationStrategy>(),
-                AnimationPreset.SpinnerWithFade => uiRoot.AddComponent<SpinnerAnimationStrategy>(),
-                _ => null
-            };
+                MonoBehaviour strat = _animPreset switch
+                {
+                    AnimationPreset.Fade    => canvasGo.AddComponent<FadeAnimationStrategy>(),
+                    AnimationPreset.Slide   => canvasGo.AddComponent<SlideAnimationStrategy>(),
+                    AnimationPreset.Scale   => canvasGo.AddComponent<ScaleAnimationStrategy>(),
+                    AnimationPreset.Spinner => canvasGo.AddComponent<SpinnerAnimationStrategy>(),
+                    _                       => null
+                };
 
-            if (strategy != null)
-            {
-                var so = new SerializedObject(controller);
-                SetSerializedField(so, "_animationStrategyObject", strategy);
-                so.ApplyModifiedPropertiesWithoutUndo();
+                if (strat != null)
+                {
+                    var soCtrl = new SerializedObject(controller);
+                    soCtrl.FindProperty("_animationStrategyObject").objectReferenceValue = strat;
+                    soCtrl.ApplyModifiedPropertiesWithoutUndo();
+                }
             }
+
+            // Wire DefaultLoadingUIController fields
+            var soController = new SerializedObject(controller);
+            soController.FindProperty("_loadingPanel").objectReferenceValue = panel;
+            SetProp(soController, "_progressBar", slider);
+            SetProp(soController, "_progressPercentText", percentTMP);
+            soController.ApplyModifiedPropertiesWithoutUndo();
+
+            // Wire LoadSceneManager fields
+            var soManager = new SerializedObject(manager);
+            soManager.FindProperty("_ui").objectReferenceValue = controller;
+            soManager.FindProperty("_completionDelay").floatValue = _completionDelay;
+            soManager.ApplyModifiedPropertiesWithoutUndo();
+
+            return root;
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────
         // UI Helpers
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────
 
-        private static GameObject CreatePanel(Transform parent, string name, Color color)
+        private static GameObject MakeStretchedPanel(string name, Transform parent, Color color)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
-
-            var rect = go.AddComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            var img = go.AddComponent<Image>();
-            img.color = color;
-
+            go.AddComponent<Image>().color = color;
+            Stretch(go.GetComponent<RectTransform>());
             return go;
         }
 
-        private Slider CreateProgressBar(Transform parent)
+        private Slider MakeProgressBar(Transform parent)
         {
             var go = new GameObject("ProgressBar");
             go.transform.SetParent(parent, false);
-
             var rect = go.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(600, 20);
-            rect.anchoredPosition = new Vector2(0, 0);
-
-            var slider = go.AddComponent<Slider>();
-            slider.minValue = 0f;
-            slider.maxValue = 1f;
-            slider.value = 0f;
+            rect.sizeDelta = new Vector2(800, 24);
+            rect.anchoredPosition = Vector2.zero;
 
             // Background
             var bg = new GameObject("Background");
             bg.transform.SetParent(go.transform, false);
-            var bgRect = bg.AddComponent<RectTransform>();
-            bgRect.anchorMin = Vector2.zero;
-            bgRect.anchorMax = Vector2.one;
-            bgRect.offsetMin = Vector2.zero;
-            bgRect.offsetMax = Vector2.zero;
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+            bg.AddComponent<Image>().color = new Color(0.15f, 0.15f, 0.15f);
+            Stretch(bg.GetComponent<RectTransform>());
 
             // Fill Area
             var fillArea = new GameObject("Fill Area");
             fillArea.transform.SetParent(go.transform, false);
-            var fillAreaRect = fillArea.AddComponent<RectTransform>();
-            fillAreaRect.anchorMin = Vector2.zero;
-            fillAreaRect.anchorMax = Vector2.one;
-            fillAreaRect.offsetMin = Vector2.zero;
-            fillAreaRect.offsetMax = Vector2.zero;
+            var faRect = fillArea.AddComponent<RectTransform>();
+            faRect.anchorMin = new Vector2(0f, 0.25f);
+            faRect.anchorMax = new Vector2(1f, 0.75f);
+            faRect.sizeDelta = new Vector2(-10f, 0f);
+            faRect.anchoredPosition = new Vector2(-5f, 0f);
 
             // Fill
             var fill = new GameObject("Fill");
             fill.transform.SetParent(fillArea.transform, false);
-            var fillRect = fill.AddComponent<RectTransform>();
+            fill.AddComponent<Image>().color = _barColor;
+            var fillRect = fill.GetComponent<RectTransform>();
             fillRect.anchorMin = Vector2.zero;
             fillRect.anchorMax = new Vector2(0f, 1f);
-            fillRect.offsetMin = Vector2.zero;
-            fillRect.offsetMax = Vector2.zero;
-            var fillImg = fill.AddComponent<Image>();
-            fillImg.color = _progressBarColor;
+            fillRect.sizeDelta = new Vector2(10f, 0f);
 
+            var slider = go.AddComponent<Slider>();
             slider.fillRect = fillRect;
-            slider.targetGraphic = bgImg;
+            slider.direction = Slider.Direction.LeftToRight;
+            slider.interactable = false;
+            slider.minValue = 0;
+            slider.maxValue = 1;
+            slider.value = 0;
 
             return slider;
         }
 
-        private TextMeshProUGUI CreateTMProText(Transform parent, string name, string defaultText, int fontSize,
-            FontStyles style, Vector2 anchoredPosition)
+        private TextMeshProUGUI MakeText(string name, Transform parent, string text, float size, Vector2 pos)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent, false);
-
             var rect = go.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(700, 40);
-            rect.anchoredPosition = anchoredPosition;
-
+            rect.sizeDelta = new Vector2(600, 80);
+            rect.anchoredPosition = pos;
             var tmp = go.AddComponent<TextMeshProUGUI>();
-            tmp.text = defaultText;
-            tmp.fontSize = fontSize;
-            tmp.fontStyle = style;
+            tmp.text = text;
+            tmp.fontSize = size;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = _textColor;
-
             return tmp;
         }
 
-        private static Button CreateButton(Transform parent, string name, string label, Vector2 anchoredPosition)
+        private static void Stretch(RectTransform r)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-
-            var rect = go.AddComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(160, 44);
-            rect.anchoredPosition = anchoredPosition;
-
-            var img = go.AddComponent<Image>();
-            img.color = new Color(0.8f, 0.2f, 0.2f, 1f);
-
-            var btn = go.AddComponent<Button>();
-
-            var labelGo = new GameObject("Label");
-            labelGo.transform.SetParent(go.transform, false);
-            var labelRect = labelGo.AddComponent<RectTransform>();
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero;
-            labelRect.offsetMax = Vector2.zero;
-
-            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-            tmp.text = label;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 16;
-            tmp.color = Color.white;
-
-            return btn;
+            r.anchorMin = Vector2.zero;
+            r.anchorMax = Vector2.one;
+            r.sizeDelta = Vector2.zero;
+            r.anchoredPosition = Vector2.zero;
         }
 
-        private static (GameObject panel, TextMeshProUGUI errorText, Button closeButton) CreateErrorPanel(Transform parent)
+        private static void SetProp(SerializedObject so, string field, Object val)
         {
-            var panel = CreatePanel(parent, "ErrorPanel", new Color(0.6f, 0.1f, 0.1f, 0.95f));
-
-            var rect = panel.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.15f, 0.3f);
-            rect.anchorMax = new Vector2(0.85f, 0.7f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            panel.SetActive(false);
-
-            var errorText = new GameObject("ErrorText");
-            errorText.transform.SetParent(panel.transform, false);
-            var etRect = errorText.AddComponent<RectTransform>();
-            etRect.anchorMin = new Vector2(0.05f, 0.35f);
-            etRect.anchorMax = new Vector2(0.95f, 0.95f);
-            etRect.offsetMin = Vector2.zero;
-            etRect.offsetMax = Vector2.zero;
-            var etTmp = errorText.AddComponent<TextMeshProUGUI>();
-            etTmp.text = "Error occurred";
-            etTmp.alignment = TextAlignmentOptions.Center;
-            etTmp.color = Color.white;
-
-            var closeBtn = CreateButton(panel.transform, "CloseButton", "Close", new Vector2(0, -30));
-
-            return (panel, etTmp, closeBtn);
+            var p = so.FindProperty(field);
+            if (p != null) p.objectReferenceValue = val;
         }
 
-        // ─────────────────────────────────────────────────────────────────────────────
-        // Editor Style Helpers
-        // ─────────────────────────────────────────────────────────────────────────────
+        // ─────────────────────────────────────────────────────────
+        // Style Helpers
+        // ─────────────────────────────────────────────────────────
 
         private void InitStyles()
         {
-            if (_headerStyle == null)
+            _headerStyle ??= new GUIStyle(EditorStyles.boldLabel)
             {
-                _headerStyle = new GUIStyle(EditorStyles.boldLabel)
-                {
-                    fontSize = 16,
-                    alignment = TextAnchor.MiddleCenter
-                };
-            }
-
-            if (_boxStyle == null)
-            {
-                _boxStyle = new GUIStyle(EditorStyles.helpBox)
-                {
-                    padding = new RectOffset(10, 10, 8, 8)
-                };
-            }
+                fontSize = 15,
+                alignment = TextAnchor.MiddleCenter
+            };
         }
 
-        private void DrawSection(string title, ref bool foldout, System.Action content)
+        private void DrawSection(string title, ref bool foldout, System.Action draw)
         {
             EditorGUILayout.Space(4);
             foldout = EditorGUILayout.BeginFoldoutHeaderGroup(foldout, title);
             if (foldout)
             {
-                EditorGUILayout.BeginVertical(_boxStyle ?? EditorStyles.helpBox);
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUI.indentLevel++;
-                content();
+                draw();
                 EditorGUI.indentLevel--;
                 EditorGUILayout.EndVertical();
             }
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private static void DrawHorizontalLine()
+        private static void DrawLine()
         {
-            var rect = EditorGUILayout.GetControlRect(false, 1);
-            EditorGUI.DrawRect(rect, new Color(0.4f, 0.4f, 0.4f, 1f));
+            var r = EditorGUILayout.GetControlRect(false, 1);
+            EditorGUI.DrawRect(r, new Color(0.4f, 0.4f, 0.4f));
             EditorGUILayout.Space(2);
-        }
-
-        private static void SetSerializedField(SerializedObject so, string fieldName, Object value)
-        {
-            var prop = so.FindProperty(fieldName);
-            if (prop != null)
-                prop.objectReferenceValue = value;
         }
     }
 }
