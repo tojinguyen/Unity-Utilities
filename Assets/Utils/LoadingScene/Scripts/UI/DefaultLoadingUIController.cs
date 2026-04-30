@@ -10,6 +10,7 @@ namespace TirexGame.Utils.LoadingScene
     {
         [Header("UI References")]
         [SerializeField] private GameObject _loadingPanel;
+        [SerializeField] private Image _loadingImage;
         [SerializeField] private Slider _progressBar;
         [SerializeField] private TextMeshProUGUI _progressPercentText;
 
@@ -38,14 +39,14 @@ namespace TirexGame.Utils.LoadingScene
             _animationStrategy?.StopIdleAnimation(GetTarget());
         }
 
-        public void ShowUI()
+        public virtual void ShowUI()
         {
             if (_isVisible) return;
             _isVisible = true;
             ShowAsync().Forget();
         }
 
-        public void HideUI()
+        public virtual void HideUI()
         {
             if (!_isVisible) return;
             _isVisible = false;
