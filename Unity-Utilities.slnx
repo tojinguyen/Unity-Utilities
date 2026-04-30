@@ -60,7 +60,6 @@
   <Project Path="TirexGame.Utils.Localization.csproj" />
   <Project Path="TirexGame.Utils.Editor.csproj" />
   <Project Path="UniTask.TextMeshPro.csproj" />
-  <Project Path="TirexGame.Utils.UI.FloatingText.csproj" />
   <Project Path="Unity.ScriptableBuildPipeline.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
   <Project Path="Unity.Settings.Editor.csproj" />
@@ -83,7 +82,6 @@
   <Project Path="DOTweenPro.Scripts.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="UnityEngine.Purchasing.WinRTCore.csproj" />
-  <Project Path="TirexGame.Utils.UI.FloatingText.Editor.csproj" />
   <Project Path="TirexGame.Utils.Editor.BuildSystem.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
