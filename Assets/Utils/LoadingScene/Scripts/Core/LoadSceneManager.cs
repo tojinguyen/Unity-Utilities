@@ -41,8 +41,11 @@ namespace TirexGame.Utils.LoadingScene
         private async UniTask LoadInternal(string sceneName)
         {
             _currentProgress = 0f;
-            _ui?.ShowUI();
-            _ui?.SetProgress(0f);
+            if (_ui != null)
+            {
+                _ui.SetProgress(0f);
+                await _ui.ShowUI();
+            }
 
             var handle = Addressables.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             await FakeProgressUntilDone(handle);
@@ -50,7 +53,7 @@ namespace TirexGame.Utils.LoadingScene
             await SmoothTo(1f, speed: 2f);
             await UniTask.Delay(TimeSpan.FromSeconds(_completionDelay));
 
-            _ui?.HideUI();
+            if (_ui != null) _ui.HideUI();
         }
 
         private async UniTask FakeProgressUntilDone(AsyncOperationHandle<SceneInstance> handle)
@@ -98,12 +101,12 @@ namespace TirexGame.Utils.LoadingScene
             while (_currentProgress < target - 0.001f)
             {
                 _currentProgress = Mathf.MoveTowards(_currentProgress, target, speed * Time.unscaledDeltaTime);
-                _ui?.SetProgress(_currentProgress);
+                if (_ui != null) _ui.SetProgress(_currentProgress);
                 await UniTask.Yield();
             }
 
             _currentProgress = target;
-            _ui?.SetProgress(_currentProgress);
+            if (_ui != null) _ui.SetProgress(_currentProgress);
         }
     }
 }

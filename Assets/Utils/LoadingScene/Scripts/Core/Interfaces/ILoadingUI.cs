@@ -1,8 +1,10 @@
+using Cysharp.Threading.Tasks;
+
 namespace TirexGame.Utils.LoadingScene
 {
     public interface ILoadingUI
     {
-        void ShowUI();
+        UniTask ShowUI();
         void HideUI();
         void SetProgress(float progress);
     }
