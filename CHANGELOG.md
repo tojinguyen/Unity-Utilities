@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/tojinguyen/Unity-Utilities/compare/v1.20.0...v1.20.1) (2026-05-01)
+
+
+### Bug Fixes
+
+* bug screen ([690c57f](https://github.com/tojinguyen/Unity-Utilities/commit/690c57feb8d1e227b9efd1b58676aa192207e26a))
+
 # [1.20.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.19.0...v1.20.0) (2026-05-01)
 
 
