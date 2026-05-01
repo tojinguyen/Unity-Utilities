@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.19.0...v1.20.0) (2026-05-01)
+
+
+### Features
+
+* update flow hide screen ([8e425fd](https://github.com/tojinguyen/Unity-Utilities/commit/8e425fd24ea4225c7010de681d0ce4486751c79e))
+
 # [1.19.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.18.0...v1.19.0) (2026-05-01)
 
 
