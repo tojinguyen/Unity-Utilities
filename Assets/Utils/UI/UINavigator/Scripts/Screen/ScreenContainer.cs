@@ -44,17 +44,19 @@ namespace Utils.Scripts.UIManager.UINavigator
             var screen = screenSpawn.GetComponent<Screen>();
             if (screen is null)
                 return null;
-            await screen.OnPushEnter();
 
+            UniTask hideTask = UniTask.CompletedTask;
             if (_stackScreen.TryPeek(out var screenToHide))
             {
                 if (screenToHide != null)
-                    await screenToHide.OnPushExit(screen);
+                    hideTask = screenToHide.OnPushExit(screen);
                 else
                     _stackScreen.Pop();
             }
 
             _stackScreen.Push(screen);
+
+            await UniTask.WhenAll(screen.OnPushEnter(), hideTask);
 
             await UniTask.Yield();
             return screen;
@@ -66,6 +68,7 @@ namespace Utils.Scripts.UIManager.UINavigator
             {
                 _stackScreen.Pop();
 
+                UniTask enterTask = UniTask.CompletedTask;
                 if (_stackScreen.TryPeek(out var screenToShow))
                 {
                     if (screenToShow != null)
@@ -73,7 +76,7 @@ namespace Utils.Scripts.UIManager.UINavigator
                         if (!screenToShow.gameObject.activeSelf)
                         {
                             screenToShow.gameObject.SetActive(true);
-                            await screenToShow.OnPopEnter();
+                            enterTask = screenToShow.OnPopEnter();
                         }
                     } 
                     else
@@ -82,7 +85,7 @@ namespace Utils.Scripts.UIManager.UINavigator
                     }
                 }
 
-                await screen.OnPopExit();
+                await UniTask.WhenAll(screen.OnPopExit(), enterTask);
                 Destroy(screen.gameObject);
             }
             await UniTask.Yield();
