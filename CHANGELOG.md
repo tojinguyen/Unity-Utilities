@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.17.0...v1.18.0) (2026-05-01)
+
+
+### Features
+
+* update package loading scene ([9a651ff](https://github.com/tojinguyen/Unity-Utilities/commit/9a651ff3b394dc93b27e4b57400d546ebefa6fcc))
+
 # [1.17.0](https://github.com/tojinguyen/Unity-Utilities/compare/v1.16.0...v1.17.0) (2026-04-30)
 
 
