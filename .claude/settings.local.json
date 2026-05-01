@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(grep -v \"\\\\.meta$\")"
+      "Bash(grep -v \"\\\\.meta$\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\GAME\\\\_ORGANIZE\\\\BOMBGUY\\\\PACKAGE\\\\Unity-Utilities\" -Recurse)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

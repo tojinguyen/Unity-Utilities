@@ -16,6 +16,8 @@ namespace TirexGame.Utils.LoadingScene
         [SerializeField] private float _completionDelay = 0.8f;
 
         private float _currentProgress;
+        private AsyncOperationHandle<SceneInstance> _loadedSceneHandle;
+        private bool _hasLoadedScene;
 
         private void Awake()
         {
@@ -40,6 +42,10 @@ namespace TirexGame.Utils.LoadingScene
 
         private async UniTask LoadInternal(string sceneName)
         {
+            Scene sceneToUnload = SceneManager.GetActiveScene();
+            AsyncOperationHandle<SceneInstance> previousHandle = _loadedSceneHandle;
+            bool unloadViaAddressables = _hasLoadedScene;
+
             _currentProgress = 0f;
             if (_ui != null)
             {
@@ -49,6 +55,16 @@ namespace TirexGame.Utils.LoadingScene
 
             var handle = Addressables.LoadSceneAsync(sceneName, LoadSceneMode.Additive);
             await FakeProgressUntilDone(handle);
+
+            _loadedSceneHandle = handle;
+            _hasLoadedScene = true;
+
+            SceneManager.SetActiveScene(handle.Result.Scene);
+
+            if (unloadViaAddressables)
+                await Addressables.UnloadSceneAsync(previousHandle).ToUniTask();
+            else if (sceneToUnload.isLoaded)
+                await SceneManager.UnloadSceneAsync(sceneToUnload).ToUniTask();
 
             await SmoothTo(1f, speed: 2f);
             await UniTask.Delay(TimeSpan.FromSeconds(_completionDelay));
