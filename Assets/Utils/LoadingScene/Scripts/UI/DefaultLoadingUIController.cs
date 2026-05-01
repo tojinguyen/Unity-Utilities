@@ -39,29 +39,11 @@ namespace TirexGame.Utils.LoadingScene
             _animationStrategy?.StopIdleAnimation(GetTarget());
         }
 
-        public virtual void ShowUI()
+        public virtual async UniTask ShowUI()
         {
             if (_isVisible) return;
             _isVisible = true;
-            ShowAsync().Forget();
-        }
 
-        public virtual void HideUI()
-        {
-            if (!_isVisible) return;
-            _isVisible = false;
-            HideAsync().Forget();
-        }
-
-        public void SetProgress(float progress)
-        {
-            float v = Mathf.Clamp01(progress);
-            if (_progressBar != null) _progressBar.value = v;
-            if (_progressPercentText != null) _progressPercentText.text = $"{v * 100:F0}%";
-        }
-
-        private async UniTaskVoid ShowAsync()
-        {
             CancelAnimation();
             _animCts = new CancellationTokenSource();
 
@@ -78,6 +60,20 @@ namespace TirexGame.Utils.LoadingScene
                 }
                 catch (System.OperationCanceledException) { }
             }
+        }
+
+        public virtual void HideUI()
+        {
+            if (!_isVisible) return;
+            _isVisible = false;
+            HideAsync().Forget();
+        }
+
+        public void SetProgress(float progress)
+        {
+            float v = Mathf.Clamp01(progress);
+            if (_progressBar != null) _progressBar.value = v;
+            if (_progressPercentText != null) _progressPercentText.text = $"{v * 100:F0}%";
         }
 
         private async UniTaskVoid HideAsync()
