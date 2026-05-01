@@ -44,6 +44,8 @@ namespace Utils.Scripts.UIManager.UINavigator
             var screen = screenSpawn.GetComponent<Screen>();
             if (screen is null)
                 return null;
+            await screen.OnPushEnter();
+
             if (_stackScreen.TryPeek(out var screenToHide))
             {
                 if (screenToHide != null)
@@ -52,7 +54,6 @@ namespace Utils.Scripts.UIManager.UINavigator
                     _stackScreen.Pop();
             }
 
-            await screen.OnPushEnter();
             _stackScreen.Push(screen);
 
             await UniTask.Yield();

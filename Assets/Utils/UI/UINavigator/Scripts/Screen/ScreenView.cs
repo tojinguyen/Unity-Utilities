@@ -40,8 +40,7 @@ namespace Utils.Scripts.UIManager.UINavigator
         {
             await UniTask.WaitUntil(() => screen.IsInitialized);
             if (animationTransition.PushExitAnimation)
-                animationTransition.PushExitAnimation.Execute(ViewCanvasGroup, ScreenContainer.Container.RectContainer).Forget();
-            await UniTask.CompletedTask;
+                await animationTransition.PushExitAnimation.Execute(ViewCanvasGroup, ScreenContainer.Container.RectContainer);
             this.gameObject.SetActive(false);
         }
 
